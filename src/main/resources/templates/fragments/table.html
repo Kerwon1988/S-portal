@@ -1,0 +1,23 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="table(captionKey, headers, rows)">
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left">
+            <caption class="sr-only" th:text="#{${captionKey}}">Data table</caption>
+            <thead>
+            <tr>
+                <th scope="col" class="border-b border-border p-3" th:each="header : ${headers}"
+                    th:text="${header}">Column</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${rows}">
+                <td class="border-b border-border p-3" th:each="cell : ${row}" th:text="${cell}">Value</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(rows)}">
+                <td class="p-3 text-text-muted" th:colspan="${#lists.size(headers)}" th:text="#{table.empty}">
+                    No data
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

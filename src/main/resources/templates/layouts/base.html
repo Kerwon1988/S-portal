@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es" th:lang="${#locale.language}" th:attr="data-theme-preference=${theme}"
+      xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout(titleKey, content, area)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <meta name="portal-correlation-id" th:content="${portalCorrelationId}">
+    <meta name="color-scheme" content="dark light">
+    <meta name="htmx-config" content='{"includeIndicatorStyles":false}'>
+    <title th:text="#{${titleKey}}">Simbio</title>
+    <link rel="stylesheet" th:href="${assets['app.css']}">
+    <script th:inline="javascript" th:nonce="${cspNonce}">
+        const themePreference = /*[[${theme}]]*/ "system";
+        document.documentElement.dataset.theme = themePreference === "light" || themePreference === "dark"
+            ? themePreference
+            : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    </script>
+    <script th:src="${assets['htmx.js']}" defer th:nonce="${cspNonce}"></script>
+    <script th:src="${assets['alpine-csp.js']}" defer th:nonce="${cspNonce}"></script>
+    <script th:src="${assets['theme.js']}" defer th:nonce="${cspNonce}"></script>
+    <script th:src="${assets['menu.js']}" defer th:nonce="${cspNonce}"></script>
+    <script th:src="${assets['htmx-config.js']}" defer th:nonce="${cspNonce}"></script>
+    <script th:src="${assets['error-reporter.js']}" defer th:nonce="${cspNonce}"></script>
+</head>
+<body th:attr="data-area=${area}">
+<header class="border-b border-border bg-surface">
+    <a class="skip-link min-h-11 rounded bg-surface px-4 py-3 text-accent-text" href="#main-content"
+       th:text="#{nav.skip}">Skip to main content</a>
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3">
+        <a class="inline-flex min-h-11 items-center font-brand text-xl text-accent-text"
+           th:href="@{/{lang}(lang=${#locale.language})}">Simbio</a>
+        <nav class="flex min-w-0 max-w-full flex-1 items-center gap-3" th:attr="aria-label=#{nav.primary}" data-primary-navigation>
+            <ul class="flex gap-4" data-primary-links>
+                <li th:each="item : ${navigationItems}">
+                    <a class="inline-flex min-h-11 items-center px-3 text-accent-text"
+                       th:href="${item.href.replace('{lang}', #locale.language)}"
+                       th:attr="aria-current=${currentPath == item.href.replace('{lang}', #locale.language) ? 'page' : null}"
+                       th:text="#{${item.labelKey}}">Home</a>
+                </li>
+            </ul>
+            <div th:replace="~{fragments/navbar :: menu(${navigationItems}, ${#locale.language})}"></div>
+        </nav>
+        <div class="flex items-center gap-2">
+            <form method="post" class="inline-flex"
+                  th:action="@{/preferences/locale/{lang}(lang=${#locale.language == 'es' ? 'en' : 'es'})}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" name="returnTo" th:value="${currentPath}">
+                <button class="inline-flex min-h-11 items-center rounded px-2 text-accent-text" type="submit"
+                        th:text="#{nav.language}">English</button>
+            </form>
+            <button type="button" class="min-h-11 rounded border border-border px-3"
+                    data-theme-toggle data-label-light="Usar tema claro" data-label-dark="Usar tema oscuro"
+                    th:attr="aria-label=#{nav.theme},data-label-light=#{nav.theme.light},data-label-dark=#{nav.theme.dark}"
+                    th:aria-pressed="${theme == 'dark'}" th:text="#{nav.theme}">Theme</button>
+        </div>
+    </div>
+</header>
+<section id="error-telemetry-consent" class="mx-auto my-6 max-w-7xl rounded border border-border bg-surface p-4 text-text"
+         hidden role="region" aria-labelledby="error-telemetry-consent-title" data-error-consent-panel>
+    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+            <h2 id="error-telemetry-consent-title" class="text-lg font-semibold" tabindex="-1"
+                th:text="#{telemetry.error-consent.title}">Error report preferences</h2>
+            <p class="mt-2 text-text-muted" th:text="#{telemetry.error-consent.description}">
+                Choose whether to send technical error reports.
+            </p>
+            <p class="mt-2 text-sm text-danger" role="alert" hidden data-error-consent-storage-error
+               th:text="#{telemetry.error-consent.storage-error}">
+                The preference could not be saved.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" class="inline-flex min-h-11 items-center rounded bg-primary px-4 text-on-primary"
+                    data-error-consent-accept th:text="#{telemetry.error-consent.accept}">Accept</button>
+            <button type="button" class="inline-flex min-h-11 items-center rounded border border-border px-4"
+                    data-error-consent-reject th:text="#{telemetry.error-consent.reject}">Reject</button>
+        </div>
+    </div>
+</section>
+<div id="preference-errors" class="mx-auto max-w-7xl px-4" role="status" aria-live="polite"></div>
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-10" tabindex="-1" th:replace="${content}">
+    <h1>Simbio</h1>
+</main>
+<footer class="border-t border-border bg-surface px-4 py-6 text-center text-text-muted">
+    <p th:text="#{nav.footer}">Simbio Portal</p>
+    <button type="button" class="mt-3 min-h-11 rounded border border-border px-3 text-accent-text"
+            aria-controls="error-telemetry-consent" aria-expanded="false" data-error-consent-manage
+            th:text="#{telemetry.error-consent.manage}">Error report preferences</button>
+</footer>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<nav xmlns:th="http://www.thymeleaf.org" th:fragment="pagination(previousHref, nextHref)"
+     class="flex items-center justify-between gap-4" th:attr="aria-label=#{nav.pagination}">
+    <a class="inline-flex min-h-11 items-center rounded border border-border px-4 text-accent-text"
+       th:if="${previousHref != null}" th:href="${previousHref}" th:text="#{pagination.previous}">Previous</a>
+    <span th:unless="${previousHref != null}"></span>
+    <a class="inline-flex min-h-11 items-center rounded border border-border px-4 text-accent-text"
+       th:if="${nextHref != null}" th:href="${nextHref}" th:text="#{pagination.next}">Next</a>
+</nav>

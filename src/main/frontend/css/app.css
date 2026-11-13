@@ -1,0 +1,88 @@
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+  font-family: var(--font-body);
+}
+
+body {
+  min-width: 20rem;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--sp-bg);
+  color: var(--sp-text);
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--sp-focus);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  z-index: 20;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.menu-drawer .menu-panel {
+  display: none;
+}
+
+.menu-drawer[open] .menu-panel {
+  display: block;
+}
+
+.menu-open {
+  overflow: hidden;
+}
+
+.htmx-indicator {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 200ms ease-in;
+}
+
+.menu-overflow [data-primary-links] {
+  display: none;
+}
+
+.menu-overflow .menu-drawer > summary {
+  display: block;
+}
+
+@media (min-width: 48rem) {
+  .menu-drawer > summary {
+    display: none;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  [data-primary-links] {
+    display: none;
+  }
+
+  .menu-drawer > summary {
+    display: block;
+  }
+}

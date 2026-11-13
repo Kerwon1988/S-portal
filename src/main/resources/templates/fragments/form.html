@@ -1,0 +1,8 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="field(fieldId, labelKey, errorMessage)">
+    <label class="mb-1 block font-semibold" th:for="${fieldId}" th:text="#{${labelKey}}">Field</label>
+    <input class="min-h-11 w-full rounded border border-border bg-surface px-3 text-text"
+           th:id="${fieldId}" th:attr="aria-describedby=${errorMessage == null ? null : fieldId + '-error'},
+           aria-invalid=${errorMessage != null}">
+    <p class="mt-1 text-danger" role="alert" th:if="${errorMessage != null}"
+       th:id="${fieldId + '-error'}" th:text="${errorMessage}">Error</p>
+</div>

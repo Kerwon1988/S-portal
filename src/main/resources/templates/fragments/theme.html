@@ -1,0 +1,6 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="toggle">
+    <button type="button" class="min-h-11 rounded border border-border px-3"
+            data-theme-toggle data-label-light="Usar tema claro" data-label-dark="Usar tema oscuro"
+            th:attr="aria-label=#{nav.theme},data-label-light=#{nav.theme.light},data-label-dark=#{nav.theme.dark}"
+            th:aria-pressed="${theme == 'dark'}" th:text="#{nav.theme}">Theme</button>
+</div>

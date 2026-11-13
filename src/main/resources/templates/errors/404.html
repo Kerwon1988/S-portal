@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('page.error.404.title', ~{::main}, 'public')}">
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-10" tabindex="-1">
+    <section class="rounded-xl bg-surface p-6">
+        <h1 class="text-3xl" th:text="#{page.error.404.title}">Page not found</h1>
+        <p class="mt-4 text-text-muted" th:text="#{page.error.404.body}">We could not find this page.</p>
+    </section>
+</main>
+</html>

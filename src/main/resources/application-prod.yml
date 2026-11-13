@@ -1,0 +1,14 @@
+portal:
+  base-url: ${PORTAL_BASE_URL}
+  brand-name: ${PORTAL_BRAND_NAME:Simbio}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+
+logging:
+  structured:
+    format:
+      console: com.simbio.core.config.observability.PiiMaskingStructuredLogFormatter

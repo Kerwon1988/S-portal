@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('page.error.403.title', ~{::main}, 'public')}">
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-10" tabindex="-1">
+    <section class="rounded-xl bg-surface p-6">
+        <h1 class="text-3xl" th:text="#{page.error.403.title}">Access denied</h1>
+        <p class="mt-4 text-text-muted" th:text="#{page.error.403.body}">You do not have permission.</p>
+    </section>
+</main>
+</html>

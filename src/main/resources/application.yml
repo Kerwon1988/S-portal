@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: portal
+
+server:
+  port: 8090
+  servlet:
+    session:
+      cookie:
+        name: SPORTAL_SESSION
+        http-only: true
+        same-site: lax
+
+management:
+  server:
+    port: 8091
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+portal:
+  base-url: ${PORTAL_BASE_URL:http://localhost:8090}
+  brand-name: ${PORTAL_BRAND_NAME:Simbio}
+  error-tracking:
+    inventory-path: ${PORTAL_ERROR_TRACKING_PATH:logs-error/error-inventory.json}
+    max-entries: ${PORTAL_ERROR_TRACKING_MAX_ENTRIES:1000}
+    max-file-bytes: ${PORTAL_ERROR_TRACKING_MAX_FILE_BYTES:5242880}
+    max-field-length: ${PORTAL_ERROR_TRACKING_MAX_FIELD_LENGTH:2048}
+    release: ${PORTAL_RELEASE:development}

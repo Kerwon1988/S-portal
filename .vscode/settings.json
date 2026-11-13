@@ -1,0 +1,22 @@
+{
+  "java.configuration.maven.userSettings": "C:\\Users\\x455035\\.m2\\settings-s-portal.xml",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "C:\\Users\\x455035\\.jdks\\ms-21.0.13.0.2",
+      "default": true
+    }
+  ],
+  "maven.executable.options": [
+    "-o",
+    "-s",
+    "C:\\Users\\x455035\\.m2\\settings-s-portal.xml",
+    "-Dfrontend.skip=true"
+  ],
+  "maven.terminal.customEnv": [
+    {
+      "environmentVariable": "JAVA_HOME",
+      "value": "C:\\Users\\x455035\\.jdks\\ms-21.0.13.0.2"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+portal:
+  base-url: ${PORTAL_BASE_URL:http://localhost:8090}
+  brand-name: ${PORTAL_BRAND_NAME:Simbio}

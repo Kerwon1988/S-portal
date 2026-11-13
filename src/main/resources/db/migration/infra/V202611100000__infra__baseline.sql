@@ -1,0 +1,4 @@
+IF SCHEMA_ID(N'infra') IS NULL
+BEGIN
+    EXEC(N'CREATE SCHEMA [infra]');
+END;

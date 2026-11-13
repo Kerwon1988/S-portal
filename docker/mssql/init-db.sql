@@ -1,0 +1,5 @@
+IF DB_ID(N'sportal') IS NULL
+BEGIN
+    CREATE DATABASE [sportal] COLLATE Latin1_General_100_CI_AS_SC;
+END;
+GO

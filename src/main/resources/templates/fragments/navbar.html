@@ -1,0 +1,13 @@
+<details xmlns:th="http://www.thymeleaf.org" th:fragment="menu(items, locale)" class="menu-drawer relative">
+    <summary class="min-h-11 cursor-pointer list-none rounded border border-border px-3 py-2"
+             aria-controls="primary-menu" th:text="#{nav.menu}">Menu</summary>
+    <ul id="primary-menu"
+        class="menu-panel absolute right-0 z-10 min-w-48 rounded border border-border bg-surface p-2 shadow-lg">
+        <li th:each="item : ${items}">
+            <a class="flex min-h-11 items-center rounded px-3 text-accent-text"
+               th:href="${item.href.replace('{lang}', locale)}"
+               th:attr="aria-current=${currentPath == item.href.replace('{lang}', locale) ? 'page' : null}"
+               th:text="#{${item.labelKey}}">Home</a>
+        </li>
+    </ul>
+</details>

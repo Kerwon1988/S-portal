@@ -1,0 +1,15 @@
+package com.simbio.core.shared.security;
+
+public enum Permission {
+    USERS_MANAGE,
+    REQUESTS_VIEW_ALL,
+    REQUESTS_ASSIGN,
+    QUOTES_MANAGE,
+    INBOX_MANAGE,
+    INBOX_PURGE,
+    CONTENT_EDIT,
+    AUDIT_VIEW,
+    STAFF_MANAGE,
+    CLIENTS_EXPORT,
+    PROVISIONING_MANAGE
+}

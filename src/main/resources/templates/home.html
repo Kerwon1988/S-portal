@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/public :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-10" tabindex="-1">
+    <section class="rounded-xl bg-surface p-6 sm:p-10">
+        <p class="text-sm font-semibold uppercase tracking-wide text-accent-text" th:text="#{home.current}">
+            Portal visual foundation
+        </p>
+        <h1 class="mt-4 font-heading text-4xl sm:text-6xl" th:text="#{page.home.heading}">
+            Less admin, more business.
+        </h1>
+        <p class="mt-4 max-w-2xl text-lg text-text-muted" th:text="#{page.home.intro}">
+            A digital foundation for your business.
+        </p>
+        <p class="mt-8 rounded border border-border bg-surface-alt p-4" th:text="#{home.notice}">
+            Product content will be added by its owning modules.
+        </p>
+    </section>
+</main>
+</html>
