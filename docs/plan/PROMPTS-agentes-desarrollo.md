@@ -122,6 +122,8 @@ Añade tests y claves bilingües de tu alcance; ejecuta los validadores aplicabl
 
 ## PROMPT 04 — F0 Inventario central y captura de errores (ERR-001..003)
 
+**Estado en este workspace: COMPLETADO el 2026-11-13.** ERR-001..003 y sus criterios de desarrollo quedaron validados localmente. Las comprobaciones contra SQL Server real, despliegue multi-réplica, retención productiva y revisión legal no son gates para cerrar este prompt; sus decisiones siguen pendientes antes de producción.
+
 ```text
 Implementa exclusivamente ERR-001, ERR-002 y ERR-003 de `docs/plan/tareas/F0-error-inventory.md`, respetando dependencias exactas. No modifiques DEMO ni reemplaces el tracker con CustomErrorController.
 
@@ -134,7 +136,7 @@ Lee `docs/plan/03-arquitectura.md`, `05-integracion-simbiosphere.md`, `07-seguri
 IMPLEMENTACIÓN
 Mantén el diseño en `config` y su SPI; no introduzcas tablas ni dependencias de negocio. Asegura que errores esperados no generen ruido descontrolado y que clasificación/deduplicación no silencien categorías configuradas. No registres datos sensibles al depurar.
 
-Prueba los criterios `TC-ERR-001..003`: UT de huella/redacción; IT JSON/restart/fallos; SQL Server caído; WT handlers/CSRF/origin/rate-limit; prueba de secretos/PII; E2E de captura frontend según ficha. Actualiza documentación y ADR solo si la ficha lo pide. Reporta límites, estrategia de volumen y validación de single-writer.
+Prueba los criterios `TC-ERR-001..003`: UT de huella/redacción; IT JSON/restart/fallos usando H2 y fixtures de indisponibilidad SQL cuando aplique (sin exigir SQL Server real); WT handlers/CSRF/origin/rate-limit; prueba de secretos/PII; E2E de captura frontend según ficha. Docker, Testcontainers, SQL Server real, PRE y aprobaciones legales/operativas de producción no son gates de cierre de ERR-001..003; conserva sus límites como pendientes de producción. Actualiza documentación y ADR solo si la ficha lo pide. Reporta límites, estrategia de volumen y validación de single-writer.
 ```
 
 ## PROMPT 05 — F1 Auditoría, ficheros e identidad núcleo

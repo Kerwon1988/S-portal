@@ -20,3 +20,7 @@ Backup incluye volumen y DB; purgas coordinan metadata/bytes. Ficheros en cuaren
 ## Verificaciones pendientes
 - FND-005/FIL-001..004: volumen dev, MIME, antivirus, límites y variantes.
 - ADR-006/HRD-005/HRD-006: persistencia, backup, plataforma y volumen.
+
+## Implementación observada — 2026-11-13
+
+Existe un avance parcial de FIL-001 con `FileStorage`, metadata JPA y adaptador local bajo un directorio configurable. Las pruebas focalizadas se añadieron pero no pudieron ejecutarse por fallo PKIX del repositorio Maven corporativo. El ADR permanece en borrador: la ruta durable, volumen, backup, antivirus y entrega HTTP siguen pendientes de validación/aprobación.

@@ -1,6 +1,8 @@
 # S-portal
 
-S-portal is a server-rendered modular monolith for Simbio. The current implementation is the F0 foundation; business modules and production UI are not yet present.
+S-portal is a server-rendered modular monolith for Simbio. The F0 foundation is in place; Prompt 05 audit, file-storage, and identity code is under unvalidated F1 development. Business workflows and production UI are not complete.
+
+The current audit/file/identity work is partial: files are stored outside the web root and kept quarantined until a clean scan; audit access and identity authorization are enforced server-side. Maven verification is currently blocked by dependency resolution, so do not treat any Prompt 05 task as complete until its H2/security tests pass.
 
 ## Stack and local build
 
@@ -34,6 +36,16 @@ Backend and database failures are captured by `config.errortracking.ErrorInvento
 
 The local fingerprinted `error-reporter.js` submits allowlisted JavaScript, resource, network, and HTMX failures to `POST /api/telemetry/errors` only after explicit opt-in. A non-modal ES/EN banner is denied by default, offers accept/reject, and can be reopened from the footer to change or withdraw the choice. The versioned preference stays in browser `localStorage` only; no identity or server-side consent record is created, and a storage failure keeps reporting disabled. Consent copy is provisional and needs legal review before production. The endpoint keeps CSRF enabled, requires a matching `Origin`, accepts at most 4 KiB of uncompressed JSON, and applies an in-memory token bucket (burst 30, refill 30/minute); the browser additionally caps reports at five per minute. The server fixes the source to `FRONTEND`, validates event/error names, and stores only an allowlisted asset-frame summary, locale, correlation ID, and redacted path. Free-form error messages, DOM/form data, cookies, headers, and query strings are not sent or persisted. The rate limiter and JSON inventory are process-local/single-writer and need an approved shared design before scaling.
 
+## Audit and identity (Prompt 05 in progress)
+
+The `audit` module records minimal, append-only events and provides paged, permission-protected views. The `identity` module contains role/permission seeding, password policy and encoding, login/session handling, a default-deny authorization matrix, rate limiting, and externally configured one-use administrator bootstrap. These implementations and their unit/H2 tests have not yet been validated by Maven. The bootstrap must remain disabled by default and cannot run in `prod`; the rate limiter is process-local and needs an approved shared design before multi-replica deployment. The password-encoding choice remains subject to ADR-002 approval.
+
+## File storage (Prompt 05 in progress)
+
+The `files.api.FileStorage` port uses a private local directory configured by `PORTAL_FILE_STORAGE_ROOT` (default: `${java.io.tmpdir}/s-portal-files`), outside the static web root. Stored objects use random UUID-derived keys in quarantine; downloads require the caller-provided authorization check and are exposed as an `InputStream` only when metadata is `CLEAN`. Upload validation, ClamAV INSTREAM scanning, and WebP image-variant code are present, but no HTTP upload/download route is implemented and the focused unit/H2 tests have not yet run. Configure a durable private volume and include it in backups before deployment; volume/backup operations and the draft status of ADR-005 remain open.
+
+If ClamAV is unavailable or returns an invalid response, the file remains quarantined and non-downloadable.
+
 ## CI and verification limits
 
 The GitHub Actions workflow is configured to run the Maven `ci` profile, tests, JaCoCo coverage checks, and OWASP Dependency-Check. Configure `NVD_API_KEY` as a GitHub Actions secret for the scan. Running the remote workflow, obtaining a scan result, and reviewing licenses are not prerequisites for closing the F0 foundation tasks.
@@ -65,7 +77,7 @@ npm run e2e
 
 The 15 Playwright tests cover the public shell across ES/EN, light/dark, mobile/desktop, theme persistence, language switching, navigation overflow/focus, HTMX CSRF/errors, consent-gated frontend error reporting, screenshots under `visual/`, and axe checks. All 15 passed against the updated local H2 application on 2026-11-13. Tests fail with an explicit precondition message when `PORTAL_E2E_BASE_URL` is not set; a missing server is not reported as a successful test.
 
-PROMPT 04 validation: `npm run build` passed; `mvn -o -s settings-s-portal.xml -Plocal-h2 verify` passed with 76 Surefire tests, 3 Failsafe integration tests, and JaCoCo checks; all 15 Playwright tests passed against the updated local H2 application, including opt-in, rejection/revocation, and browser-storage failure. The full suite exposed and led to fixing a Thymeleaf 3.1 incompatibility: the layout no longer accesses the disabled `#request` expression object and receives the correlation ID via `WebViewAdvice`. The startup log showed the application needed about 36 seconds to start; earlier probes ran too soon. Consent copy still needs legal review before production; single-writer/rate-limit scaling and retention also need operational approval.
+PROMPT 04 is complete for ERR-001..003. `npm run build` passed; `mvn -o -s settings-s-portal.xml -Plocal-h2 verify` passed with 76 Surefire tests, 3 Failsafe integration tests, and JaCoCo checks; all 15 Playwright tests passed against the updated local H2 application, including opt-in, rejection/revocation, and browser-storage failure. The focused documentation, governance, i18n, and template gates also passed (19 tests). The full suite exposed and led to fixing a Thymeleaf 3.1 incompatibility: the layout no longer accesses the disabled `#request` expression object and receives the correlation ID via `WebViewAdvice`. The startup log showed the application needed about 36 seconds to start; earlier probes ran too soon. SQL Server compatibility, multi-replica storage/rate limiting, retention, and legal review of the provisional consent copy remain production follow-ups, not gates for closing PROMPT 04.
 
 ## Governance and architecture documentation
 

@@ -19,7 +19,10 @@ public class LocaleConfig {
     @Bean
     MessageSource messageSource() {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
-        messageSource.setBasename("i18n.config.messages");
+        messageSource.setBasenames(
+                "i18n.config.messages",
+                "i18n.audit.messages",
+                "i18n.identity.messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setDefaultLocale(Locale.forLanguageTag("es"));
         messageSource.setFallbackToSystemLocale(false);

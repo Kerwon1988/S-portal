@@ -1,6 +1,8 @@
 portal:
   base-url: ${PORTAL_BASE_URL}
   brand-name: ${PORTAL_BRAND_NAME:Simbio}
+  files:
+    storage-root: ${PORTAL_FILE_STORAGE_ROOT}
 
 server:
   servlet:

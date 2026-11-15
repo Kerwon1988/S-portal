@@ -1,6 +1,6 @@
 # ADR-012 — Inventario operativo de errores
 
-- Estado: Aceptado; ERR-001..003 implementados y validados localmente; límites operativos/retención pendientes de aprobación
+- Estado: Aceptado; ERR-001..003 y PROMPT 04 completados y validados localmente; límites operativos/retención y aprobación legal productiva siguen pendientes fuera del alcance de desarrollo
 - Fecha: 2026-11-11
 
 ## Contexto

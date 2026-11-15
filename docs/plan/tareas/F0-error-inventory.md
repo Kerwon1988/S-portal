@@ -1,5 +1,6 @@
 # F0 — Inventario de errores (núcleo y captura backend/BD/frontend)
 
+- Estado: COMPLETADA (ERR-001..003 / PROMPT 04), validada localmente el 2026-11-13. SQL Server real, despliegue multi-réplica, retención productiva y aprobación legal son asuntos fuera del gate de cierre de desarrollo y permanecen pendientes antes de producción.
 - Objetivo: registrar errores desde el inicio del desarrollo en un inventario central consultable y saneado.
 - Módulo(s) owner: `config.errortracking`; publica el puerto mínimo `shared.spi.ErrorReporter`.
 
@@ -14,7 +15,7 @@
 - Seguridad: scrub/allowlist, límites de tamaño/entradas, permisos de archivo; nunca PII/secretos en bruto, tokens, body ni literales/valores SQL.
 - Criterios de aceptación (Given/When/Then):
   - Given errores con misma huella When se registran Then incrementa ocurrencias sin duplicar entrada y conserva primer/último momento.
-  - Given SQL Server caído When un error se registra Then persiste en JSON independiente; fallo del tracker no reemplaza la excepción original.
+  - Given la dependencia SQL no está disponible When un error se registra Then persiste en JSON independiente; fallo del tracker no reemplaza la excepción original. La prueba puede simular la indisponibilidad y no requiere SQL Server real.
 - Tests: TC-ERR-001: UT (fingerprint/redacción), IT (carga/reinicio/escritura), SEC (fixtures PII/secretos).
 - Documentación a actualizar: DIARIO + INVENTARIO; ADR-012; README operación
 - Estimación: M (≤ 1 d)

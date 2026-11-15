@@ -1,12 +1,12 @@
 # Inventario técnico de S-portal
 
-Actualizado: 2026-11-13. Alcance: fundaciones F0, PROMPT 03, captura backend/BD y telemetría frontend parcial del PROMPT 04.
+Actualizado: 2026-11-13. Alcance: fundaciones F0, PROMPT 03, captura backend/BD y telemetría frontend parcial del PROMPT 04; implementación no validada de PROMPT 05 (AUD-001/002, FIL-001..004 e IAM-001/002/004/005/012/014); evaluaciones bloqueadas de PROMPT 06 y PROMPT 08.
 
 ## Build y estructura
 
 - `com.simbio.core:portal`, Java 21, Maven Wrapper/Maven 3.6.3, Spring Boot 4.1.2.
 - Aplicación principal: `PortalApplication`; puerto HTTP `8090`, gestión `8091`.
-- Paquetes modulares iniciales: `shared` y `config`, ambos abiertos según Modulith. No existen aún módulos de negocio.
+- Paquetes modulares iniciales: `shared` y `config`; `audit`, `files` e `identity` tienen implementación parcial bajo sus owners, pero ninguno de los cambios de PROMPT 05 está validado.
 - `shared` contiene roles/permisos, usuario autenticado, email, paginación, errores y SPIs para identidad, destinatarios, datos personales y navegación.
 - Modulith, DAG de módulos y seis reglas ArchUnit protegen límites y capas.
 
@@ -26,7 +26,7 @@ Actualizado: 2026-11-13. Alcance: fundaciones F0, PROMPT 03, captura backend/BD 
 - Backend/MVC y errores de persistencia se capturan con huella SHA-256, categoría, severidad, estado, marcas de tiempo, ocurrencias y contexto saneado. No se guarda el mensaje de la excepción, SQL crudo, query string ni body. El fallo del tracker se registra sin sustituir el error original.
 - ERR-003 tiene intake en `POST /api/telemetry/errors` y un reporter local fingerprinted que no envía nada hasta consentimiento explícito. La banda ES/EN deniega por defecto, permite aceptar/rechazar y cambiar/retirar la elección desde el pie de página; la preferencia versionada se guarda solo en localStorage, sin identidad ni evidencia backend, y si falla el almacenamiento la captura permanece desactivada. El navegador solo envía tipos/nombres allowlisted, marcos de assets aprobados, locale, correlación y ruta reducida; el servidor fija `FRONTEND`, vuelve a validar/sanear y limita el body a 4 KiB. CSRF se mantiene activo, se requiere `Origin` same-origin y se aplica un token bucket en memoria de 30 solicitudes de ráfaga y 30/minuto; el cliente limita a cinco/minuto. No se captura el payload rechazado como un error BACKEND. Copy de consentimiento provisional, requiere revisión legal antes de producción.
 - Verificación focal inicial del carril: compilación principal, 7 UT de error-tracking, 4 comprobaciones de arquitectura (11 tests Surefire en total) y 1 IT H2 pasaron con JDK 21.
-- Validación posterior de PROMPT 04: `npm run build` pasó; `mvn -o -s settings-s-portal.xml -Plocal-h2 verify` pasó con JDK 21 offline: 76 tests Surefire y 3 Failsafe H2/integración, sin fallos ni errores, y gates JaCoCo aprobados. La suite completa detectó que Thymeleaf 3.1 deshabilita `#request`; se corrigió el layout exponiendo `portalCorrelationId` desde `WebViewAdvice`. Los 15 Playwright pasaron contra la instancia local actualizada, incluidos denegación por defecto, aceptación, rechazo/revocación y fallo de persistencia de consentimiento. La captura sobre SQL Server y el escalado multi-réplica no se verificaron; el texto de consentimiento sigue pendiente de revisión legal.
+- PROMPT 04 (ERR-001..003): COMPLETADO y validado localmente. `npm run build` pasó; `mvn -o -s settings-s-portal.xml -Plocal-h2 verify` pasó con JDK 21 offline: 76 tests Surefire y 3 Failsafe H2/integración, sin fallos ni errores, y gates JaCoCo aprobados. Los 15 Playwright pasaron contra la instancia local actualizada, incluidos denegación por defecto, aceptación, rechazo/revocación y fallo de persistencia de consentimiento. Los gates focalizados posteriores de documentación, gobernanza, i18n y plantillas pasaron (19 tests). SQL Server real, escalado multi-réplica, retención productiva y revisión legal del texto provisional no forman parte del cierre de desarrollo; siguen pendientes antes de producción.
 - CI definido en `.github/workflows/ci.yml`: Java 21, Maven `ci`, tests, JaCoCo, Dependency-Check y publicación de informes. Dependency-Check está configurado con umbral CVSS 7 y usa `NVD_API_KEY` si se ejecuta; su ejecución no es requisito de cierre de FND.
 - Reglas de plantillas cubren colores directos, `th:utext` y nonce de scripts. `I18nKeyParityTest` valida pares de bundles `messages_es.properties`/`messages_en.properties` cuando existan.
 - Última verificación local del perfil CI: 32 tests Surefire y 2 Failsafe, todos aprobados; comprobaciones JaCoCo aprobadas. No se declara resultado de Dependency-Check.
@@ -55,8 +55,18 @@ Actualizado: 2026-11-13. Alcance: fundaciones F0, PROMPT 03, captura backend/BD 
 | Elemento | Owner | Estado observable |
 |---|---|---|
 | `shared` | Kernel/SPIs | Implementado; incluye `CurrentUser`, `NavContribution` y el puerto `ThemePreference` |
-| `config` | Composición web, seguridad, locale, tema y navegación | Implementación base añadida; build frontend, `mvn clean verify -Plocal-h2` y Playwright/axe 13/13 pasan con JDK 21 y H2 |
-| Sitio público `/es`, `/en` | `config` shell; contenido futuro `content` | Solo shell técnico, sin contenido funcional/CMS |
+| `config` | Composición web, seguridad, locale, tema y navegación | Implementación base validada antes de PROMPT 05; los cambios nuevos de autorización/rate limit no están validados |
+| `audit` | Registro mínimo e inmutable; API `AuditRecorder` | Servicio, persistencia JPA, listado/vistas y protección por permiso están en el código. Hay tests unitarios y H2 de búsqueda/retención, aún sin ejecución exitosa; AUD-001/002 siguen sin validar |
+| `files` | Almacenamiento y metadata de ficheros | API, validación MIME/firma, almacenamiento privado con cuarentena, persistencia JPA, scanner ClamAV fail-closed y variantes WebP están en el código. Se añadieron tests unitarios/H2 y protocolo ClamAV, aún sin ejecutar; FIL-001..004 siguen sin validar |
+| `identity` | Usuarios, roles, permisos y sesión | Se añadieron seed idempotente, política/codificación de contraseña, login/logout, matriz default-deny, bootstrap externo de ADMIN y rate limit. Tests unitarios/MVC/H2 añadidos, aún sin ejecución exitosa; IAM-001/002/004/005/012/014 siguen sin validar y la decisión de encoder de ADR-002 sigue pendiente |
+| Sitio público `/es`, `/en` | `config` shell; contenido futuro `content` | Solo shell técnico, sin contenido funcional/CMS. PROMPT 06 sigue bloqueado antes de CMS-001 porque FIL-001 aún no está validada; PROMPT 08 queda bloqueado por dependencias CMS y DEMO-01; ningún CMS/WEB/SEO se declara completado |
 | `/cuenta/**`, `/gestion/**` | Módulos de negocio futuros | Denegación por defecto; no habilitadas |
 | Assets frontend compilados | Build/config | CSS/JS y manifest fingerprintados; `npm run build` y `FrontendAssetPipelineTest` pasan; el perfil Maven frontend no se ejecutó localmente y no es gate del alcance actual |
 | Fuentes web | `config` | No incluidas; se usa `system-ui, sans-serif`, sin decisión de licencia pendiente |
+
+## Evaluación de PROMPT 08 — 2026-11-13
+
+- **Sin implementación:** el módulo `content`, sus páginas funcionales y las pruebas `TC-WEB-*`/`TC-SEO-*` aún no existen. `contratos-ui-backend.md` es una propuesta de rutas, no evidencia de implementación.
+- **Bloqueados por CMS:** WEB-001, WEB-003 y WEB-004 esperan CMS-004 y CMS-012; WEB-005 espera CMS-004 y CMS-009; WEB-006 espera CMS-010 (UIK-006 sí está disponible); SEO-001 espera CMS-004. Por transitividad quedan bloqueados WEB-002 por WEB-001, SEO-002 por SEO-001 y WEB-007 por WEB-002/SEO-002.
+- **SIM-002 bloqueado:** FND-002 está implementada, pero DEMO-01 no tiene evidencia de ejecución/aprobación en el workspace. `05-integracion-simbiosphere.md` contiene un borrador propuesto, no un OpenAPI validado ni un acuerdo entre owners; no se ejecutó lint/contract test ni se generaron stubs WireMock.
+- No se modificaron código, rutas, contratos ni el repositorio externo DEMO. Quedan pendientes los prerrequisitos CMS indicados y la revisión/acuerdo del contrato por los owners Portal y DEMO; no se afirma integración real ni aprobación de contenidos, materiales o textos legales.

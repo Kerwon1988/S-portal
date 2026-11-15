@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('audit.page.title', ~{::main}, 'backoffice')}">
+<main id="main-content" class="space-y-8" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{audit.page.heading}">Audit log</h1>
+    <form method="get" class="grid gap-4 rounded border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+            <label class="block" for="actorId" th:text="#{audit.filter.actor}">Actor ID</label>
+            <input id="actorId" name="actorId" type="text" maxlength="36" inputmode="text"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"
+                   th:value="${actorId}">
+        </div>
+        <div>
+            <label class="block" for="actionCode" th:text="#{audit.filter.action}">Action</label>
+            <input id="actionCode" name="actionCode" type="text" maxlength="64"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"
+                   th:value="${actionCode}">
+        </div>
+        <div>
+            <label class="block" for="fromDate" th:text="#{audit.filter.from}">From</label>
+            <input id="fromDate" name="fromDate" type="date"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"
+                   th:value="${fromDate}">
+        </div>
+        <div>
+            <label class="block" for="toDate" th:text="#{audit.filter.to}">To</label>
+            <input id="toDate" name="toDate" type="date"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"
+                   th:value="${toDate}">
+        </div>
+        <button type="submit" class="min-h-11 self-end rounded bg-primary px-4 text-on-primary"
+                th:text="#{audit.filter.submit}">Filter</button>
+    </form>
+    <p th:if="${invalidFilter}" class="rounded border border-danger p-3 text-danger" role="alert"
+       th:text="#{audit.error.invalid-filter}">Invalid filter.</p>
+    <section th:if="${entityHistory != null}" class="space-y-3">
+        <h2 class="font-heading text-xl" th:text="#{audit.entity.heading}">Entity history</h2>
+        <p class="break-all" th:text="${entityType + ' · ' + entityPublicId}">Entity ID</p>
+        <ul class="space-y-2">
+            <li th:each="event : ${entityHistory}" class="rounded border border-border bg-surface p-3">
+                <span th:text="${event.occurredAt}">Time</span>
+                <span th:text="${event.actionCode}">Action</span>
+                <span th:text="${event.actorId}">Actor</span>
+            </li>
+        </ul>
+    </section>
+    <div class="overflow-x-auto rounded border border-border">
+        <table class="w-full min-w-[44rem] border-collapse text-left">
+            <caption class="p-3 text-left font-semibold" th:text="#{audit.table.caption}">Audit events</caption>
+            <thead>
+            <tr class="border-y border-border bg-surface-alt">
+                <th scope="col" class="p-3" th:text="#{audit.table.time}">Time</th>
+                <th scope="col" class="p-3" th:text="#{audit.table.actor}">Actor</th>
+                <th scope="col" class="p-3" th:text="#{audit.table.action}">Action</th>
+                <th scope="col" class="p-3" th:text="#{audit.table.entity}">Entity</th>
+                <th scope="col" class="p-3" th:text="#{audit.table.identifier}">Entity ID</th>
+                <th scope="col" class="p-3" th:text="#{audit.table.correlation}">Correlation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${auditPage.entries.empty}">
+                <td colspan="6" class="p-4 text-text-muted" th:text="#{audit.empty}">No events.</td>
+            </tr>
+            <tr th:each="event : ${auditPage.entries}" class="border-b border-border">
+                <td class="p-3" th:text="${event.occurredAt}">Time</td>
+                <td class="p-3" th:text="${event.actorId}">Actor</td>
+                <td class="p-3" th:text="${event.actionCode}">Action</td>
+                <td class="p-3" th:text="${event.entityType}">Entity</td>
+                <td class="p-3">
+                    <a class="break-all text-accent-text underline"
+                       th:href="@{/gestion/auditoria(entityType=${event.entityType},entityId=${event.entityPublicId})}"
+                       th:text="${event.entityPublicId}">ID</a>
+                </td>
+                <td class="break-all p-3" th:text="${event.correlationId}">Correlation</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:if="${auditPage.totalPages > 1}" class="flex flex-wrap items-center gap-3"
+         th:attr="aria-label=#{nav.pagination}">
+        <a th:if="${auditPage.page > 0}"
+           class="inline-flex min-h-11 items-center rounded border border-border px-3"
+           th:href="@{/gestion/auditoria(page=${auditPage.page - 1},actorId=${actorId},actionCode=${actionCode},fromDate=${fromDate},toDate=${toDate})}"
+           th:text="#{audit.pagination.previous}">Previous</a>
+        <span th:text="#{audit.pagination.current(${auditPage.page + 1},${auditPage.totalPages})}">Page 1</span>
+        <a th:if="${auditPage.page + 1 < auditPage.totalPages}"
+           class="inline-flex min-h-11 items-center rounded border border-border px-3"
+           th:href="@{/gestion/auditoria(page=${auditPage.page + 1},actorId=${actorId},actionCode=${actionCode},fromDate=${fromDate},toDate=${toDate})}"
+           th:text="#{audit.pagination.next}">Next</a>
+    </nav>
+</main>
+</html>

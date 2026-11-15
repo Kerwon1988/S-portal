@@ -1,3 +1,9 @@
 module,depends_on
+audit,shared
 config,
+files,shared
+identity,audit;shared
+audit,
+files,
+identity,audit;shared
 shared,

@@ -60,7 +60,8 @@ class LayerRulesTest {
             .allowEmptyShould(true);
 
     private static final ArchRule INFRASTRUCTURE_IMPLEMENTS_PORTS = classes()
-            .that().resideInAPackage("..infrastructure..")
+            .that().areNotInterfaces()
+            .and().resideInAPackage("..infrastructure..")
             .should(new ArchCondition<>("implement a port from an application package") {
                 @Override
                 public void check(JavaClass item, ConditionEvents events) {

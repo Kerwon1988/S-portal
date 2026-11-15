@@ -27,9 +27,29 @@ management:
 portal:
   base-url: ${PORTAL_BASE_URL:http://localhost:8090}
   brand-name: ${PORTAL_BRAND_NAME:Simbio}
+  files:
+    storage-root: ${PORTAL_FILE_STORAGE_ROOT:${java.io.tmpdir}/s-portal-files}
+    clamav:
+      enabled: ${PORTAL_CLAMAV_ENABLED:true}
+      host: ${PORTAL_CLAMAV_HOST:localhost}
+      port: ${PORTAL_CLAMAV_PORT:3310}
+      timeout: ${PORTAL_CLAMAV_TIMEOUT:5000}
   error-tracking:
     inventory-path: ${PORTAL_ERROR_TRACKING_PATH:logs-error/error-inventory.json}
     max-entries: ${PORTAL_ERROR_TRACKING_MAX_ENTRIES:1000}
     max-file-bytes: ${PORTAL_ERROR_TRACKING_MAX_FILE_BYTES:5242880}
     max-field-length: ${PORTAL_ERROR_TRACKING_MAX_FIELD_LENGTH:2048}
     release: ${PORTAL_RELEASE:development}
+  security:
+    rate-limit:
+      max-buckets: 10000
+      ip-capacity: 30
+      email-capacity: 5
+      window: 1m
+  files:
+    storage-root: ${PORTAL_FILE_STORAGE_ROOT:${java.io.tmpdir}/s-portal-files}
+    clamav:
+      enabled: ${PORTAL_CLAMAV_ENABLED:true}
+      host: ${PORTAL_CLAMAV_HOST:localhost}
+      port: ${PORTAL_CLAMAV_PORT:3310}
+      timeout: ${PORTAL_CLAMAV_TIMEOUT:5000}
