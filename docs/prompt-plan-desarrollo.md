@@ -365,7 +365,7 @@ Convierte cada punto en requisitos con ID (`RF-<ÁREA>-NN`), prioridad MoSCoW, f
    - Diagramas generados con el `Documenter` de Spring Modulith.
 
 ### 7.12 Skill y gobernanza modular (idea 15º, D12)
-1. **Base:** adaptar de DEMO las normas M01–M12, la constitución, `copilot-instructions.md` y la skill `seniorThymeleaf`. La gobernanza con CSV/ArchUnit se sustituye por Spring Modulith (`ApplicationModules.verify()`, `@ApplicationModuleTest`, named interfaces) más reglas ArchUnit de capas.
+1. **Base:** adaptar de DEMO las normas M01–M12, la constitución, `copilot-instructions.md` y la skill `seniorThymeleaf`. La gobernanza con CSV/ArchUnit se sustituye por comprobaciones de módulos Spring Modulith (`@ApplicationModuleTest`, named interfaces) más reglas ArchUnit de capas.
 2. **Entregables:** `.github/copilot-instructions.md`, `.github/skills/<nombre>/SKILL.md` y `docs/arquitectura/NORMAS-DESARROLLO-MODULAR.md`.
 3. **Contenido de la skill:**
    - Cuándo usarla (en todo cambio) y lecturas obligatorias.

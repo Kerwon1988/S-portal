@@ -12,7 +12,9 @@ const inputs = [
   ["theme.js", join(root, "src", "main", "frontend", "js", "theme.js")],
   ["menu.js", join(root, "src", "main", "frontend", "js", "menu.js")],
   ["htmx-config.js", join(root, "src", "main", "frontend", "js", "htmx-config.js")],
-  ["error-reporter.js", join(root, "src", "main", "frontend", "js", "error-reporter.js")]
+  ["error-reporter.js", join(root, "src", "main", "frontend", "js", "error-reporter.js")],
+  ["anti-bot.js", join(root, "src", "main", "frontend", "js", "anti-bot.js")],
+  ["simbio-logo.png", join(root, "src", "main", "frontend", "images", "simbio-logo.png")]
 ];
 const manifest = {};
 

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-5xl px-4 py-10" tabindex="-1">
+    <h1 class="mb-4 font-heading text-3xl" th:text="#{content.team.title}">Team members</h1>
+    <p th:if="${noticeKey}" class="mb-4 text-success" role="status" th:text="#{${noticeKey}}"></p>
+    <p class="mb-6 rounded border border-warning p-4" role="note" th:text="#{content.team.approval}">
+        Do not publish team material without permission and approval.
+    </p>
+    <form method="post" class="grid gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-2">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <label class="grid gap-2" for="member-id">
+            <span th:text="#{content.team.id}">Existing member ID (leave blank to create)</span>
+            <input id="member-id" class="min-h-11 rounded border border-border bg-surface px-3" name="publicId">
+        </label>
+        <label class="grid gap-2" for="member-locale">
+            <span th:text="#{content.locale}">Language</span>
+            <select id="member-locale" class="min-h-11 rounded border border-border bg-surface px-3" name="locale">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+            </select>
+        </label>
+        <label class="grid gap-2" for="member-position">
+            <span th:text="#{content.team.position}">Display position</span>
+            <input id="member-position" class="min-h-11 rounded border border-border bg-surface px-3"
+                   name="position" type="number" min="0" value="0" required>
+        </label>
+        <label class="grid gap-2" for="member-name">
+            <span th:text="#{content.team.name}">Name</span>
+            <input id="member-name" class="min-h-11 rounded border border-border bg-surface px-3"
+                   name="displayName" maxlength="120" required>
+        </label>
+        <label class="grid gap-2" for="member-role">
+            <span th:text="#{content.team.role}">Role</span>
+            <input id="member-role" class="min-h-11 rounded border border-border bg-surface px-3"
+                   name="roleTitle" maxlength="120" required>
+        </label>
+        <label class="grid gap-2 sm:col-span-2" for="member-bio">
+            <span th:text="#{content.team.bio}">Biography in Markdown</span>
+            <textarea id="member-bio" class="min-h-32 rounded border border-border bg-surface p-3"
+                      name="bioMarkdown" maxlength="4000" required></textarea>
+        </label>
+        <label class="grid gap-2" for="member-photo">
+            <span th:text="#{content.team.photo}">Clean media ID</span>
+            <input id="member-photo" class="min-h-11 rounded border border-border bg-surface px-3"
+                   name="photoPublicId">
+        </label>
+        <label class="grid gap-2" for="member-alt">
+            <span th:text="#{content.team.alt}">Photo alternative text</span>
+            <input id="member-alt" class="min-h-11 rounded border border-border bg-surface px-3"
+                   name="photoAlt" maxlength="500">
+        </label>
+        <label class="grid gap-2 sm:col-span-2" for="member-url">
+            <span th:text="#{content.team.profile-url}">HTTPS profile URL</span>
+            <input id="member-url" class="min-h-11 rounded border border-border bg-surface px-3"
+                   name="profileUrl" maxlength="512">
+        </label>
+        <button class="min-h-11 rounded bg-primary px-5 text-on-primary sm:col-span-2" type="submit"
+                th:text="#{content.action.save}">Save draft</button>
+    </form>
+    <div class="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
+        <table class="w-full text-left">
+            <caption class="sr-only" th:text="#{content.team.caption}">Team member drafts</caption>
+            <thead>
+            <tr class="border-b border-border">
+                <th scope="col" class="p-3" th:text="#{content.team.id}">ID</th>
+                <th scope="col" class="p-3" th:text="#{content.locale}">Language</th>
+                <th scope="col" class="p-3" th:text="#{content.team.name}">Name</th>
+                <th scope="col" class="p-3" th:text="#{content.state}">State</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="member : ${members}" class="border-b border-border">
+                <td class="break-all p-3" th:text="${member.publicId}">ID</td>
+                <td class="p-3" th:text="${#strings.toUpperCase(member.locale)}">ES</td>
+                <td class="p-3" th:text="${member.displayName}">Name</td>
+                <td class="p-3" th:text="${member.active ? 'Published' : 'Draft'}">Draft</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</html>

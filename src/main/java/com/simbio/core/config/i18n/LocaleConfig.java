@@ -22,7 +22,11 @@ public class LocaleConfig {
         messageSource.setBasenames(
                 "i18n.config.messages",
                 "i18n.audit.messages",
-                "i18n.identity.messages");
+                "i18n.identity.messages",
+                "i18n.notification.messages",
+                "i18n.customer.messages",
+                "i18n.staff.messages",
+                "i18n.legal.messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setDefaultLocale(Locale.forLanguageTag("es"));
         messageSource.setFallbackToSystemLocale(false);

@@ -1,5 +1,7 @@
 package com.simbio.core.files.infrastructure;
 
+import java.util.List;
+
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,5 +21,11 @@ class JpaFileVariantStore implements FileVariantStore {
     @Transactional
     public FileVariantEntity save(FileVariantEntity variant) {
         return repository.save(variant);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FileVariantEntity> findByFileId(Long fileId) {
+        return repository.findByFile_IdOrderByWidthAsc(fileId);
     }
 }

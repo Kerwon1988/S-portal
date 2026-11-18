@@ -9,7 +9,7 @@ D10 fija Java 21 y la última versión Spring Boot con soporte OSS vigente al ej
 ## Decisión
 Usar Java 21, Spring Boot 4.1.2 y Spring Modulith 2.1.2 para iniciar FND-002..006. Adoptar Spring Modulith para `ApplicationModules.verify()`, `@ApplicationModuleTest`, named interfaces y Event Publication Registry; complementar con ArchUnit para capas/ownership. Un monolito, una BD y un esquema por módulo. `shared` y `config` OPEN con límites estrictos.
 
-### Versiones fijadas por FND-001
+### Versiones base actuales del proyecto
 
 | Componente | Versión / gestión |
 |---|---|
@@ -19,12 +19,16 @@ Usar Java 21, Spring Boot 4.1.2 y Spring Modulith 2.1.2 para iniciar FND-002..00
 | Thymeleaf Layout Dialect | 3.3.0 |
 | Thymeleaf Extras Spring Security | 3.1.2.RELEASE |
 | Flyway | Gestionado por Spring Boot 4.1.2 |
-| H2 | 2.4.240 |
+| H2 | 2.2.224 |
 | Bouncy Castle (`bcprov-jdk18on`) | 1.80 |
 | Bucket4j (`bucket4j-core`) | 8.10.1 |
 | Resilience4j Retry | 2.3.0 |
 
-El spike pasó `mvn verify` con Maven 3.6.3 y Java 21: 2 tests, 0 fallos, 0 errores. Flyway aplicó la migración de prueba H2; el test verificó también la cadena de seguridad, los dialectos Thymeleaf, Argon2, Bucket4j, Resilience4j y `ApplicationModules.verify()`. Flyway advierte que H2 2.4.240 es posterior a la última versión con la que se declara verificado (2.3.232); se conserva la versión probada y se registra la advertencia, sin afirmar certificación de esa combinación.
+El spike original pasó `mvn verify` con Maven 3.6.3 y Java 21: 2 tests, 0 fallos, 0 errores, usando H2 2.4.240. El owner fijó posteriormente H2 2.2.224 como versión oficial del proyecto; el POM la declara explícitamente tanto para tests como para el perfil `local-h2`. La nueva versión queda pendiente de una ejecución satisfactoria de las pruebas con la configuración actual. No se afirma que SQL Server esté validado.
+
+### Actualización de H2 — 2026-11-17
+
+Por decisión del owner, H2 2.2.224 reemplaza la versión gestionada anteriormente por Spring Boot. Esta es la versión oficial para la base de datos de pruebas y para el perfil local `local-h2`. La disponibilidad del JAR en la caché local no constituye por sí sola evidencia de compilación o ejecución de pruebas.
 
 ## Alternativas
 - Seguir en Boot 3.3.5: menor cambio inicial, pero el soporte OSS terminó según brief; no recomendado.

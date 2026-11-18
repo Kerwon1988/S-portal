@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/account :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-3xl px-4 py-8" tabindex="-1">
+    <section class="rounded-xl border border-border bg-surface p-6">
+        <h1 class="font-heading text-3xl" th:text="#{legal.rights.title}">Your data</h1>
+        <p class="mt-4" th:text="#{legal.rights.pending}">
+            Data export and account erasure are not available until the approved retention policy and secure workflow are in place.
+        </p>
+        <p class="mt-3 text-text-muted" th:text="#{legal.rights.no-change}">
+            No data has been changed or erased by this page.
+        </p>
+    </section>
+</main>
+</html>

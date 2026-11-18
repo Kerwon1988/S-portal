@@ -24,7 +24,7 @@ class RateLimitFilterTest {
             lastResponse = response;
         }
 
-        assertThat(passed).isEqualTo(30);
+        assertThat(passed).hasValue(30);
         assertThat(lastResponse.getStatus()).isEqualTo(429);
         assertThat(lastResponse.getHeader("Retry-After")).isEqualTo("60");
     }
@@ -43,7 +43,7 @@ class RateLimitFilterTest {
             lastResponse = response;
         }
 
-        assertThat(passed).isEqualTo(5);
+        assertThat(passed).hasValue(5);
         assertThat(lastResponse.getStatus()).isEqualTo(429);
         assertThat(lastResponse.getContentAsString()).doesNotContain("synthetic@example.test");
     }

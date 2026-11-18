@@ -27,6 +27,6 @@ ERR-003 incorpora `POST /api/telemetry/errors`: el cliente solo lo usa tras cons
 ## Verificaciones pendientes
 - ERR-001..002: implementados; 7 UT de error-tracking, 1 IT H2 y gates de capas/Modulith/DAG ejecutados y aprobados. El inventario no depende de la BD.
 - ERR-003: opt-in, intake, CSRF, same-origin, límites y sanitización implementados; `mvn verify` local con H2, build frontend y Playwright 15/15 aprobados, incluidos denegación por defecto, aceptación, revocación y fallo de almacenamiento. Se verificó la instancia en `local-h2`; no se certifica SQL Server ni despliegue multi-réplica. El texto provisional necesita revisión legal antes de producción. UIK-006, ERR-001 y FND-009 están satisfechas.
-- ERR-004: acceso ADMIN, filtros/resolución y degradación si storage no está disponible.
+- ERR-004: están presentes el visor server-side ADMIN con permiso dedicado, filtros, paginación, resolución/ignorado auditados y degradación sin detalles ante storage no disponible. Las pruebas específicas y la compilación del cambio no se ejecutaron; permanece sin verificar y abierto.
 - HRD-005/007/008/010: backup, métricas/alertas, retención aprobada y storage/secretos.
 - 13-preguntas-abiertas.md: cap/retención, persistencia multi-réplica, clasificación/severidad y payload frontend.

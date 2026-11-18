@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-4xl px-4 py-10" tabindex="-1">
+    <header class="mb-6">
+        <h1 class="font-heading text-3xl" th:text="#{content.editor.title}">Edit content</h1>
+        <p class="mt-2 text-text-muted" th:text="#{content.editor.help}">Only published, approved content is public.</p>
+    </header>
+    <p th:if="${errorKey}" class="mb-4 text-danger" role="alert" th:text="#{${errorKey}}"></p>
+    <form method="post" class="space-y-6 rounded-xl border border-border bg-surface p-5"
+          th:object="${form}"
+          th:action="${form.pagePublicId == null ? '/gestion/contenido/crear' : '/gestion/contenido/' + form.pagePublicId + '/guardar'}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" th:field="*{pagePublicId}">
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label class="grid gap-2" for="pageKey">
+                <span th:text="#{content.page.key}">Page key</span>
+                <input id="pageKey" class="min-h-11 rounded border border-border bg-surface px-3"
+                       th:field="*{pageKey}" required maxlength="120" pattern="[a-z][a-z0-9-]*">
+            </label>
+            <label class="grid gap-2" for="pageType">
+                <span th:text="#{content.page.type}">Page type</span>
+                <select id="pageType" class="min-h-11 rounded border border-border bg-surface px-3"
+                        th:field="*{pageType}">
+                    <option value="PAGE" th:text="#{content.page.type.page}">Page</option>
+                    <option value="LEGAL" th:text="#{content.page.type.legal}">Legal document</option>
+                    <option value="REQUEST_CONDITIONS" th:text="#{content.page.type.conditions}">Request conditions</option>
+                </select>
+            </label>
+            <label class="grid gap-2" for="locale">
+                <span th:text="#{content.locale}">Language</span>
+                <select id="locale" class="min-h-11 rounded border border-border bg-surface px-3" th:field="*{locale}">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </label>
+            <label class="grid gap-2" for="slug">
+                <span th:text="#{content.slug}">Slug</span>
+                <input id="slug" class="min-h-11 rounded border border-border bg-surface px-3"
+                       th:field="*{slug}" required maxlength="120" pattern="[a-z0-9]+([-/][a-z0-9-]+)*">
+            </label>
+            <label class="grid gap-2 sm:col-span-2" for="title">
+                <span th:text="#{content.title}">Title</span>
+                <input id="title" class="min-h-11 rounded border border-border bg-surface px-3"
+                       th:field="*{title}" required maxlength="200">
+            </label>
+            <label class="grid gap-2" for="seoTitle">
+                <span th:text="#{content.seo.title}">SEO title</span>
+                <input id="seoTitle" class="min-h-11 rounded border border-border bg-surface px-3"
+                       th:field="*{seoTitle}" maxlength="200">
+            </label>
+            <label class="grid gap-2" for="metaDescription">
+                <span th:text="#{content.seo.description}">Meta description</span>
+                <input id="metaDescription" class="min-h-11 rounded border border-border bg-surface px-3"
+                       th:field="*{metaDescription}" maxlength="320">
+            </label>
+        </div>
+        <fieldset class="space-y-4">
+            <legend class="text-xl font-semibold" th:text="#{content.blocks.title}">Content blocks</legend>
+            <p class="text-text-muted" th:text="#{content.blocks.help}">Select only the block types you need.</p>
+            <section th:if="${!#lists.isEmpty(media)}" aria-labelledby="media-gallery-title">
+                <h2 id="media-gallery-title" class="mb-3 text-lg font-semibold"
+                    th:text="#{content.block.media.gallery}">Available clean media</h2>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <figure th:each="asset : ${media}" class="rounded border border-border p-3">
+                        <img class="h-36 w-full rounded object-contain"
+                             th:src="@{/gestion/contenido/medios/{publicId}/preview(publicId=${asset.filePublicId})}"
+                             alt="" loading="lazy">
+                        <figcaption class="mt-2 break-all text-sm"
+                                    th:text="${(form.locale == 'es' ? asset.altEs : asset.altEn) + ' (' + asset.filePublicId + ')'}">
+                            Alternative text (media ID)
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
+            <div th:each="block, status : *{blocks}" class="grid gap-3 rounded border border-border p-4">
+                <label class="grid gap-2" th:for="${'block-type-' + status.index}">
+                    <span th:text="#{content.block.type}">Block type</span>
+                    <select class="min-h-11 rounded border border-border bg-surface px-3"
+                            th:id="${'block-type-' + status.index}" th:field="*{blocks[__${status.index}__].type}">
+                        <option value="" th:text="#{content.block.skip}">Skip block</option>
+                        <option value="HERO">Hero</option>
+                        <option value="CARD">Card</option>
+                        <option value="TEXT">Text</option>
+                        <option value="IMAGE">Image</option>
+                        <option value="CTA">CTA</option>
+                        <option value="FAQ">FAQ</option>
+                    </select>
+                </label>
+                <label class="grid gap-2" th:for="${'block-position-' + status.index}">
+                    <span th:text="#{content.block.position}">Order (editable by keyboard)</span>
+                    <input class="min-h-11 w-32 rounded border border-border bg-surface px-3"
+                           th:id="${'block-position-' + status.index}"
+                           th:field="*{blocks[__${status.index}__].position}" type="number" min="0">
+                </label>
+                <label class="grid gap-2" th:for="${'block-heading-' + status.index}">
+                    <span th:text="#{content.block.heading}">Heading</span>
+                    <input class="min-h-11 rounded border border-border bg-surface px-3"
+                           th:id="${'block-heading-' + status.index}"
+                           th:field="*{blocks[__${status.index}__].heading}" maxlength="200">
+                </label>
+                <label class="grid gap-2" th:for="${'block-body-' + status.index}">
+                    <span th:text="#{content.block.body}">Markdown body</span>
+                    <textarea class="min-h-28 rounded border border-border bg-surface p-3"
+                              th:id="${'block-body-' + status.index}"
+                              th:field="*{blocks[__${status.index}__].bodyMarkdown}" maxlength="8000"></textarea>
+                </label>
+                <label class="grid gap-2" th:for="${'block-url-' + status.index}">
+                    <span th:text="#{content.block.url}">Safe link target</span>
+                    <input class="min-h-11 rounded border border-border bg-surface px-3"
+                           th:id="${'block-url-' + status.index}"
+                           th:field="*{blocks[__${status.index}__].targetUrl}" maxlength="512">
+                </label>
+                <label class="grid gap-2" th:for="${'block-media-' + status.index}">
+                    <span th:text="#{content.block.media}">Registered media</span>
+                    <select class="min-h-11 rounded border border-border bg-surface px-3"
+                            th:id="${'block-media-' + status.index}"
+                            th:field="*{blocks[__${status.index}__].mediaPublicId}">
+                        <option value="" th:text="#{content.block.noMedia}">No media</option>
+                        <option th:each="asset : ${media}" th:value="${asset.filePublicId}"
+                                th:text="${(form.locale == 'es' ? asset.altEs : asset.altEn) + ' (' + asset.filePublicId + ')'}">
+                            Image alternative text (media ID)
+                        </option>
+                    </select>
+                    <a class="text-accent-text underline" th:href="@{/gestion/contenido/medios}"
+                       th:text="#{content.block.media.help}">Upload or preview media</a>
+                </label>
+            </div>
+        </fieldset>
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="min-h-11 rounded bg-primary px-5 text-on-primary"
+                    th:text="#{content.action.save}">Save draft</button>
+            <a class="inline-flex min-h-11 items-center rounded border border-border px-4"
+               th:href="@{/gestion/contenido}" th:text="#{content.action.cancel}">Cancel</a>
+        </div>
+    </form>
+    <div class="mt-5 flex flex-wrap gap-3" th:if="${form.pagePublicId != null}">
+        <a class="inline-flex min-h-11 items-center rounded border border-border px-4"
+           th:href="@{/gestion/contenido/{id}/preview(id=${form.pagePublicId},locale=${form.locale})}"
+           th:text="#{content.action.preview}">Preview privately</a>
+        <form method="post" th:action="@{/gestion/contenido/{id}/publicar(id=${form.pagePublicId})}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="locale" th:value="${form.locale}">
+            <button class="min-h-11 rounded bg-primary px-5 text-on-primary" type="submit"
+                    th:text="#{content.action.publish}">Publish</button>
+        </form>
+        <form method="post" th:action="@{/gestion/contenido/{id}/restaurar(id=${form.pagePublicId})}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="locale" th:value="${form.locale}">
+            <button class="min-h-11 rounded border border-border px-4" type="submit"
+                    th:text="#{content.action.restore}">Restore previous</button>
+        </form>
+    </div>
+</main>
+</html>

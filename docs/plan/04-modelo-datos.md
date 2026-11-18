@@ -19,17 +19,20 @@ erDiagram
 
 | Esquema.tabla (owner) | Columnas principales | Restricciones/índices |
 |---|---|---|
-| `identity.user_account` | `id`, `public_id`, `email_normalized NVARCHAR(320)`, `first_name`, `last_name`, `password_hash NVARCHAR(255)`, `status`, `email_verified_at`, `preferred_locale`, `created_at` | PK clustered; `public_id` único; email normalizado único; no persistir password en claro |
+| `identity.user_account` | `id`, `public_id`, `email_normalized NVARCHAR(320)`, `first_name`, `last_name`, `display_name`, `password_hash NVARCHAR(255)`, `status`, `email_verified_at`, `preferred_locale`, `theme_preference`, `created_at` | PK clustered; `public_id` único; email normalizado único; tema NULL o `light`/`dark`; no persistir password en claro |
 | `identity.user_role` / `identity.role_permission` | `user_id`, `role_code`, `permission_code`, `created_at` | Unicidad por asignación; cambios privilegiados auditados |
-| `identity.one_time_token` | `user_id`, `purpose`, `token_hash VARBINARY`, `expires_at`, `consumed_at`, `revoked_at` | Índice único hash; consumo atómico de un uso; token en claro nunca se almacena |
-| `identity.mfa_factor` | `user_id`, `secret_ciphertext`, `enabled_at`, `last_used_step` | Un factor activo por usuario; secreto cifrado/versionado |
-| `customer.client_account` | `id`, `public_id`, `account_type`, `display_name`, `legal_name`, `tax_id_ciphertext`, `country_code`, `status`, timestamps | `account_type` empresa/autónomo/particular; NIF opcional al alta; datos fiscales cifrados |
-| `customer.account_member` | `client_account_id`, `user_id`, `role_code`, `status`, `joined_at` | Un OWNER activo por cuenta en MVP; preparado para `MEMBER` futuro; referencias identity por API/ID |
+| `identity.one_time_token` | `id`, `token_hash CHAR(64)`, `purpose`, `user_public_id`, `email_encrypted`, `email_key CHAR(64)`, `role_code`, `expires_at`, `consumed_at`, `revoked_at`, `created_at` | Hash único; `email_key` es HMAC-SHA-256 ciego con separación de propósito y clave; propósitos limitados; rol CLIENT/EMPLOYEE requerido para invitación; consumo atómico; token en claro nunca se almacena |
+| `identity.mfa_factor` | `user_public_id`, `secret_encrypted`, `enabled`, `last_accepted_step`, `recovery_hashes`, `updated_at`, `version` | Un factor por usuario; secreto cifrado; códigos de recuperación hashados; referencia FK al usuario |
+| `customer.client_account` | Código presente: `id`, `public_id`, `account_type`, `display_name`, `status`, `created_at`; opcionales `country_code`, `tax_id_ciphertext`, `phone_ciphertext` | `account_type`: `COMPANY`/`SOLE_TRADER`/`INDIVIDUAL`; NIF y teléfono opcionales; valores sensibles protegidos mediante `SensitiveDataProtector`; solo hay validador fiscal sintáctico `ES` |
+| `customer.account_member` | `id`, `account_id`, `user_public_id`, `role_code`, `status_code`, `owner_slot`, `joined_at` | Un OWNER activo por cuenta; unicidad de usuario por cuenta; vínculo de identidad por UUID comprobado mediante API, sin FK/repositorio externo |
+| `customer.client_invitation` | Código presente: `invitation_reference`, `account_type`, `account_name_ciphertext`, `created_by_user_id`, `status`, `created_at`, `accepted_user_id`, `client_account_public_id`, `completed_at` | Referencia opaca única; nombre cifrado; no persiste email/token; alta idempotente tras aceptación. No tiene expiración/limpieza propia |
 | `staff.staff_profile` | `id`, `public_id`, `user_id`, `job_title`, `phone_ciphertext`, `employment_status`, timestamps | `user_id` único; no contraseña propia; alta vinculada a invitación |
 | `staff.staff_specialty` | `staff_profile_id`, `specialty_code` | Único por perfil/especialidad; catálogo configurable |
-| `legal.consent_record` | `id`, `subject_user_id`, `consent_type`, `document_version_id`, `accepted_at`, `source`, `ip_ciphertext` | Versión/fecha/origen obligatorios; índice por sujeto/tipo/fecha |
-| `legal.data_subject_request` | `id`, `public_id`, `subject_user_id`, `request_type`, `status`, `requested_at`, `completed_at` | Estado auditable; exportación temporal con expiración; no contener payload sin cifrar |
-| `legal.retention_policy` | `data_category`, `retention_days`, `action`, `effective_from`, `approved_by` | Política versionada; no ejecutar borrado irreversible antes de aprobación |
+| `legal.consent_record` | Implementado: `id`, `public_id`, `subject_user_id`, `purpose_code`, `document_type`, `document_locale`, `document_version`, `accepted_at`, `source_code` | Versión publicada vigente; hora UTC del servidor; actor autenticado debe coincidir con el sujeto; sin IP |
+| `legal.data_subject_request` | Diseño objetivo; no hay tabla/migración implementada | Requiere contributors de todos los owners, exportación temporal protegida y aprobación antes de anonimización irreversible |
+| `legal.retention_policy` | Diseño objetivo; no hay tabla/migración implementada | No hay política activa ni purga; solo dry-run hasta aprobación legal de categorías/plazos |
+
+El esquema y las columnas de `customer` y `legal.consent_record` reflejan código/migraciones presentes, no un cierre validado. Las fuentes de tests Java compilaron, pero el runner no pudo iniciar Surefire por una dependencia Maven ausente del repositorio offline; no se ejecutaron tests H2. Las tablas de solicitudes RGPD y retención siguen siendo propuestas del modelo, no evidencia de implementación.
 
 ## Contenido, ficheros y auditoría
 ```mermaid
@@ -43,13 +46,14 @@ erDiagram
 
 | Esquema.tabla (owner) | Columnas principales | Restricciones/índices |
 |---|---|---|
-| `content.page` | `id`, `public_id`, `content_type`, `publication_state`, `created_by`, timestamps | Índice por state/type; `content` único owner |
-| `content.page_translation` | `page_id`, `locale`, `slug`, `title`, `description`, `published_at` | Único `(page_id, locale)` y `(locale, slug)`; guardar slug anterior para 301 |
-| `content.page_block` | `page_id`, `locale`, `block_type`, `sort_order`, `content_json` | `block_type` allowlist; validar JSON y contenido saneado |
-| `content.page_version` | `page_id`, `version_no`, `snapshot`, `author_id`, `published_at` | Único `(page_id, version_no)`; snapshots inmutables; diff completo R2 |
-| `content.team_member` / `team_member_translation` | `public_id`, `publication_state`; `locale`, `name`, `role`, `bio`, `alt`, `file_public_id` | Locale único; solo medios CLEAN; derechos de imagen verificados |
-| `content.legal_document_version` | `document_type`, `locale`, `version`, `valid_from`, `valid_to`, `body_sanitized` | Único `(document_type, locale, version)`; documento aprobado antes de publicar |
+| `content.page` | `id`, `public_id`, `page_key`, `page_type`, `created_at` | `page_key` y `public_id` únicos; `content` único owner |
+| `content.page_translation` | `page_id`, `locale`, `slug`, title/SEO, `state_code`, `approval_state`, `published_slug`, immutable `published_snapshot_json`, version/author/timestamps | Único `(page_id, locale)` y `(locale, slug)`; índice filtrado por `(locale, published_slug)`; locale y estados allowlisted |
+| `content.content_block` | `translation_id`, `block_type`, `position_no`, heading, Markdown, URL local/segura, `media_public_id` | Tipo allowlisted; posición única por traducción; las referencias de fichero no importan entidades de `files` |
+| `content.page_version` | `translation_public_id`, `version_no`, `snapshot_json`, `actor_id`, `created_at` | Único `(translation_public_id, version_no)`; snapshots inmutables; diff completo R2 |
 | `content.slug_redirect` | `locale`, `old_slug`, `new_slug`, `created_at` | `old_slug` único por locale; 301 solo entre rutas públicas |
+| `content.media_asset` | `file_public_id`, `alt_es`, `alt_en`, `created_at` | Solo referencia y texto alternativo; MIME, tamaño, estado de escaneo y bytes pertenecen a `files` |
+| `content.team_member` / `team_member_translation` | `public_id`, posición, estado activo/aprobación de materiales; `locale`, nombre, rol, bio Markdown, referencia/alt de foto, URL perfil | Locale único por miembro; solo CLEAN; aprobación de materiales sigue bloqueada hasta definir autoridad/proceso |
+| `content.legal_document_version` | `document_type`, `locale`, `version_no`, título, Markdown, `approval_state`, `effective_from`, autor/fecha | Único `(document_type, locale, version_no)`; una versión futura o pendiente no es vigente |
 | `files.file_metadata` | `id`, `public_id`, `storage_key`, `detected_mime`, `size_bytes`, `scan_state`, `created_at` | `storage_key` único y aleatorio; `size_bytes` acotado; `scan_state` bloquea cuarentena |
 | `files.file_variant` | `file_id`, `variant_code`, `storage_key`, `width`, `height`, `mime` | Único `(file_id, variant_code)`; límite de píxeles/tamaño |
 | `audit.audit_entry` | `id`, `actor_id`, `action_code`, `entity_type`, `entity_public_id`, `occurred_at`, `correlation_id`, `before_hash`, `after_hash` | Índices por entidad/fecha y actor/fecha; sin contenido PII/secretos |
@@ -88,9 +92,9 @@ erDiagram
 
 | Esquema.tabla (owner) | Columnas principales | Restricciones/índices |
 |---|---|---|
-| `notification.outbox_message` | `id`, `public_id`, `event_type`, `payload_ciphertext`, `status`, `attempt_count`, `next_attempt_at`, `created_at` | Claim por estado/fecha; payload cifrado; idempotency key único por operación |
-| `notification.delivery_attempt` | `outbox_id`, `attempt_no`, `result_code`, `attempted_at` | Único `(outbox_id, attempt_no)`; sin correo/body en logs |
-| `notification.notification_preference` | `user_id`, `category`, `enabled`, `updated_at` | Único `(user_id, category)`; consentimiento comercial separado |
+| `notification.outbox_message` | `id`, `payload_encrypted`, `status`, `attempt_count`, `available_at`, `claimed_until`, `created_at`, `sent_at`, `failure_code` | Estados PENDING/PROCESSING/SENT/FAILED; índices de claim y purga; payload cifrado; no garantiza exactly-once |
+| `notification.delivery_attempt` | Diseño futuro, no creado por NTF-001..003 | Requiere decisión antes de persistir detalle de intentos |
+| `notification.notification_preference` | Diseño futuro, fuera de NTF-001..003 | Consentimiento comercial debe mantenerse separado |
 | `simbiosphere.provisioning` | `id`, `public_id`, `client_account_id`, `state`, `attempt_count`, `locked_until`, `next_attempt_at`, IDs DEMO, timestamps | Índices por state/next_attempt y owner; lease para workers concurrentes |
 | `simbiosphere.account_link` | `client_account_id`, `external_system`, `external_account_id`, `external_owner_user_id`, `status` | Único `(external_system, external_account_id)`; jamás unique por email |
 | `simbiosphere.linked_business` | `account_link_id`, `tenant_id`, `tenant_slug`, `location_id`, `status` | Permite varios tenants por cuenta |
@@ -100,6 +104,7 @@ erDiagram
 - Las FKs internas se crean dentro del esquema owner. IDs externos a módulo se resuelven por `api`; no se importan entidades JPA de otro módulo. El vínculo de negocio se valida en servicio y la autorización comprueba rol **y** propiedad del recurso.
 - Índices mínimos: identidad por email normalizado; CMS por `(locale, slug, state)`; request por `(client_account_id, state_code, created_at)`; inbox por `(status, assigned_to, created_at)`; quote por `(request_id, version_no)`; outbox por `(status, next_attempt_at)`; provisioning por `(state, next_attempt_at, locked_until)`.
 - Todas las pruebas automatizadas de persistencia usan H2. Collation, secuencias de `SOL-AAAA-NNNNNN`, índices filtrados, nivel de aislamiento y demás comportamiento específico de SQL Server no se verifican; se mantiene como riesgo conocido y no se afirma compatibilidad probada con producción.
+- El esquema CMS y sus restricciones SQL Server están implementados en `db/migration/content/`; las pruebas CMS H2 todavía no se han ejecutado. La migración no se ha aplicado a SQL Server.
 - Email/nombres/textos que requieren búsqueda se protegen mediante edición/TDE, cifrado de disco y backups según ADR-009/006 (**VERIFICAR edición soportada**). `tax_id`, teléfono, TOTP, IP si se conserva y payload de email se cifran por columna; tokens siempre hasheados.
 
 ## Migraciones

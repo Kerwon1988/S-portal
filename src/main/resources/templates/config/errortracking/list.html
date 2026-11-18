@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('errors.page.title', ~{::main}, 'backoffice')}">
+<main id="main-content" class="space-y-8" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{errors.page.heading}">Error inventory</h1>
+    <p th:if="${notice == 'resolved'}" class="rounded border border-border p-3" role="status" aria-live="polite"
+       th:text="#{errors.notice.resolved}">The error was marked as resolved.</p>
+    <p th:if="${notice == 'ignored'}" class="rounded border border-border p-3" role="status" aria-live="polite"
+       th:text="#{errors.notice.ignored}">The error was marked as ignored.</p>
+    <p th:if="${notice == 'unavailable'}" class="rounded border border-danger p-3 text-danger" role="alert"
+       th:text="#{errors.storage.unavailable}">The error inventory is temporarily unavailable.</p>
+    <p th:if="${available}" class="rounded border border-border p-3" role="status"
+       th:text="#{errors.storage.available(${storedEntries},${maxEntries})}">
+        Inventory storage is available.
+    </p>
+    <p th:unless="${available}" class="rounded border border-danger p-3 text-danger" role="alert"
+       th:text="#{errors.storage.degraded}">The inventory cannot be read; details are hidden.</p>
+    <section th:if="${available}" class="space-y-6">
+        <form method="get" action="/gestion/errores"
+              class="grid gap-4 rounded border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <label for="source" class="mb-1 block font-semibold" th:text="#{errors.filter.source}">Source</label>
+                <select id="source" name="source" class="min-h-11 w-full rounded border border-border bg-surface px-3">
+                    <option value="" th:text="#{errors.filter.all}">All</option>
+                    <option th:each="option : ${sources}" th:value="${option}" th:selected="${source == option}"
+                            th:text="${option}">BACKEND</option>
+                </select>
+            </div>
+            <div>
+                <label for="severity" class="mb-1 block font-semibold" th:text="#{errors.filter.severity}">Severity</label>
+                <select id="severity" name="severity" class="min-h-11 w-full rounded border border-border bg-surface px-3">
+                    <option value="" th:text="#{errors.filter.all}">All</option>
+                    <option th:each="option : ${severities}" th:value="${option}" th:selected="${severity == option}"
+                            th:text="${option}">HIGH</option>
+                </select>
+            </div>
+            <div>
+                <label for="status" class="mb-1 block font-semibold" th:text="#{errors.filter.status}">Status</label>
+                <select id="status" name="status" class="min-h-11 w-full rounded border border-border bg-surface px-3">
+                    <option value="" th:text="#{errors.filter.all}">All</option>
+                    <option th:each="option : ${statuses}" th:value="${option}" th:selected="${status == option}"
+                            th:text="${option}">OPEN</option>
+                </select>
+            </div>
+            <button type="submit" class="min-h-11 self-end rounded bg-primary px-4 text-on-primary"
+                    th:text="#{errors.filter.submit}">Filter</button>
+        </form>
+        <p class="text-text-muted" th:text="#{errors.count(${totalEntries})}">0 errors</p>
+        <div class="overflow-x-auto rounded border border-border">
+            <table class="w-full min-w-[60rem] border-collapse text-left">
+                <caption class="p-3 text-left font-semibold" th:text="#{errors.table.caption}">Recorded errors</caption>
+                <thead>
+                <tr class="border-y border-border bg-surface-alt">
+                    <th scope="col" class="p-3" th:text="#{errors.table.source}">Source</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.severity}">Severity</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.status}">Status</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.fingerprint}">Fingerprint</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.firstSeen}">First seen</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.lastSeen}">Last seen</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.occurrences}">Occurrences</th>
+                    <th scope="col" class="p-3" th:text="#{errors.table.details}">Details</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${entries.empty}">
+                    <td colspan="8" class="p-4 text-text-muted" th:text="#{errors.empty}">No errors match these filters.</td>
+                </tr>
+                <tr th:each="entry : ${entries}" th:id="${'entry-' + entry.fingerprint}" tabindex="-1"
+                    class="border-b border-border align-top">
+                    <td class="p-3" th:text="${entry.source}">BACKEND</td>
+                    <td class="p-3" th:text="${entry.severity}">HIGH</td>
+                    <td class="p-3" th:text="${entry.status}">OPEN</td>
+                    <td class="break-all p-3 font-mono text-sm" th:text="${entry.fingerprint}">hash</td>
+                    <td class="p-3" th:text="${entry.firstSeen}">time</td>
+                    <td class="p-3" th:text="${entry.lastSeen}">time</td>
+                    <td class="p-3" th:text="${entry.occurrences}">1</td>
+                    <td class="space-y-3 p-3">
+                        <details>
+                            <summary class="min-h-11 cursor-pointer text-accent-text underline"
+                                     th:text="#{errors.details.show}">Show details</summary>
+                            <dl class="mt-2 space-y-2 break-words">
+                                <dt class="font-semibold" th:text="#{errors.details.category}">Category</dt>
+                                <dd th:text="${entry.category}">category</dd>
+                                <dt class="font-semibold" th:text="#{errors.details.exception}">Exception type</dt>
+                                <dd th:text="${entry.exceptionType}">type</dd>
+                                <dt class="font-semibold" th:text="#{errors.details.path}">Route</dt>
+                                <dd th:text="${entry.path}">path</dd>
+                                <dt th:if="${!#strings.isEmpty(entry.resolutionNote)}" class="font-semibold"
+                                    th:text="#{errors.details.resolution-note}">Resolution note</dt>
+                                <dd th:if="${!#strings.isEmpty(entry.resolutionNote)}"
+                                    th:text="${entry.resolutionNote}">note</dd>
+                            </dl>
+                        </details>
+                        <form method="post" class="space-y-2"
+                              th:action="@{/gestion/errores/{fingerprint}/estado(fingerprint=${entry.fingerprint})}">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="page" th:value="${page}">
+                            <input th:if="${source != null}" type="hidden" name="source" th:value="${source}">
+                            <input th:if="${severity != null}" type="hidden" name="severity" th:value="${severity}">
+                            <input th:if="${status != null}" type="hidden" name="filterStatus" th:value="${status}">
+                            <label class="sr-only" th:for="${'resolution-note-' + entry.fingerprint}"
+                                   th:text="#{errors.details.note-label}">Resolution note</label>
+                            <textarea class="min-h-20 w-full rounded border border-border bg-surface p-2"
+                                      maxlength="500" required
+                                      th:id="${'resolution-note-' + entry.fingerprint}"
+                                      name="resolutionNote" th:placeholder="#{errors.details.note-help}"></textarea>
+                            <label class="sr-only" th:for="${'status-' + entry.fingerprint}"
+                                   th:text="#{errors.details.status-label}">New status</label>
+                            <select class="min-h-11 w-full rounded border border-border bg-surface px-3"
+                                    th:id="${'status-' + entry.fingerprint}" name="status">
+                                <option value="RESOLVED" th:text="#{errors.status.resolved}">Resolved</option>
+                                <option value="IGNORED" th:text="#{errors.status.ignored}">Ignored</option>
+                            </select>
+                            <button type="submit" class="min-h-11 rounded bg-primary px-4 text-on-primary"
+                                    th:text="#{errors.details.save}">Save status</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav th:if="${totalPages > 1}" class="flex flex-wrap items-center gap-3"
+             th:attr="aria-label=#{nav.pagination}">
+            <a th:if="${page > 0}" class="inline-flex min-h-11 items-center rounded border border-border px-3"
+               th:href="@{/gestion/errores(page=${page - 1},source=${source},severity=${severity},status=${status})}"
+               th:text="#{pagination.previous}">Previous</a>
+            <span th:text="#{errors.pagination.current(${page + 1},${totalPages})}">Page 1</span>
+            <a th:if="${page + 1 < totalPages}"
+               class="inline-flex min-h-11 items-center rounded border border-border px-3"
+               th:href="@{/gestion/errores(page=${page + 1},source=${source},severity=${severity},status=${status})}"
+               th:text="#{pagination.next}">Next</a>
+        </nav>
+    </section>
+</main>
+</html>

@@ -9,31 +9,44 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.simbio.core.identity.application.UserAccountStore;
+import com.simbio.core.identity.application.LoginAttemptService;
+import com.simbio.core.identity.application.MfaService;
+import com.simbio.core.identity.security.PortalUserPrincipal;
 
 @Component
 public class AccountLoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final UserAccountStore accounts;
+    private final LoginAttemptService loginAttempts;
+    private final MfaService mfaService;
 
-    public AccountLoginSuccessHandler(UserAccountStore accounts) {
-        this.accounts = accounts;
+    public AccountLoginSuccessHandler(LoginAttemptService loginAttempts, MfaService mfaService) {
+        this.loginAttempts = loginAttempts;
+        this.mfaService = mfaService;
     }
 
     @Override
-    @Transactional
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
-        accounts.findByEmail(authentication.getName()).ifPresent(account -> {
-            account.resetLoginFailures();
-            accounts.save(account);
-        });
+        loginAttempts.resetFailures(authentication.getName());
         String destination = request.getParameter("continue");
-        if (destination == null || !destination.startsWith("/") || destination.startsWith("//")
+        if (destination == null) {
+            destination = "/es";
+        } else if (!destination.startsWith("/") || destination.startsWith("//")
                 || destination.startsWith("/\\") || destination.contains("\r") || destination.contains("\n")) {
-            destination = "/gestion/auditoria";
+            destination = "/es";
+        }
+        if (authentication.getPrincipal() instanceof PortalUserPrincipal principal) {
+            boolean enrolled = mfaService.isEnrolled(principal.publicUserId());
+            if (principal.isAdmin() || enrolled) {
+                var session = request.getSession(true);
+                session.setAttribute("mfaContinue", destination);
+                session.setAttribute("mfaPending", true);
+                response.sendRedirect(enrolled
+                        ? "/cuenta/seguridad/mfa"
+                        : "/cuenta/seguridad/mfa/enrolar");
+                return;
+            }
         }
         response.sendRedirect(destination);
     }

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class FrontendAssetPipelineTest {
 
     private static final Pattern FINGERPRINTED_ASSET =
-            Pattern.compile(".+\\.[0-9a-f]{16}\\.(?:css|js)");
+            Pattern.compile(".+\\.[0-9a-f]{16}\\.(?:css|js|png)");
     private static final Pattern EXTERNAL_ASSET =
             Pattern.compile("(?i)(?:src|href)\\s*=\\s*[\"']https?://");
     private static final Path TEMPLATE_ROOT = Path.of("src/main/resources/templates");
@@ -75,13 +75,21 @@ class FrontendAssetPipelineTest {
                 manifest.toFile(), new TypeReference<Map<String, String>>() {});
         assertThat(assets.keySet()).contains(
                 "app.css", "htmx.js", "alpine-csp.js", "theme.js", "menu.js", "htmx-config.js",
-                "error-reporter.js");
+                "error-reporter.js", "simbio-logo.png");
 
         for (String asset : assets.values()) {
             String fileName = asset.substring(asset.lastIndexOf('/') + 1);
             assertThat(fileName).matches(FINGERPRINTED_ASSET);
             assertThat(ASSET_ROOT.resolve(fileName)).exists();
         }
+    }
+
+    @Test
+    void homeUsesFingerprintLogoAsHighPriorityImageWithReservedDimensions() throws IOException {
+        String template = Files.readString(TEMPLATE_ROOT.resolve("content/page.html"));
+
+        assertThat(template).contains("assets['simbio-logo.png']", "width=\"2869\"", "height=\"929\"",
+                "content.home.logo.alt", "fetchpriority=\"high\"");
     }
 
     @Test

@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.LocaleResolver;
 
 @Controller
@@ -23,8 +22,4 @@ public class HomeController {
         return "redirect:/" + localeResolver.resolveLocale(request).getLanguage();
     }
 
-    @GetMapping("/{lang:es|en}")
-    public String home(@PathVariable String lang) {
-        return "home";
-    }
 }

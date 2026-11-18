@@ -70,6 +70,60 @@ class ErrorInventoryServiceTest {
                 .hasMessageContaining("outside the web root");
     }
 
+    @Test
+    void persistsResolvedStatusAndSanitizedNote() {
+        Path inventoryPath = temporaryDirectory.resolve("private").resolve("error-inventory.json");
+        ErrorInventoryService service = new ErrorInventoryService(properties(inventoryPath), JsonMapper.builder().build());
+        ErrorReport report = new ErrorReport(
+                Source.BACKEND,
+                "MVC_EXCEPTION",
+                "IllegalStateException",
+                new IllegalStateException("synthetic"),
+                "/gestion/errores",
+                "release-1",
+                "es",
+                "corr-synthetic");
+        service.report(report);
+        String fingerprint = service.snapshot().errors().getFirst().fingerprint();
+
+        service.updateStatus(fingerprint, "RESOLVED",
+                "Fixed for ana@example.test; token=private-value; caller 12345678");
+
+        ErrorRecord updated = service.snapshot().errors().getFirst();
+        assertThat(updated.status()).isEqualTo("RESOLVED");
+        assertThat(updated.resolutionNote())
+                .isEqualTo("Fixed for [redacted]; token=[redacted]; caller [redacted]");
+        assertThat(readFile(inventoryPath))
+                .doesNotContain("ana@example.test")
+                .doesNotContain("private-value")
+                .doesNotContain("12345678");
+
+        ErrorInventoryService restarted = new ErrorInventoryService(properties(inventoryPath), JsonMapper.builder().build());
+        assertThat(restarted.snapshot().errors().getFirst().resolutionNote())
+                .isEqualTo(updated.resolutionNote());
+
+        restarted.updateStatus(fingerprint, "IGNORED", "Duplicate technical event");
+        assertThat(restarted.snapshot().errors().getFirst().status()).isEqualTo("IGNORED");
+
+        restarted.report(report);
+        assertThat(restarted.snapshot().errors().getFirst().status()).isEqualTo("OPEN");
+        assertThat(restarted.snapshot().errors().getFirst().resolutionNote()).isEmpty();
+    }
+
+    @Test
+    void reportsDegradedAvailabilityWhenStoredInventoryCannotBeRead() throws Exception {
+        Path inventoryPath = temporaryDirectory.resolve("private").resolve("error-inventory.json");
+        java.nio.file.Files.createDirectories(inventoryPath.getParent());
+        java.nio.file.Files.writeString(inventoryPath, "not-json");
+
+        ErrorInventoryService service = new ErrorInventoryService(properties(inventoryPath), JsonMapper.builder().build());
+
+        assertThat(service.snapshot().available()).isFalse();
+        assertThat(service.snapshot().errors()).isEmpty();
+        assertThatThrownBy(() -> service.updateStatus("a".repeat(64), "RESOLVED", "synthetic note"))
+                .isInstanceOf(ErrorInventoryUnavailableException.class);
+    }
+
     private static ErrorTrackingProperties properties(Path path) {
         return new ErrorTrackingProperties(path, 10, 1024 * 1024, 2048, "test-release");
     }

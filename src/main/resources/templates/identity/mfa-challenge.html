@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('identity.mfa.title', ~{::main}, 'account')}">
+<main id="main-content" class="mx-auto w-full max-w-xl px-4 py-10" tabindex="-1">
+    <section class="rounded-xl border border-border bg-surface p-6 sm:p-8">
+        <h1 class="font-heading text-3xl" th:text="#{identity.mfa.challenge-heading}">Verify your sign-in</h1>
+        <p class="mt-3 text-muted" th:text="#{identity.mfa.challenge-description}">Enter a current code or recovery code.</p>
+        <p th:if="${invalidCode}" role="alert" class="mt-4 text-danger"
+           th:text="#{identity.mfa.invalid}">The code is invalid or has already been used.</p>
+        <form method="post" th:action="@{/cuenta/seguridad/mfa/verificar}" class="mt-6 space-y-5">
+            <div>
+                <label for="mfa-code" th:text="#{identity.mfa.code}">Authentication code</label>
+                <input id="mfa-code" name="code" required maxlength="64" autocomplete="one-time-code"
+                       inputmode="numeric" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+            </div>
+            <button type="submit" class="min-h-11 rounded bg-primary px-4 text-on-primary"
+                    th:text="#{identity.mfa.verify}">Verify</button>
+        </form>
+    </section>
+</main>
+</html>

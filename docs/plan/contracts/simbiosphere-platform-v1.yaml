@@ -1,0 +1,428 @@
+openapi: 3.1.0
+info:
+  title: SimbioSphere Platform Provisioning API
+  version: 1.0.0
+  description: |
+    Propuesta de contrato M2M para revisión de los owners Portal y DEMO.
+    No está publicada ni acordada; no habilita tráfico real.
+    El endpoint no acepta credenciales de usuario ni persiste tokens de activación.
+paths:
+  /api/platform/v1/owner-onboardings:
+    post:
+      operationId: createOwnerOnboarding
+      summary: Provision an owner account from an external verified account
+      description: |
+        Idempotent by Idempotency-Key. The same key and normalized request replay the original
+        response; reusing the key with a different request returns 409. Retention period remains
+        pending DEMO-01 owner approval. Do not log request or response bodies.
+      x-required-scopes:
+        - provisioning:write
+      security:
+        - PlatformKeyId: []
+          PlatformTimestamp: []
+          PlatformSignature: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerOnboardingRequest'
+      responses:
+        '201':
+          description: Owner account and tenant were created
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerOnboardingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/platform/v1/tenant-slugs/{slug}/availability:
+    get:
+      operationId: checkTenantSlug
+      summary: Check whether a tenant slug can be provisioned
+      x-required-scopes:
+        - provisioning:read
+      security:
+        - PlatformKeyId: []
+          PlatformTimestamp: []
+          PlatformSignature: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9-]{3,50}$'
+        - $ref: '#/components/parameters/PlatformKeyId'
+        - $ref: '#/components/parameters/PlatformTimestamp'
+        - $ref: '#/components/parameters/PlatformSignature'
+      responses:
+        '200':
+          description: Slug availability result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlugAvailability'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/platform/v1/owner-onboardings/{customerAccountId}/activation-links:
+    post:
+      operationId: createActivationLink
+      summary: Create or replay a one-use activation link
+      description: |
+        The activation URL is a short-lived secret and must be returned with Cache-Control
+        no-store. Never log the URL or its token.
+      x-required-scopes:
+        - provisioning:write
+      security:
+        - PlatformKeyId: []
+          PlatformTimestamp: []
+          PlatformSignature: []
+      parameters:
+        - name: customerAccountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: One-use activation link created
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivationLink'
+        '200':
+          description: Idempotent replay of the same activation-link request
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivationLink'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  securitySchemes:
+    PlatformKeyId:
+      type: apiKey
+      in: header
+      name: X-Platform-Key-Id
+      description: Public identifier for the active key; not a secret.
+    PlatformTimestamp:
+      type: apiKey
+      in: header
+      name: X-Platform-Timestamp
+      description: Unix epoch seconds; proposed maximum clock skew is 300 seconds.
+    PlatformSignature:
+      type: apiKey
+      in: header
+      name: X-Platform-Signature
+      description: |
+        HMAC-SHA256 v1 signature. Proposed canonical bytes are
+        timestamp, uppercase method, path, canonical query, SHA-256 body digest,
+        and Idempotency-Key joined with LF. Compare signatures in constant time.
+        Key rotation, replay storage, and canonical-query rules require DEMO-01 approval.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._:-]+$'
+    PlatformKeyId:
+      name: X-Platform-Key-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+    PlatformTimestamp:
+      name: X-Platform-Timestamp
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^[0-9]{10}$'
+    PlatformSignature:
+      name: X-Platform-Signature
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^v1=[a-f0-9]{64}$'
+  schemas:
+    OwnerOnboardingRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - firstName
+        - lastName
+        - businessName
+        - businessSlug
+        - businessType
+        - verification
+        - terms
+        - externalReference
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Required for account delivery; do not use as the idempotency identity.
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        locale:
+          type: string
+          enum: [es, en]
+        verification:
+          type: object
+          additionalProperties: false
+          required: [status, verifiedAt, evidence]
+          properties:
+            status:
+              type: string
+              const: VERIFIED
+            verifiedAt:
+              type: string
+              format: date-time
+            evidence:
+              type: string
+              enum: [EMAIL_OTP]
+        accountName:
+          type: string
+          maxLength: 200
+        businessName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        businessSlug:
+          type: string
+          pattern: '^[a-z0-9-]{3,50}$'
+        businessType:
+          type: string
+          enum: [RESTAURANT, RETAIL, SERVICES, REPAIR_SHOP]
+        modules:
+          type: array
+          items:
+            type: string
+            pattern: '^[A-Z0-9_-]{1,64}$'
+          description: Omit or null requests DEMO defaults; an empty array requests no optional modules.
+        locationName:
+          type: string
+          maxLength: 200
+        locationSlug:
+          type: string
+          pattern: '^[a-z0-9-]{2,50}$'
+        terms:
+          type: object
+          additionalProperties: false
+          required: [version, acceptedAt]
+          properties:
+            version:
+              type: string
+              minLength: 1
+              maxLength: 64
+            acceptedAt:
+              type: string
+              format: date-time
+        externalReference:
+          type: object
+          additionalProperties: false
+          required: [source, externalAccountId]
+          properties:
+            source:
+              type: string
+              const: S_PORTAL
+            externalAccountId:
+              type: string
+              minLength: 1
+              maxLength: 128
+              description: Opaque stable account identifier; required in addition to email.
+    OwnerOnboardingResponse:
+      type: object
+      additionalProperties: false
+      required: [externalAccountId, customerAccountId, tenantId, tenantSlug, modulesApplied, status]
+      properties:
+        externalAccountId:
+          type: string
+        customerAccountId:
+          type: integer
+          format: int64
+        tenantId:
+          type: integer
+          format: int64
+        tenantSlug:
+          type: string
+        modulesApplied:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [PENDING_ACTIVATION, ACTIVE]
+    SlugAvailability:
+      type: object
+      additionalProperties: false
+      required: [slug, available, suggestions]
+      properties:
+        slug:
+          type: string
+        available:
+          type: boolean
+        suggestions:
+          type: array
+          items:
+            type: string
+    ActivationLink:
+      type: object
+      additionalProperties: false
+      required: [activationUrl, expiresAt]
+      properties:
+        activationUrl:
+          type: string
+          format: uri
+          readOnly: true
+          description: One-use URL; short TTL proposed as 15 minutes, pending DEMO-01 approval.
+        expiresAt:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          description: Sanitized, generic detail; must not contain PII, tokens, or request data.
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          description: Stable machine-readable extension to RFC 7807 Problem Details.
+        correlationId:
+          type: string
+          format: uuid
+  responses:
+    BadRequest:
+      description: Malformed request or invalid slug
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Missing, expired, or invalid HMAC authentication
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Required M2M scope is missing
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Account, slug, or idempotency conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unprocessable:
+      description: Business validation failed, including module selection
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: Per-key rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unavailable:
+      description: Provisioning dependency is temporarily unavailable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

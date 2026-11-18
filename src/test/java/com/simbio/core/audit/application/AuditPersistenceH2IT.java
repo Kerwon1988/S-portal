@@ -47,7 +47,7 @@ class AuditPersistenceH2IT {
     @Test
     void retentionDeletesEntriesBeyondThreeYearsAndKeepsRecentEntries() {
         Instant now = Instant.parse("2026-01-01T00:00:00Z");
-        Instant expiredAt = now.minusSeconds(365L * 3 * 24 * 60 * 60 + 1);
+        Instant expiredAt = now.atZone(java.time.ZoneOffset.UTC).minusYears(3).minusSeconds(1).toInstant();
         UUID expiredActor = UUID.randomUUID();
         UUID currentActor = UUID.randomUUID();
         auditEntryStore.save(new AuditEntryEntity(

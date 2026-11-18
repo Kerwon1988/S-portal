@@ -11,6 +11,8 @@ import com.simbio.core.identity.application.AdminBootstrapService;
 @Component
 class AdminBootstrapRunner implements ApplicationRunner {
 
+    private static final java.util.Set<String> ALLOWED_PROFILES = java.util.Set.of("dev", "test", "local-h2");
+
     private final AdminBootstrapService bootstrapService;
     private final Environment environment;
     private final boolean enabled;
@@ -36,8 +38,9 @@ class AdminBootstrapRunner implements ApplicationRunner {
         if (!enabled) {
             return;
         }
-        if (environment.matchesProfiles("prod")) {
-            throw new IllegalStateException("Admin bootstrap must not be enabled in production");
+        if (environment.matchesProfiles("prod")
+                || java.util.Arrays.stream(environment.getActiveProfiles()).noneMatch(ALLOWED_PROFILES::contains)) {
+            throw new IllegalStateException("Admin bootstrap is allowed only in dev, test, or local-h2 profiles");
         }
         if (email.isBlank() || password.isBlank()) {
             throw new IllegalStateException("External admin bootstrap properties are required");

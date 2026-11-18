@@ -8,7 +8,11 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
@@ -41,12 +45,31 @@ public class SecurityConfig {
     }
 
     @Bean
+    FilterRegistrationBean<AdminMfaFilter> adminMfaFilterRegistration(AdminMfaFilter filter) {
+        FilterRegistrationBean<AdminMfaFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             Environment environment,
             CorrelationIdFilter correlationIdFilter,
             CspNonceFilter cspNonceFilter,
             RateLimitFilter rateLimitFilter,
+            AdminMfaFilter adminMfaFilter,
+            SessionRegistry sessionRegistry,
             AuthenticationFailureHandler authenticationFailureHandler,
             AuthenticationSuccessHandler authenticationSuccessHandler)
             throws Exception {
@@ -63,7 +86,9 @@ public class SecurityConfig {
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .sessionFixation(fixation -> fixation.migrateSession()))
+                        .sessionFixation(fixation -> fixation.changeSessionId())
+                        .maximumSessions(-1)
+                        .sessionRegistry(sessionRegistry))
                 .requestCache(cache -> cache.disable())
                 .formLogin(form -> form
                         .loginPage("/acceso")
@@ -77,11 +102,22 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, exception) -> response.sendError(403)))
                 .authorizeHttpRequests(authorize -> {
                     authorize.requestMatchers("/", "/es", "/es/**", "/en", "/en/**", "/public/**",
-                            "/assets/**", "/error", "/acceso", "/preferences/**",
-                            "/api/telemetry/errors", "/actuator/health/**").permitAll();
+                            "/public/media/**", "/sitemap.xml", "/robots.txt",
+                            "/assets/**", "/error", "/acceso", "/registro", "/preferences/**",
+                            "/api/telemetry/errors", "/actuator/health/**",
+                            "/verificar-email", "/recuperar", "/restablecer",
+                            "/invitacion/aceptar", "/fragments/anti-bot-challenge").permitAll();
                     authorize.requestMatchers("/logout").authenticated();
                     AuthorizationRules.routes().forEach(rule ->
-                            authorize.requestMatchers(rule.method(), rule.path()).hasAuthority(rule.permission()));
+                            authorize.requestMatchers(rule.method(), rule.path()).access((authentication, context) -> {
+                                var authorities = authentication.get().getAuthorities();
+                                boolean hasPermission = authorities.stream()
+                                        .anyMatch(authority -> rule.permission().equals(authority.getAuthority()));
+                                boolean hasRole = rule.role() == null || authorities.stream()
+                                        .anyMatch(authority -> ("ROLE_" + rule.role()).equals(authority.getAuthority()));
+                                return new AuthorizationDecision(hasPermission && hasRole);
+                            }));
+                    authorize.requestMatchers("/cuenta/**").authenticated();
                     authorize.anyRequest().denyAll();
                 })
                 .headers(headers -> {
@@ -97,6 +133,8 @@ public class SecurityConfig {
         http.addFilterBefore(correlationIdFilter, CspNonceFilter.class);
         http.addFilterBefore(rateLimitFilter,
                 org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(adminMfaFilter,
+                org.springframework.security.web.access.intercept.AuthorizationFilter.class);
         return http.build();
     }
 }

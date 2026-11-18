@@ -7,8 +7,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
@@ -21,15 +23,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.simbio.core.files.api.FileAccessAuthorization;
+import com.simbio.core.files.api.ImageVariant;
+import com.simbio.core.files.api.ImageVariants;
 import com.simbio.core.files.api.FileStorage;
+import com.simbio.core.files.api.ScanState;
+import com.simbio.core.files.domain.FileMetadataEntity;
 import com.simbio.core.files.domain.FileVariantEntity;
 
 @Service
-public class ImageVariantService {
+public class ImageVariantService implements ImageVariants {
 
     private static final long MAX_INPUT_BYTES = 12L * 1024 * 1024;
     private static final long MAX_PIXELS = 20_000_000;
     private static final int MAX_DIMENSION = 10_000;
+    private static final Set<String> IMAGE_MIMES = Set.of("image/png", "image/jpeg", "image/webp");
     private static final List<Integer> WIDTHS = List.of(400, 900, 1600);
 
     private final FileStorage fileStorage;
@@ -45,35 +52,101 @@ public class ImageVariantService {
         this.variantStore = variantStore;
     }
 
+    @Override
     @Transactional
-    public List<Variant> createVariants(UUID filePublicId, FileAccessAuthorization authorization) {
+    public List<ImageVariant> createVariants(UUID filePublicId, FileAccessAuthorization authorization) {
+        var metadata = authorizedCleanMetadata(filePublicId, authorization);
+        if (!IMAGE_MIMES.contains(metadata.getDetectedMime())) {
+            throw new InvalidFileException();
+        }
         byte[] source = readBounded(filePublicId, authorization);
         BufferedImage decoded = decodeBounded(source);
-        List<Variant> variants = new ArrayList<>();
-        for (int targetWidth : WIDTHS) {
-            if (targetWidth > decoded.getWidth()) {
-                if (!variants.isEmpty()) {
+        List<FileVariantEntity> existing = variantStore.findByFileId(metadata.getId());
+        Set<String> existingCodes = new HashSet<>();
+        existing.forEach(variant -> existingCodes.add(variant.getVariantCode()));
+        List<String> storedKeys = new ArrayList<>();
+        Set<Integer> processedWidths = new HashSet<>();
+        try {
+            for (int requestedWidth : WIDTHS) {
+                int targetWidth = Math.min(requestedWidth, decoded.getWidth());
+                if (!processedWidths.add(targetWidth)) {
                     continue;
                 }
-                targetWidth = decoded.getWidth();
-            }
-            int height = Math.max(1, (int) Math.round((double) decoded.getHeight()
-                    * targetWidth / decoded.getWidth()));
-            BufferedImage resized = resize(decoded, targetWidth, height);
-            byte[] webp = encodeWebp(resized);
-            String code = "w" + targetWidth;
-            String key = UUID.randomUUID().toString().replace("-", "");
-            try {
+                String code = "w" + targetWidth;
+                if (existingCodes.contains(code)) {
+                    continue;
+                }
+                int height = Math.max(1, (int) Math.round((double) decoded.getHeight()
+                        * targetWidth / decoded.getWidth()));
+                BufferedImage resized = resize(decoded, targetWidth, height);
+                byte[] webp = encodeWebp(resized);
+                String key = UUID.randomUUID().toString().replace("-", "");
                 objectStore.writeQuarantined(new ByteArrayInputStream(webp), key);
+                storedKeys.add(key);
                 objectStore.markClean(key);
-            } catch (IOException exception) {
-                throw new FileStorageException(exception);
+                variantStore.save(new FileVariantEntity(
+                        metadata, code, key, targetWidth, height, "image/webp", webp.length));
             }
-            var parent = metadataStore.findByPublicId(filePublicId).orElseThrow(FileNotFoundException::new);
-            variantStore.save(new FileVariantEntity(parent.getId(), code, key, targetWidth, height, "image/webp"));
-            variants.add(new Variant(code, targetWidth, height, webp.length));
+        } catch (IOException exception) {
+            FileStorageException failure = new FileStorageException(exception);
+            cleanup(storedKeys, failure);
+            throw failure;
+        } catch (RuntimeException exception) {
+            cleanup(storedKeys, exception);
+            throw exception;
         }
-        return List.copyOf(variants);
+        return listVariants(filePublicId, authorization);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ImageVariant> listVariants(UUID filePublicId, FileAccessAuthorization authorization) {
+        var metadata = authorizedCleanMetadata(filePublicId, authorization);
+        return variantStore.findByFileId(metadata.getId()).stream().map(ImageVariantService::toApi).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.io.InputStream openVariant(
+            UUID filePublicId, String variantCode, FileAccessAuthorization authorization) {
+        var metadata = authorizedCleanMetadata(filePublicId, authorization);
+        if (variantCode == null || !variantCode.matches("w[1-9][0-9]{0,4}")) {
+            throw new FileNotFoundException();
+        }
+        FileVariantEntity variant = variantStore.findByFileId(metadata.getId()).stream()
+                .filter(candidate -> candidate.getVariantCode().equals(variantCode))
+                .findFirst()
+                .orElseThrow(FileNotFoundException::new);
+        try {
+            return objectStore.open(variant.getStorageKey());
+        } catch (IOException exception) {
+            throw new FileStorageException(exception);
+        }
+    }
+
+    private FileMetadataEntity authorizedCleanMetadata(
+            UUID filePublicId, FileAccessAuthorization authorization) {
+        if (filePublicId == null || authorization == null || !authorization.mayRead(filePublicId)) {
+            throw new FileNotFoundException();
+        }
+        return metadataStore.findByPublicId(filePublicId)
+                .filter(metadata -> metadata.getScanState() == ScanState.CLEAN)
+                .orElseThrow(FileNotFoundException::new);
+    }
+
+    private static ImageVariant toApi(FileVariantEntity variant) {
+        return new ImageVariant(variant.getVariantCode(), variant.getWidth(), variant.getHeight(),
+                variant.getMime(), variant.getSizeBytes());
+    }
+
+    private void cleanup(List<String> storedKeys, Exception failure) {
+        for (String key : storedKeys) {
+            try {
+                objectStore.remove(key);
+            } catch (IOException cleanupException) {
+                failure.addSuppressed(cleanupException);
+            }
+        }
     }
 
     private byte[] readBounded(UUID publicId, FileAccessAuthorization authorization) {
@@ -159,6 +232,4 @@ public class ImageVariantService {
         }
     }
 
-    public record Variant(String code, int width, int height, int sizeBytes) {
-    }
 }

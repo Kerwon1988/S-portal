@@ -6,7 +6,9 @@
 
 **Restricción operativa global:** no se usa Git en ninguna fase del plan. No compruebes ni requieras repositorio, rama, worktree, commit, log ni `.gitignore`; registra el avance con evidencia observable en los artefactos y pruebas del workspace. Esta regla prevalece sobre cualquier referencia heredada a Git en las fichas y prompts.
 
-**Estrategia de pruebas y toolchain:** H2 es el único motor de pruebas automatizadas; no se requieren Docker, SQL Server, Testcontainers ni evidencia de VPS para cerrar tareas o gates de desarrollo. Se mantiene un único árbol Flyway dirigido a SQL Server para producción, pero sus migraciones y la compatibilidad real con ese motor quedan sin verificar y no se declaran certificadas. Maven 3.6.3/JDK 17 se usa para descargar dependencias; los builds y verificaciones usan Maven 3.6.3/JDK 21, sin requisito de versión Maven mínima.
+**Regla de Maven:** los agentes solo pueden invocar Maven para compilar (`compile`), ejecutar pruebas (`test`) o arrancar la aplicación (`spring-boot:run`). Usa JDK 21 y las dependencias locales proporcionadas por el usuario. No ejecutes metas de descarga, inspección o gestión de dependencias/caché, metas directas de plugins, `clean`, `install` u otros objetivos. No investigues ni comuniques registros de origen/metadata de la caché local, ni solicites volver a descargar dependencias. Si una operación básica no llega a ejecutarse, registra únicamente que compilación/pruebas/arranque no se ejecutaron y continúa con el trabajo independiente. No omitas ni desactives gates.
+
+**Estrategia de pruebas:** H2 es el único motor de pruebas automatizadas; no se requieren Docker, SQL Server, Testcontainers ni evidencia de VPS para cerrar tareas o gates de desarrollo. Se mantiene un único árbol Flyway dirigido a SQL Server para producción, pero sus migraciones y la compatibilidad real con ese motor quedan sin verificar y no se declaran certificadas.
 
 ## Cómo usar los prompts
 
@@ -95,10 +97,10 @@ REGLAS MODULARES
 Lee `docs/prompt-plan-desarrollo.md` y `docs/plan/03-arquitectura.md`, `04-modelo-datos.md`, `08-calidad-testing.md`, `09-operacion-despliegue.md`, `10-roadmap-backlog.md`, ADRs relacionados y la ficha completa. Mantén `web→application→domain`; controladores no acceden a repositorios; módulos se comunican por `api`/SPI, no por entidades/repositorios; no crees microservicios, un segundo árbol H2 ni migraciones destructivas. Todas las pruebas de persistencia usan H2 con esquema generado; no se exige verificar SQL Server/Testcontainers. Un esquema y owner por módulo. Contratos y dependencias han de pasar Modulith y ArchUnit.
 
 SEGURIDAD/LOCAL
-No guardes secretos en Git ni en Compose; usa variables de entorno y `.env.example` sin valores reales. Perfil local: app 8090 y H2 para las pruebas; no ejecutar Docker/SQL Server. Compose describe servicios potenciales, pero no se exige arrancarlos. Usa Maven 3.6.3/JDK 21 para compilar y Maven 3.6.3/JDK 17 para descargar dependencias; no hay requisito de Maven mínimo. Comprueba compatibilidad de dependencias con las pruebas H2; no declares SQL Server como validado. Respeta las preguntas pendientes de licencia/edición SQL Server.
+No guardes secretos en Git ni en Compose; usa variables de entorno y `.env.example` sin valores reales. Perfil local: app 8090 y H2 para las pruebas; no ejecutar Docker/SQL Server. Compose describe servicios potenciales, pero no se exige arrancarlos. Usa JDK 21 y Maven solo para compilar, ejecutar pruebas o arrancar la aplicación; las dependencias locales las proporciona el usuario. Si Maven no inicia, deja constancia únicamente de que la operación no se ejecutó y continúa lo que no dependa de Maven. No investigues ni informes metadata de la caché. No declares SQL Server como validado. Respeta las preguntas pendientes de licencia/edición SQL Server.
 
 EJECUCIÓN
-Comprueba en el roadmap y la ficha las dependencias exactas de cada FND antes de tocarla. Ejecuta las tareas en orden topológico; FND-001 y FND-002 son gates previos a los demás módulos. Define el esqueleto Maven, paquetes y gates; Compose con SQL Server 2022, Mailpit y ClamAV se valida estáticamente, sin levantar servicios. Mantén una sola estrategia Flyway para SQL Server; H2 usa esquema generado y no contiene migraciones. Usa Maven 3.6.3/JDK 21 para compilar; no existe requisito de versión Maven mínima. No alteres funcionalidad de otros carriles. Coordina previamente si se tocarán build, configuración, migraciones o archivos compartidos.
+Comprueba en el roadmap y la ficha las dependencias exactas de cada FND antes de tocarla. Ejecuta las tareas en orden topológico; FND-001 y FND-002 son gates previos a los demás módulos. Define el esqueleto Maven, paquetes y gates; Compose con SQL Server 2022, Mailpit y ClamAV se valida estáticamente, sin levantar servicios. Mantén una sola estrategia Flyway para SQL Server; H2 usa esquema generado y no contiene migraciones. Maven offline solo para compilar, ejecutar pruebas o arrancar la aplicación; no uses Maven para descargar o inspeccionar dependencias. No alteres funcionalidad de otros carriles. Coordina previamente si se tocarán build, configuración, migraciones o archivos compartidos.
 
 Para cada ID: implementa el criterio de aceptación literal, añade el test indicado `TC-<ID>`, ejecuta el test/gate mínimo y actualiza la documentación indicada por la ficha (README/INVENTARIO/DIARIO/ADR). No marques tareas completas por haber compilado parcialmente. No ejecutes limpieza destructiva contra bases persistentes. Al cerrar, informa IDs y evidencias, comandos/resultados, ficheros tocados, migraciones, bloqueos y dependencias liberadas.
 ```
@@ -154,7 +156,12 @@ SEGURIDAD
 Auditoría inmutable con datos mínimos; no incluir credenciales, tokens ni payload sensible. Descargas autorizadas y ownership comprobado, nombre aleatorio, validación de tipo/tamaño, almacenamiento fuera de webroot, antivirus/ cuarentena y `Content-Disposition`/`nosniff`. Contraseñas con encoder aprobado; sesión/cookie segura; bloqueo progresivo; permisos default-deny. El bootstrap del primer ADMIN no puede incluir credenciales en repositorio, imagen, logs ni documentación.
 
 EJECUTA TAREA A TAREA
-Verifica prerequisitos y limita cambios al ownership del paquete. Implementa APIs y pruebas negativas (autorización/IDOR, descarga cruzada, archivo inválido, bootstrap no autorizado). No cambies las pantallas CMS, salvo contratos mínimos requeridos y acordados con su agente. Ejecuta TC de ficha y tests MSSQL. Actualiza README/INVENTARIO/DIARIO según corresponda. Informa IDs, permisos y migraciones creadas, evidencias, rutas de archivo, dependencias liberadas y todo riesgo no resuelto.
+Verifica prerequisitos y limita cambios al ownership del paquete. Implementa APIs y pruebas negativas (autorización/IDOR, descarga cruzada, archivo inválido, bootstrap no autorizado). No cambies las pantallas CMS, salvo contratos mínimos requeridos y acordados con su agente. Ejecuta los TC de la ficha y la suite automatizada con H2; no se requieren tests MSSQL/Testcontainers.
+
+CRITERIO DE CIERRE Y BLOQUEO LOCAL DE MAVEN
+Para cerrar Prompt 05 deben estar implementadas las tareas incluidas, cumplidos sus criterios funcionales y de seguridad, y pasar la compilación Java 21 y todos los tests requeridos. Enforcer no es un gate adicional de cierre para este prompt; registra su resultado por separado si se ejecutó. Si una operación básica no llega a compilar o ejecutar los tests, los IDs afectados permanecen abiertos; no investigues ni comuniques detalles de metadata/origen local y continúa el trabajo independiente. Usa Maven únicamente para compilar, ejecutar pruebas o arrancar la aplicación. No inspecciones ni repares la caché ni descargues dependencias; el usuario las proporciona. No afirmes que compilación o tests pasaron sin evidencia.
+
+Actualiza README/INVENTARIO/DIARIO según corresponda. Informa IDs, permisos y migraciones creadas, evidencias, rutas de archivo, dependencias pendientes de proporcionar y todo riesgo no resuelto.
 ```
 
 ## PROMPT 06 — F1 CMS bilingüe (CMS-001..013)
@@ -177,7 +184,7 @@ Prueba por ID (`TC-CMS-001..013`), incluidos control de permisos, XSS/sanitizaci
 ## PROMPT 07 — F1 Visor ADMIN de errores (ERR-004)
 
 ```text
-Implementa exclusivamente ERR-004 de `docs/plan/tareas/F1-error-inventory.md`. Es requisito que ERR-001..003 y las dependencias de seguridad/UI listadas estén integradas.
+Implementa exclusivamente ERR-004 de `docs/plan/tareas/F1-error-inventory.md`. Conserva los prerrequisitos ERR-001..003, IAM-012 y UIK-008 tal como están declarados en el DAG; no añadas una fase separada para volver a verificar esas dependencias. Los criterios y pruebas propios de ERR-004 sí son obligatorios para declarar su cierre.
 
 CONTEXTO AUTÓNOMO
 S-portal es MONOLITO MODULAR, Java 21/Spring Boot estable, Thymeleaf/HTMX, SQL Server 2022, un solo desplegable. El registro central es `config.errortracking.ErrorInventoryService` con JSON privado fuera de webroot/SQL y SPI `shared.spi.ErrorReporter`. `/error` y `CustomErrorController` no son el inventario; solo despachan y delegan.
@@ -186,7 +193,7 @@ SEGURIDAD Y ARQUITECTURA
 Consulta `docs/plan/03-arquitectura.md`, `06-ux-ui.md`, `07-seguridad-rgpd.md`, `08-calidad-testing.md`, ADR-012, `10-roadmap-backlog.md` y ficha. La UI vive en el área ADMIN/gestión; solo ADMIN con permiso dedicado puede consultar, resolver o eliminar conforme al contrato. CLIENT/EMPLOYEE no acceden. Cada endpoint comprueba autorización en servidor y audita la resolución. Lista con filtros source/severity/status y detalle saneado; no expongas PII, secretos, body, SQL raw ni stack sin sanitizar. La vista no debe escribir directamente el archivo ni depender de tablas SQL.
 
 EJECUCIÓN
-Integra con el servicio/DTO existentes; no dupliques registrador ni cambies formatos sin compatibilidad. Implementa fragmentos Thymeleaf/HTMX con CSRF, i18n ES/EN, estados accesibles y paginación/filtros según ficha. Añade pruebas ADMIN permitida, otros roles denegados, filtrado y redacción. Ejecuta pruebas del módulo y gates. Informa evidencia, permisos, archivo JSON y dependencias de despliegue/localidad.
+Integra con el servicio/DTO existentes; no dupliques registrador ni cambies formatos sin compatibilidad. Implementa fragmentos Thymeleaf/HTMX con CSRF, i18n ES/EN, estados accesibles y paginación/filtros según ficha. Añade pruebas ADMIN permitida, otros roles denegados, filtrado y redacción. Las dependencias Maven proporcionadas para este workspace están en `C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias`; usa `-Dmaven.repo.local` con esa ruta y Maven offline para compilar o ejecutar tests. Ejecuta pruebas del módulo y gates. Informa evidencia, permisos, archivo JSON y dependencias de despliegue/localidad.
 ```
 
 ## PROMPT 08 — F1 Web pública, SEO y contrato inicial SimbioSphere
@@ -203,7 +210,17 @@ Lee fuentes maestras, `docs/plan/02-requisitos.md`, `03-arquitectura.md`, `05-in
 CONTRATO PORTAL↔DEMO
 SIM-002 define un OpenAPI M2M futuro bajo `/api/platform/v1/**`, consumido desde el backend. No llames a DEMO desde el navegador, no accedas a su BD, no hagas scraping ni uses sus credenciales. Mantén secretos fuera de YAML/Git; especifica HMAC/idempotencia/Problem Details según ADR/05. La pista DEMO es separada. Si el contrato no puede verificarse en DEMO, marca “propuesto/no publicado” y genera WireMock para portal, sin afirmar integración real.
 
-Ejecuta TC de cada ID, pruebas de render ES/EN, accesibilidad, SEO, Lighthouse/Playwright según gates; actualiza documentación. Reporta lo implementado, claims que requieren revisión, contrato generado y si el endpoint externo sigue pendiente.
+MAVEN Y VALIDACIÓN
+El owner proporciona las dependencias en `C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias`; selecciona esa ruta con `-Dmaven.repo.local`. Usa Maven offline únicamente para compilar, ejecutar tests o arrancar el micro (`spring-boot:run`). Para pruebas de integración H2/Failsafe, usa el job o runner de pruebas configurado para el proyecto; si no está disponible, registra esas pruebas como no ejecutadas y deja las tareas afectadas abiertas. No ejecutes otros goals Maven de descarga, inspección o gestión de dependencias. Si la resolución impide compilar/testear, registra el error y continúa el trabajo independiente sin inspeccionar la caché; deja esos gates sin validar.
+
+DECISIONES CONFIRMADAS DEL OWNER PARA ESTE WORKSPACE
+- No hay URL pública de producción aprobada: conserva el fallback local y no inventes un dominio.
+- Mantén ocultos los textos legales/comerciales y los materiales del equipo hasta su aprobación explícita.
+- SIM-002 sigue siendo una propuesta; no la publiques ni modifiques/invoques DEMO hasta el acuerdo de ambos owners.
+- El logo `../../src/main/frontend/images/simbio-logo.png` está autorizado para Home, con alt ES «Logotipo de Simbio» y EN «Simbio logo». Esta aprobación no se extiende a otros recursos de marca.
+- Ejecuta Lighthouse/Core Web Vitals solo cuando la aplicación pueda compilar y arrancar; hasta entonces no declares umbrales medidos.
+
+Ejecuta TC de cada ID cuando el comando de test esté disponible, además de pruebas de render ES/EN, accesibilidad, SEO, Lighthouse/Playwright según gates; actualiza documentación. Reporta lo implementado, claims que requieren revisión, contrato generado y si el endpoint externo sigue pendiente.
 ```
 
 ## PROMPT 09 — F2 Notificaciones e identidad extendida
@@ -357,7 +374,7 @@ No borres datos ni uses `flyway clean` sobre una BD persistente. No uses credenc
 
 CHECKLIST LOCAL OBLIGATORIO
 1. Estado de integración: verifica que las tareas F0–F6 aplicables están integradas, dependencias satisfechas, no hay cambios ajenos perdidos, tests/TC y documentación vinculada. Comprueba los gates de Spring Modulith/ArchUnit y las capas/owners.
-2. Build y calidad local: con Maven 3.6.3/JDK 21 ejecuta `.\mvnw.cmd -B verify` y los scripts reales para assets, i18n, plantillas y pruebas H2. Maven 3.6.3/JDK 17 se usa para descargar dependencias; no hay requisito de Maven mínimo. Registra selectores omitidos y motivo.
+2. Build y calidad local: con JDK 21, selecciona el repositorio Maven local proporcionado por el usuario en `C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias` mediante `-Dmaven.repo.local` y usa Maven offline solo para compilar o ejecutar pruebas: `.\mvnw.cmd -o -B "-Dmaven.repo.local=C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias" -Plocal-h2 compile` y `.\mvnw.cmd -o -B "-Dmaven.repo.local=C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias" -Plocal-h2 test`. Si el alcance exige pruebas Failsafe/H2, ejecútalas mediante el job o runner de pruebas configurado; si no está disponible, regístralas como no ejecutadas y deja las tareas afectadas abiertas. No ejecutes metas de descarga/inspección de dependencias ni otros objetivos Maven. Ejecuta los scripts reales para assets, i18n y plantillas; registra selectores omitidos y motivo.
 3. Arranque local: valida `.env.example` sin secretos y configuración; no se requiere ejecutar Docker/SQL Server. Perfil local app 8090 y H2 para pruebas; Compose, Mailpit y ClamAV no son gates de desarrollo. Management 8091 no debe exponerse públicamente.
 4. Base de datos: todas las pruebas automatizadas de persistencia usan H2 con esquema generado; no ejecutan el árbol Flyway SQL Server ni validan su compatibilidad. SQL Server 2022 sigue como destino de producción, pero no se exige Testcontainers, ejecución MSSQL ni evidencia de VPS. No se debe declarar certificada la compatibilidad SQL Server; reporta esta limitación y las decisiones de licencia/edición/TDE pendientes.
 5. Recorridos de producto: valida web pública ES/EN, Home/servicios/Sobre nosotros/Contacto, CMS y legales donde estén en alcance; registro/invitación; cliente y propiedad de solicitudes; presupuesto/empleado; contacto/bandeja; SimbioSphere vía WireMock en offline. Verifica 403/404/500, roles, CSRF, IDOR, INTERNAL oculto, temas, viewport, accesibilidad, SEO y manejo de errores conforme a pruebas existentes. No uses datos reales.

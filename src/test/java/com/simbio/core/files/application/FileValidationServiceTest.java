@@ -49,6 +49,24 @@ class FileValidationServiceTest {
                 .isInstanceOf(InvalidFileException.class);
     }
 
+    @Test
+    void rejectsMissingAndMismatchedExtensions() {
+        byte[] image = png();
+
+        assertThatThrownBy(() -> validation.validate(image, "image", image.length, FilePurpose.IMAGE))
+                .isInstanceOf(InvalidFileException.class);
+        assertThatThrownBy(() -> validation.validate(image, "image.gif", image.length, FilePurpose.IMAGE))
+                .isInstanceOf(InvalidFileException.class);
+    }
+
+    @Test
+    void rejectsMissingFilePurpose() {
+        byte[] image = png();
+
+        assertThatThrownBy(() -> validation.validate(image, "image.png", image.length, null))
+                .isInstanceOf(InvalidFileException.class);
+    }
+
     private static byte[] png() {
         return Base64.getDecoder().decode(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lI0AAAAASUVORK5CYII=");

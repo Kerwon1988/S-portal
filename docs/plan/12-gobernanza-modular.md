@@ -6,8 +6,8 @@
 | ID | Norma para S-portal | Gate/evidencia |
 |---|---|---|
 | P01 — Owner único por cambio | Identificar un módulo owner por feature, fix, refactor, plantilla, datos o config. Si afecta varios, lidera owner del caso de uso/dato; no crear módulo sin decisión y alta en inventario. | PR declara módulo owner; test de inventario detecta módulos sin owner. |
-| P02 — Contratos, no detalles | Consumir otro módulo solo por `<owner>.api`/`shared.spi`; no importar entidad JPA, repo, controller, DTO web o infrastructure. Contratos publican IDs/DTOs, nunca entidades. Reportar errores por `shared.spi.ErrorReporter`; `config.errortracking` es el servicio central. | `ApplicationModules.verify()`, ArchUnit de `api`, inventario de APIs/consumers. |
-| P03 — DAG sin ciclos | No crear dependencias recíprocas, directas o transitivas. Resolver con evento, SPI o puerto query del owner y documentar decisión si cambia frontera. | Modulith verify y test de DAG. |
+| P02 — Contratos, no detalles | Consumir otro módulo solo por `<owner>.api`/`shared.spi`; no importar entidad JPA, repo, controller, DTO web o infrastructure. Contratos publican IDs/DTOs, nunca entidades. Reportar errores por `shared.spi.ErrorReporter`; `config.errortracking` es el servicio central. | Pruebas de Spring Modulith, ArchUnit de `api`, inventario de APIs/consumers. |
+| P03 — DAG sin ciclos | No crear dependencias recíprocas, directas o transitivas. Resolver con evento, SPI o puerto query del owner y documentar decisión si cambia frontera. | Pruebas de arquitectura de Modulith y DAG. |
 | P04 — Capas limpias | Dentro del módulo: `web→application→domain`; `infrastructure` implementa puertos. `domain` no depende de infraestructura y `application` no depende de web. | ArchUnit; fixtures negativos para cada regla. |
 | P05 — Ownership único de datos | Una entidad/tabla pertenece a un módulo y esquema; migración solo modifica esquema owner. No compartir repositorios/entidades. Relaciones externas por ID/contrato; coordinaciones de migración se justifican. | `entity-table-owners.csv` futuro, test de nomenclatura Flyway y EntityOwnershipTest. |
 | P06 — Propiedad explícita del recurso | S-portal no tiene `TenantContext` de DEMO. Casos de uso reciben `userId`/`clientAccountId` autorizado y validan propiedad en query/mutación; IDs de tenant remoto son referencias externas, no autoridad de sesión. | Tests IDOR por recurso/owner; ningún lookup solo por email. |
@@ -16,7 +16,7 @@
 | P09 — Probar contrato, ownership y fallo | Cada cambio prueba caso focal, contrato consumido/publicado, owner/IDOR y camino de error. Si toca errores, probar deduplicación, redacción y fallo del propio tracker sin ocultar la excepción original. Si toca archivos, probar virus; si toca solicitudes, PUBLIC/INTERNAL. | `TC-<ID>` con UT/MT/WT/IT/CT/E2E/A11Y/VIS/SEC/PERF. |
 | P10 — Documentar en el mismo cambio | Actualizar DIARIO e INVENTARIO; README si cambia resumen/arranque; ADR si cambia decisión; reflejar rutas, permisos, eventos, tablas, jobs, gaps y estado. | GOV-004/005; test de enlaces/módulos↔inventario. |
 | P11 — Cero excepciones silenciosas | No desactivar ni aflojar gates para «hacer pasar» build; excepción requiere regla exacta, owner, ticket, caducidad y aprobación explícita. Baselines solo registran mejoras aceptadas. | CI falla ante waiver sin metadatos/owner, test omitido o baseline ampliada. |
-| P12 — DoD modular | Owner identificado; API/DAG y owner de tabla correctos; autorización/PII; tests y gates verdes; documentación actualizada; una tarea/commit atómico ≤1 día. | Checklist DoD, `mvn verify`, calidad/a11y/security según riesgo. |
+| P12 — DoD modular | Owner identificado; API/DAG y owner de tabla correctos; autorización/PII; tests y gates verdes; documentación actualizada; una tarea/commit atómico ≤1 día. | Checklist DoD, pruebas automatizadas y gates de calidad/a11y/security según riesgo. |
 
 ## Esquema de `.github/copilot-instructions.md`
 Archivo de instrucciones raíz, aplicable a todo el workspace S-portal. Debe ser breve y enlazar la norma completa, no duplicarla.
@@ -30,7 +30,7 @@ Este repositorio es un monolito modular Java/Thymeleaf. Para todo cambio:
 3. Escribir/verificar test focal antes de implementar; respetar P01–P12 y el DAG.
 4. No leer/escribir la BD de DEMO ni usar scraping/CSRF; integración solo por contrato M2M.
 5. Actualizar README/INVENTARIO/DIARIO y ADR aplicable; no registrar PII/secrets.
-6. Ejecutar `./mvnw -B verify` y gates aplicables antes de cerrar.
+6. Ejecutar los gates aplicables antes de cerrar. En este workspace, el repositorio Maven local proporcionado está en `C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias`; para pruebas Java en Windows, usar `.\mvnw.cmd -o -B "-Dmaven.repo.local=C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias" -Plocal-h2 test`.
 
 No introducir ciclos, dependencias internas, módulos vacíos, waivers, `th:utext` sin allowlist ni endpoints sin autorización por owner.
 ```
@@ -101,7 +101,7 @@ Incluir módulos, páginas/rutas, endpoints, entidades/tablas, eventos, integrac
 Orden cronológico inverso; una entrada por cambio integrado. No copiar el inventario ni registrar secretos/PII. Mientras no haya implementación, documentación del plan debe distinguir «planificado» de «hecho».
 
 ## Gates y gobierno
-- `ApplicationModules.verify()` y reglas ArchUnit de capas/dependencias; un esquema/tablas owner por módulo.
+- Pruebas de Spring Modulith y reglas ArchUnit de capas/dependencias; un esquema/tablas owner por módulo.
 - Test de contrato Inventario↔Modulith y diagramas `Documenter` (GOV-005).
 - Pruebas del inventario de errores para persistencia fuera de SQL, payload frontend acotado, redacción y acceso ADMIN (ERR-001..004); el tracker no debe crear recursión ni almacenar PII/raw SQL.
 - Test paridad i18n, ratios de contraste, reglas plantillas/`th:utext`/nonce, cobertura ≥80 % domain/application, escaneo deps/secrets.

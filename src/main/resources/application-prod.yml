@@ -1,5 +1,22 @@
 portal:
   base-url: ${PORTAL_BASE_URL}
+  encryption:
+    current-key-id: ${PORTAL_ENCRYPTION_CURRENT_KEY_ID}
+    keys: ${PORTAL_ENCRYPTION_KEYS}
+  notification:
+    from-address: ${PORTAL_SMTP_FROM}
+    retention: ${PORTAL_NOTIFICATION_RETENTION}
+
+spring:
+  mail:
+    host: ${PORTAL_SMTP_HOST}
+    port: ${PORTAL_SMTP_PORT:587}
+    username: ${PORTAL_SMTP_USERNAME}
+    password: ${PORTAL_SMTP_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
   brand-name: ${PORTAL_BRAND_NAME:Simbio}
   files:
     storage-root: ${PORTAL_FILE_STORAGE_ROOT}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-10" tabindex="-1">
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 class="font-heading text-3xl" th:text="#{content.admin.title}">Content management</h1>
+        <div class="flex flex-wrap gap-3">
+            <a class="inline-flex min-h-11 items-center rounded border border-border px-4"
+               th:href="@{/gestion/contenido/legal}" th:text="#{content.legal.title}">Legal documents</a>
+            <a class="inline-flex min-h-11 items-center rounded border border-border px-4"
+               th:href="@{/gestion/contenido/equipo}" th:text="#{content.team.title}">Team members</a>
+            <a class="inline-flex min-h-11 items-center rounded border border-border px-4"
+               th:href="@{/gestion/contenido/medios}" th:text="#{content.media.title}">Media library</a>
+            <a class="inline-flex min-h-11 items-center rounded bg-primary px-4 text-on-primary"
+               th:href="@{/gestion/contenido/nuevo}" th:text="#{content.admin.create}">Create page</a>
+        </div>
+    </header>
+    <p th:if="${noticeKey}" class="mb-4 text-success" role="status" th:text="#{${noticeKey}}"></p>
+    <form method="get" class="mb-5 flex flex-wrap items-end gap-3">
+        <label class="grid gap-2" for="missing-locale">
+            <span th:text="#{content.translation.filter}">Show pages missing a published translation</span>
+            <select id="missing-locale" name="missingLocale"
+                    class="min-h-11 rounded border border-border bg-surface px-3">
+                <option value="" th:selected="${missingLocale == null}" th:text="#{content.translation.all}">All pages</option>
+                <option value="es" th:selected="${missingLocale == 'es'}" th:text="#{content.translation.missing.es}">Spanish missing</option>
+                <option value="en" th:selected="${missingLocale == 'en'}" th:text="#{content.translation.missing.en}">English missing</option>
+            </select>
+        </label>
+        <button class="min-h-11 rounded bg-primary px-4 text-on-primary" type="submit"
+                th:text="#{content.translation.apply}">Apply filter</button>
+    </form>
+    <div class="overflow-x-auto rounded-xl border border-border bg-surface">
+        <table class="w-full text-left">
+            <caption class="sr-only" th:text="#{content.admin.caption}">CMS pages</caption>
+            <thead>
+            <tr class="border-b border-border">
+                <th scope="col" class="p-3" th:text="#{content.page.key}">Page</th>
+                <th scope="col" class="p-3" th:text="#{content.locale}">Language</th>
+                <th scope="col" class="p-3" th:text="#{content.slug}">Slug</th>
+                <th scope="col" class="p-3" th:text="#{content.state}">State</th>
+                <th scope="col" class="p-3" th:text="#{content.translation}">Translation</th>
+                <th scope="col" class="p-3" th:text="#{content.actions}">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="page : ${pages}" class="border-b border-border last:border-0">
+                <td class="p-3" th:text="${page.pageKey}">home</td>
+                <td class="p-3" th:text="${#strings.toUpperCase(page.locale)}">ES</td>
+                <td class="p-3" th:text="${page.slug}">inicio</td>
+                <td class="p-3" th:text="${#messages.msg('content.state.' + page.state.name())}">Draft</td>
+                <td class="p-3">
+                    <span th:if="${translationPending.contains(page.pageKey)}"
+                          class="text-warning" th:text="#{content.translation.pending}">Translation pending</span>
+                    <span th:unless="${translationPending.contains(page.pageKey)}"
+                          class="text-success" th:text="#{content.translation.complete}">Complete</span>
+                </td>
+                <td class="p-3">
+                    <a class="min-h-11 px-2 text-accent-text"
+                       th:href="@{/gestion/contenido/{id}(id=${page.pagePublicId},locale=${page.locale})}"
+                       th:text="#{content.action.edit}">Edit</a>
+                    <a class="min-h-11 px-2 text-accent-text"
+                       th:href="@{/gestion/contenido/{id}/versiones(id=${page.pagePublicId},translation=${page.translationPublicId})}"
+                       th:text="#{content.action.history}">History</a>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(pages)}">
+                <td class="p-4 text-text-muted" colspan="6" th:text="#{content.admin.empty}">No pages yet.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:if="${pageCount > 1}" class="mt-5 flex items-center justify-between"
+         th:aria-label="#{content.admin.pagination}">
+        <a th:if="${hasPrevious}" class="inline-flex min-h-11 items-center rounded border border-border px-4"
+           th:href="@{/gestion/contenido(page=${pageNumber - 1},missingLocale=${missingLocale})}"
+           th:text="#{content.admin.previous}">Previous</a>
+        <span class="text-text-muted" th:text="#{content.admin.page(${pageNumber + 1},${pageCount})}">
+            Page 1 of 1
+        </span>
+        <a th:if="${hasNext}" class="inline-flex min-h-11 items-center rounded border border-border px-4"
+           th:href="@{/gestion/contenido(page=${pageNumber + 1},missingLocale=${missingLocale})}"
+           th:text="#{content.admin.next}">Next</a>
+    </nav>
+</main>
+</html>

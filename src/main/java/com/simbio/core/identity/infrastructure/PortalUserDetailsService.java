@@ -1,11 +1,12 @@
 package com.simbio.core.identity.infrastructure;
 
+import java.util.Locale;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.simbio.core.identity.application.AccountDetailsLoader;
 import com.simbio.core.identity.application.UserAccountStore;
 import com.simbio.core.identity.security.PortalUserPrincipal;
@@ -25,7 +26,7 @@ class PortalUserDetailsService implements UserDetailsService, AccountDetailsLoad
         if (username == null || username.length() > 320) {
             throw new UsernameNotFoundException("Invalid credentials");
         }
-        return accounts.findByEmail(username)
+        return accounts.findByEmail(username.trim().toLowerCase(Locale.ROOT))
                 .map(PortalUserPrincipal::new)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
     }

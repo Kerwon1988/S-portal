@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" th:lang="${#locale.language}" th:attr="data-theme-preference=${theme}"
+<html lang="es" th:lang="${contentLocale != null ? contentLocale : #locale.language}" th:attr="data-theme-preference=${theme}"
       xmlns:th="http://www.thymeleaf.org"
       th:fragment="layout(titleKey, content, area)">
 <head>
@@ -10,7 +10,28 @@
     <meta name="portal-correlation-id" th:content="${portalCorrelationId}">
     <meta name="color-scheme" content="dark light">
     <meta name="htmx-config" content='{"includeIndicatorStyles":false}'>
-    <title th:text="#{${titleKey}}">Simbio</title>
+    <title th:text="${seoTitle != null ? seoTitle : #messages.msg(titleKey)}">Simbio</title>
+    <meta th:if="${metaDescription != null}" name="description" th:content="${metaDescription}">
+    <meta th:if="${isPreview == true}" name="robots" content="noindex,nofollow">
+    <link th:if="${canonicalUrl != null and isPreview != true}" rel="canonical" th:href="${canonicalUrl}">
+    <link th:if="${canonicalUrl == null and canonicalPath != null and isPreview != true}"
+          rel="canonical" th:href="@{${canonicalPath}}">
+    <link th:if="${alternateUrls != null and isPreview != true}" th:each="alternate : ${alternateUrls}"
+          rel="alternate"
+          th:hreflang="${alternate.key}" th:href="${alternate.value}">
+    <link th:if="${alternateUrls == null and isPreview != true}" th:each="alternate : ${alternatePaths}"
+          rel="alternate"
+          th:hreflang="${alternate.key}" th:href="@{${alternate.value}}">
+    <meta th:if="${seoTitle != null and isPreview != true}" property="og:type" content="website">
+    <meta th:if="${seoTitle != null and isPreview != true}" property="og:title" th:content="${seoTitle}">
+    <meta th:if="${metaDescription != null and isPreview != true}"
+          property="og:description" th:content="${metaDescription}">
+    <meta th:if="${siteName != null and isPreview != true}" property="og:site_name" th:content="${siteName}">
+    <meta th:if="${openGraphLocale != null and isPreview != true}" property="og:locale"
+          th:content="${openGraphLocale}">
+    <meta th:if="${canonicalUrl != null and isPreview != true}" property="og:url" th:content="${canonicalUrl}">
+    <script th:if="${organizationJsonLd != null and isPreview != true}" type="application/ld+json"
+            th:nonce="${cspNonce}" th:utext="${organizationJsonLd}"></script>
     <link rel="stylesheet" th:href="${assets['app.css']}">
     <script th:inline="javascript" th:nonce="${cspNonce}">
         const themePreference = /*[[${theme}]]*/ "system";
@@ -85,7 +106,23 @@
     <h1>Simbio</h1>
 </main>
 <footer class="border-t border-border bg-surface px-4 py-6 text-center text-text-muted">
+    <nav th:if="${footerLegalLinks != null and !#lists.isEmpty(footerLegalLinks)}"
+         class="mb-4" th:aria-label="#{content.legal.footer}">
+        <ul class="flex flex-wrap justify-center gap-x-5 gap-y-2">
+            <li th:each="legalLink : ${footerLegalLinks}">
+                <a class="inline-flex min-h-11 items-center text-accent-text underline underline-offset-4"
+                   th:href="${legalLink.href}" th:text="${legalLink.label}">Legal information</a>
+            </li>
+        </ul>
+    </nav>
     <p th:text="#{nav.footer}">Simbio Portal</p>
+    <form method="post" class="mt-3"
+          th:action="@{/preferences/locale/{lang}(lang=${#locale.language == 'es' ? 'en' : 'es'})}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" name="returnTo" th:value="${currentPath}">
+        <button type="submit" class="inline-flex min-h-11 items-center rounded border border-border px-3 text-accent-text"
+                th:text="#{nav.language}">English</button>
+    </form>
     <button type="button" class="mt-3 min-h-11 rounded border border-border px-3 text-accent-text"
             aria-controls="error-telemetry-consent" aria-expanded="false" data-error-consent-manage
             th:text="#{telemetry.error-consent.manage}">Error report preferences</button>

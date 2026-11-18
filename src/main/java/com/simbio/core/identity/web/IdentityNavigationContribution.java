@@ -14,7 +14,9 @@ class IdentityNavigationContribution implements NavContribution {
 
     @Override
     public List<NavigationItem> itemsFor(Optional<AuthenticatedUser> user) {
-        return user.isPresent() ? List.of()
-                : List.of(new NavigationItem("access", "nav.access", "/acceso", null));
+        if (user.isEmpty()) {
+            return List.of(new NavigationItem("access", "nav.access", "/acceso", null));
+        }
+        return List.of(new NavigationItem("profile", "identity.profile.title", "/cuenta/perfil", null));
     }
 }

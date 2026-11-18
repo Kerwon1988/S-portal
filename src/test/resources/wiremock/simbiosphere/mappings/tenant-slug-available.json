@@ -1,0 +1,23 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/platform/v1/tenant-slugs/contract-shop/availability",
+    "headers": {
+      "X-Platform-Key-Id": { "equalTo": "portal-contract-test" },
+      "X-Platform-Timestamp": { "matches": "^[0-9]{10}$" },
+      "X-Platform-Signature": { "matches": "^v1=[a-f0-9]{64}$" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store"
+    },
+    "jsonBody": {
+      "slug": "contract-shop",
+      "available": true,
+      "suggestions": []
+    }
+  }
+}

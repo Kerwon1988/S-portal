@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-4xl px-4 py-8" tabindex="-1">
+    <a th:href="${user.identity.role == 'CLIENT' ? '/gestion/clientes' : '/gestion/trabajadores'}"
+       class="underline" th:text="#{customer.user.back}">Back to directory</a>
+    <section class="mt-5 rounded-xl border border-border bg-surface p-6">
+        <h1 class="font-heading text-3xl" th:text="${user.identity.displayName}">User</h1>
+        <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.email}">Email</dt>
+                <dd th:text="${user.identity.email}">user@example.test</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.role}">Role</dt>
+                <dd th:text="${user.identity.role}">CLIENT</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.status}">Status</dt>
+                <dd th:text="${user.identity.status}">ACTIVE</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.locale}">Language</dt>
+                <dd th:text="${user.identity.locale}">es</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.email-verified}">Email verified</dt>
+                <dd>
+                    <span th:if="${user.identity.emailVerified}" th:text="#{customer.common.yes}">Yes</span>
+                    <span th:unless="${user.identity.emailVerified}" th:text="#{customer.common.no}">No</span>
+                </dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.locked}">Locked</dt>
+                <dd>
+                    <span th:if="${user.identity.locked}" th:text="#{customer.common.yes}">Yes</span>
+                    <span th:unless="${user.identity.locked}" th:text="#{customer.common.no}">No</span>
+                </dd>
+            </div>
+        </dl>
+    </section>
+    <section th:if="${user.customerAccount.isPresent()}" class="mt-5 rounded-xl border border-border bg-surface p-6">
+        <h2 class="font-heading text-xl" th:text="#{customer.user.account}">Customer account</h2>
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.account-type}">Account type</dt>
+                <dd th:text="${user.customerAccount.get().accountType}">INDIVIDUAL</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.account-name}">Account name</dt>
+                <dd th:text="${user.customerAccount.get().displayName}">Example</dd>
+            </div>
+        </dl>
+    </section>
+    <section th:if="${user.staffProfile.isPresent()}" class="mt-5 rounded-xl border border-border bg-surface p-6">
+        <h2 class="font-heading text-xl" th:text="#{customer.user.staff-profile}">Staff profile</h2>
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.job-title}">Job title</dt>
+                <dd th:text="${user.staffProfile.get().jobTitle}">Specialist</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.employment-start-date}">Employment start date</dt>
+                <dd th:text="${user.staffProfile.get().employmentStartDate}">2026-01-01</dd>
+            </div>
+            <div>
+                <dt class="font-semibold" th:text="#{customer.user.specialties}">Specialties</dt>
+                <dd th:text="${#strings.listJoin(user.staffProfile.get().specialties, ', ')}">Analysis</dd>
+            </div>
+        </dl>
+        <a th:href="@{/gestion/trabajadores/{id}(id=${user.identity.publicId})}"
+           class="mt-4 inline-block min-h-11 content-center underline" th:text="#{customer.user.edit-staff}">
+            Edit staff profile
+        </a>
+    </section>
+    <section class="mt-5 rounded-xl border border-border bg-surface p-6">
+        <h2 class="font-heading text-xl" th:text="#{customer.user.panels}">Related panels</h2>
+        <section th:if="${canViewAudit}" class="mt-4">
+            <div th:id="${'user-audit-' + user.identity.publicId}"
+                 th:attr="hx-get=@{/gestion/auditoria/usuarios/{id}/panel(id=${user.identity.publicId})}"
+                 hx-trigger="load" hx-swap="innerHTML" aria-live="polite">
+                <p role="status" th:text="#{customer.user.audit-loading}">Loading audit history…</p>
+            </div>
+            <a class="mt-2 inline-flex min-h-11 items-center underline"
+               th:href="@{/gestion/auditoria(entityType='USER',entityId=${user.identity.publicId})}"
+               th:text="#{customer.user.audit-open}">Open audit history</a>
+        </section>
+        <p class="mt-2 text-text-muted" th:text="#{customer.user.panels-unavailable}">
+            Request, conversation, and SimbioSphere panels are not available in this phase.
+        </p>
+    </section>
+    <section class="mt-5 rounded-xl border border-border bg-surface p-6">
+        <h2 class="font-heading text-xl" th:text="#{customer.user.actions.title}">Account actions</h2>
+        <p th:if="${accountAction == 'status'}" role="status" th:text="#{customer.user.actions.status-done}">
+            Account status updated.
+        </p>
+        <p th:if="${accountAction == 'unlock'}" role="status" th:text="#{customer.user.actions.unlock-done}">
+            Account unlocked.
+        </p>
+        <p th:if="${accountAction == 'password'}" role="status" th:text="#{customer.user.actions.password-requested}">
+            If the account is eligible, reset instructions will be sent.
+        </p>
+        <p th:if="${accountAction == 'role'}" role="status" th:text="#{customer.user.actions.role-done}">
+            Account role updated.
+        </p>
+        <p th:if="${accountActionRejected}" role="alert" th:text="#{customer.user.actions.rejected}">
+            The action was rejected. The account was not changed.
+        </p>
+        <form th:action="@{/gestion/usuarios/{id}/estado(id=${user.identity.publicId})}" method="post"
+              class="mt-4 grid gap-3">
+            <input type="hidden" name="active" th:value="${user.identity.status != 'ACTIVE'}">
+            <label class="flex items-start gap-3">
+                <input type="checkbox" name="confirmed" value="true" required class="mt-1">
+                <span th:text="#{customer.user.actions.confirm}">I confirm this action.</span>
+            </label>
+            <button th:if="${user.identity.status == 'ACTIVE'}" type="submit"
+                    class="min-h-11 rounded-lg border border-border px-4"
+                    th:text="#{customer.user.actions.deactivate}">Deactivate account</button>
+            <button th:unless="${user.identity.status == 'ACTIVE'}" type="submit"
+                    class="min-h-11 rounded-lg border border-border px-4"
+                    th:text="#{customer.user.actions.activate}">Activate account</button>
+        </form>
+        <form th:if="${user.identity.locked}"
+              th:action="@{/gestion/usuarios/{id}/desbloquear(id=${user.identity.publicId})}" method="post"
+              class="mt-4 grid gap-3">
+            <label class="flex items-start gap-3">
+                <input type="checkbox" name="confirmed" value="true" required class="mt-1">
+                <span th:text="#{customer.user.actions.confirm}">I confirm this action.</span>
+            </label>
+            <button type="submit" class="min-h-11 rounded-lg border border-border px-4"
+                    th:text="#{customer.user.actions.unlock}">Unlock account</button>
+        </form>
+        <form th:action="@{/gestion/usuarios/{id}/restablecer(id=${user.identity.publicId})}" method="post"
+              class="mt-4 grid gap-3">
+            <label class="flex items-start gap-3">
+                <input type="checkbox" name="confirmed" value="true" required class="mt-1">
+                <span th:text="#{customer.user.actions.confirm}">I confirm this action.</span>
+            </label>
+            <button type="submit" class="min-h-11 rounded-lg border border-border px-4"
+                    th:text="#{customer.user.actions.password}">Send password reset</button>
+        </form>
+        <form th:if="${canManageStaff and user.identity.role != 'CLIENT'}"
+              th:action="@{/gestion/usuarios/{id}/rol(id=${user.identity.publicId})}" method="post"
+              class="mt-4 grid gap-3">
+            <label for="new-role" th:text="#{customer.user.actions.role}">Change worker role</label>
+            <select id="new-role" name="role" class="min-h-11 rounded-lg border border-border bg-surface px-3">
+                <option th:if="${user.identity.role == 'EMPLOYEE'}" value="ADMIN"
+                        th:text="#{customer.user.actions.role-admin}">Administrator</option>
+                <option th:if="${user.identity.role == 'ADMIN'}" value="EMPLOYEE"
+                        th:text="#{customer.user.actions.role-employee}">Employee</option>
+            </select>
+            <label class="flex items-start gap-3">
+                <input type="checkbox" name="confirmed" value="true" required class="mt-1">
+                <span th:text="#{customer.user.actions.confirm}">I confirm this action.</span>
+            </label>
+            <button type="submit" class="min-h-11 rounded-lg border border-border px-4"
+                    th:text="#{customer.user.actions.role-submit}">Update role</button>
+        </form>
+    </section>
+</main>
+</html>

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.simbio.core.audit.api.AuditRecord;
 import com.simbio.core.audit.domain.AuditEntryEntity;
+import com.simbio.core.shared.spi.AuditEvent;
 
 class AuditRecorderServiceTest {
 
@@ -56,6 +57,23 @@ class AuditRecorderServiceTest {
     }
 
     @Test
+    void recordsMinimalSharedAuditEventsThroughTheAuditOwner() {
+        CapturingAuditEntryStore store = new CapturingAuditEntryStore();
+        AuditRecorderService service = new AuditRecorderService(store);
+
+        service.record(new AuditEvent(
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
+                "ERROR_INVENTORY.RESOLVED",
+                "ERROR_INVENTORY",
+                UUID.fromString("123e4567-e89b-12d3-a456-426614174001"),
+                "corr-12345678"));
+
+        assertThat(store.saved.getActionCode()).isEqualTo("ERROR_INVENTORY.RESOLVED");
+        assertThat(store.saved.getEntityType()).isEqualTo("ERROR_INVENTORY");
+        assertThat(store.saved.getCorrelationId()).isEqualTo("corr-12345678");
+    }
+
+    @Test
     void retentionDeletesOnlyEntriesOlderThanThreeYears() {
         CapturingAuditEntryStore store = new CapturingAuditEntryStore();
         Instant now = Instant.parse("2026-11-13T18:00:00Z");
@@ -63,7 +81,7 @@ class AuditRecorderServiceTest {
 
         service.purgeExpired(now);
 
-        assertThat(store.deleteBefore).isEqualTo(Instant.parse("2023-11-14T18:00:00Z"));
+        assertThat(store.deleteBefore).isEqualTo(Instant.parse("2023-11-13T18:00:00Z"));
     }
 
     private static final class CapturingAuditEntryStore implements AuditEntryStore {

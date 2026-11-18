@@ -121,6 +121,10 @@ test("language switch preserves the current public path", async ({ page }) => {
   await page.locator('form[action="/preferences/locale/en"] button').click();
   await expect(page).toHaveURL(/\/en$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+  await page.locator('footer form[action="/preferences/locale/es"] button').click();
+  await expect(page).toHaveURL(/\/es$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
 });
 
 test("frontend error reporting sends only bounded, non-identifying diagnostics", async ({ page }) => {
@@ -299,4 +303,51 @@ test("HTMX mutations send CSRF and expose accessible errors", async ({ page }) =
   await expect(errors).toHaveAttribute("tabindex", "-1");
   await expect(errors).toContainText("No se pudo completar la solicitud");
   await expect(errors).toBeFocused();
+});
+
+test("public pages keep drafts hidden and use only technical cookies and local assets", async ({ page }) => {
+  if (!baseURL) {
+    throw new Error("E2E precondition missing: start S-portal and set PORTAL_E2E_BASE_URL.");
+  }
+  const origin = new URL(baseURL).origin;
+  const externalRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.protocol.startsWith("http") && url.origin !== origin) {
+      externalRequests.push(url.origin);
+    }
+  });
+  const logoResponsePromise = page.waitForResponse((response) =>
+    /\/assets\/simbio-logo\.[0-9a-f]{16}\.png$/.test(new URL(response.url()).pathname)
+  );
+  await page.goto("/es");
+  await expect(page.locator("[data-cookie-banner], [data-cookie-notice], #cookie-notice")).toHaveCount(0);
+
+  const logoResponse = await logoResponsePromise;
+  expect(logoResponse.status()).toBe(200);
+  expect(logoResponse.headers()["cache-control"]).toContain("public");
+  expect(logoResponse.headers()["cache-control"]).toContain("immutable");
+  const cookies = await page.context().cookies(baseURL);
+  const cookieNames = cookies.map((cookie) => cookie.name);
+  expect(cookieNames).toContain("sp_theme");
+  expect(cookieNames.every((name) =>
+    ["SPORTAL_SESSION", "sp_theme", "sp_lang"].includes(name)
+  )).toBe(true);
+
+  const manifestResponse = await page.request.get(
+    new URL("/assets/asset-manifest.json", baseURL).toString()
+  );
+  expect(manifestResponse.ok()).toBe(true);
+  expect(manifestResponse.headers()["cache-control"] ?? "").not.toContain("immutable");
+  expect(externalRequests).toEqual([]);
+
+  for (const path of [
+    "/es/simbiosphere",
+    "/en/simbiosphere",
+    "/es/servicios/desarrollo",
+    "/en/services/development"
+  ]) {
+    const response = await page.request.get(new URL(path, baseURL).toString());
+    expect(response.status(), `draft route ${path} must remain unpublished`).toBe(404);
+  }
 });

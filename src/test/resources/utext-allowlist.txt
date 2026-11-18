@@ -1,0 +1,3 @@
+content/page.html
+content/legal.html
+layouts/base.html

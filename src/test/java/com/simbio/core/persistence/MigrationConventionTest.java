@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -60,7 +62,23 @@ class MigrationConventionTest {
                 .withMessageContaining("folder must match module");
     }
 
+    @Test
+    void rejectsDuplicateVersionsAcrossModuleFolders() throws IOException {
+        Path identity = temporaryDirectory.resolve("identity/V202611110001__identity__create_users.sql");
+        Path customer = temporaryDirectory.resolve("customer/V202611110001__customer__create_accounts.sql");
+        Files.createDirectories(identity.getParent());
+        Files.createDirectories(customer.getParent());
+        Files.writeString(identity, "SELECT 1;");
+        Files.writeString(customer, "SELECT 1;");
+
+        assertThatIllegalStateException()
+                .isThrownBy(() -> validate(temporaryDirectory))
+                .withMessageContaining("duplicate global version")
+                .withMessageContaining(identity.getFileName().toString());
+    }
+
     private static void validate(Path root) throws IOException {
+        Map<String, String> versions = new HashMap<>();
         try (Stream<Path> paths = Files.walk(root)) {
             for (Path file : paths.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".sql"))
@@ -78,6 +96,11 @@ class MigrationConventionTest {
                 }
                 if (!folder.equals(matcher.group(1))) {
                     throw violation(filename, "folder must match module");
+                }
+                String version = filename.substring(1, filename.indexOf("__"));
+                String previous = versions.putIfAbsent(version, relative.toString());
+                if (previous != null) {
+                    throw violation(filename, "duplicate global version " + version + " also used by " + previous);
                 }
                 if (LEGACY_DBO_SCHEMA.matcher(Files.readString(file)).find()) {
                     throw violation(filename, "dbo schema is not allowed");

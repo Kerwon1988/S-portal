@@ -12,7 +12,10 @@ import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import io.micrometer.core.instrument.Metrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.simbio.core.files.api.FileAccessAuthorization;
 import com.simbio.core.files.api.FilePurpose;
@@ -24,6 +27,7 @@ import com.simbio.core.files.domain.FileMetadataEntity;
 @Service
 public class FileStorageService implements FileStorage {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileStorageService.class);
     private static final long MAX_BYTES = 25L * 1024 * 1024;
 
     private final FileObjectStore objectStore;
@@ -32,6 +36,7 @@ public class FileStorageService implements FileStorage {
     private final MalwareScanner scanner;
     private final Clock clock;
 
+    @Autowired
     public FileStorageService(FileObjectStore objectStore, FileMetadataStore metadataStore,
             FileValidationService validation, MalwareScanner scanner) {
         this(objectStore, metadataStore, validation, scanner, Clock.systemUTC());
@@ -58,6 +63,10 @@ public class FileStorageService implements FileStorage {
         try {
             var path = objectStore.writeQuarantined(new ByteArrayInputStream(bytes), storageKey);
             MalwareScanner.ScanResult scan = scanner.scan(path);
+            if (scan == null) {
+                LOGGER.warn("Malware scanner returned no result; the file remains quarantined");
+                scan = MalwareScanner.ScanResult.UNAVAILABLE;
+            }
             Metrics.counter("portal.files.scan", "result", scan.name().toLowerCase(Locale.ROOT)).increment();
             if (scan == MalwareScanner.ScanResult.CLEAN) {
                 objectStore.markClean(storageKey);

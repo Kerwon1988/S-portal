@@ -4,7 +4,7 @@
 <main id="main-content" class="mx-auto w-full max-w-xl px-4 py-10" tabindex="-1">
     <section class="rounded-xl border border-border bg-surface p-6 sm:p-8">
         <h1 class="font-heading text-3xl" th:text="#{identity.login.heading}">Sign in</h1>
-        <p th:if="${param.error}" class="mt-4 rounded border border-danger p-3 text-danger" role="alert"
+        <p th:if="${loginFailed}" class="mt-4 rounded border border-danger p-3 text-danger" role="alert"
            th:text="#{identity.login.failed}">The email or password is not valid.</p>
         <form method="post" th:action="@{/acceso}" class="mt-6 space-y-5">
             <input type="hidden" name="continue" th:value="${continueTo}">
@@ -12,18 +12,22 @@
                 <label for="username" class="block font-medium" th:text="#{identity.login.email}">Email</label>
                 <input id="username" name="username" type="email" autocomplete="username" required maxlength="320"
                        class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"
-                       th:attr="aria-describedby=${param.error ? 'login-error' : null}">
+                       th:attr="aria-describedby=${loginFailed ? 'login-error' : null}">
             </div>
             <div>
                 <label for="password" class="block font-medium" th:text="#{identity.login.password}">Password</label>
                 <input id="password" name="password" type="password" autocomplete="current-password" required
                        class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"
-                       th:attr="aria-describedby=${param.error ? 'login-error' : null}">
+                       th:attr="aria-describedby=${loginFailed ? 'login-error' : null}">
             </div>
             <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded bg-primary px-4 text-on-primary"
                     th:text="#{identity.login.submit}">Sign in</button>
         </form>
-        <span id="login-error" class="sr-only" th:if="${param.error}" th:text="#{identity.login.failed}">
+        <a class="mt-4 inline-flex min-h-11 items-center text-primary" th:href="@{/recuperar}"
+           th:text="#{identity.login.recover}">Forgot your password?</a>
+        <a class="mt-2 inline-flex min-h-11 items-center text-primary" th:href="@{/registro}"
+           th:text="#{identity.login.register}">Create a customer account</a>
+        <span id="login-error" class="sr-only" th:if="${loginFailed}" th:text="#{identity.login.failed}">
             The email or password is not valid.
         </span>
     </section>

@@ -100,6 +100,18 @@ class TemplateRulesTest {
                 "meta[name=\"_csrf_header\"]", "htmx:beforeSwap", "htmx:afterSwap", "htmx:responseError");
     }
 
+    @Test
+    void productionTemplatesUseOnlyExplicitlyApprovedSanitizedHtml() throws IOException {
+        Set<String> validated = validate(
+                Path.of("src/main/resources/templates"),
+                Path.of("src/test/resources/utext-allowlist.txt"));
+
+        assertThat(validated).contains("content/page.html", "content/legal.html");
+        String baseLayout = Files.readString(Path.of("src/main/resources/templates/layouts/base.html"));
+        assertThat(baseLayout).contains("th:utext=\"${organizationJsonLd}\"");
+        assertThat(baseLayout.split("th:utext", -1)).hasSize(2);
+    }
+
     static Set<String> validate(Path templates, Path allowlist) throws IOException {
         Set<String> allowedUtext = Files.readAllLines(allowlist).stream()
                 .map(String::trim)

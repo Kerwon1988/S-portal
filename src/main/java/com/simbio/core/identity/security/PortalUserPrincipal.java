@@ -3,6 +3,7 @@ package com.simbio.core.identity.security;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,7 +14,7 @@ import com.simbio.core.shared.security.AuthenticatedUser;
 import com.simbio.core.shared.security.Permission;
 import com.simbio.core.shared.security.Role;
 
-final class PortalUserPrincipal implements UserDetails {
+public final class PortalUserPrincipal implements UserDetails {
 
     private final UUID userId;
     private final String email;
@@ -23,27 +24,59 @@ final class PortalUserPrincipal implements UserDetails {
     private final boolean enabled;
     private final boolean accountNonLocked;
 
-    PortalUserPrincipal(UserAccountEntity account) {
+    public PortalUserPrincipal(UserAccountEntity account) {
         userId = account.getPublicId();
         email = account.getEmailNormalized();
         passwordHash = account.getPasswordHash();
         enabled = account.isEnabled();
         accountNonLocked = !account.isLockedAt(java.time.Instant.now());
-        var roleNames = account.getRoles().stream().map(roleEntity -> roleEntity.getCode()).collect(java.util.stream.Collectors.toSet());
-        role = roleNames.contains("ADMIN") ? Role.ADMIN
-                : roleNames.contains("EMPLOYEE") ? Role.EMPLOYEE : Role.CLIENT;
+        Set<Role> roles = account.getRoles().stream()
+                .map(roleEntity -> parseRole(roleEntity.getCode()))
+                .collect(Collectors.toUnmodifiableSet());
+        role = roles.contains(Role.ADMIN) ? Role.ADMIN
+                : roles.contains(Role.EMPLOYEE) ? Role.EMPLOYEE
+                : roles.contains(Role.CLIENT) ? Role.CLIENT
+                : throwMissingRole();
         permissions = account.getRoles().stream()
                 .flatMap(roleEntity -> roleEntity.getPermissions().stream())
-                .map(permissionEntity -> Permission.valueOf(permissionEntity.getCode()))
+                .map(permissionEntity -> parsePermission(permissionEntity.getCode()))
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
-    AuthenticatedUser authenticatedUser() {
+    private static Role parseRole(String code) {
+        try {
+            return Role.valueOf(code);
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            throw new IllegalStateException("Unknown identity role", exception);
+        }
+    }
+
+    private static Role throwMissingRole() {
+        throw new IllegalStateException("User account has no supported role");
+    }
+
+    private static Permission parsePermission(String code) {
+        try {
+            return Permission.valueOf(code);
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            throw new IllegalStateException("Unknown identity permission", exception);
+        }
+    }
+
+    public AuthenticatedUser authenticatedUser() {
         return new AuthenticatedUser(userId, role, permissions);
     }
 
     UUID userId() {
         return userId;
+    }
+
+    public UUID publicUserId() {
+        return userId;
+    }
+
+    public boolean isAdmin() {
+        return role == Role.ADMIN;
     }
 
     @Override
@@ -62,6 +95,16 @@ final class PortalUserPrincipal implements UserDetails {
     @Override
     public String getUsername() {
         return email;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof PortalUserPrincipal principal && userId.equals(principal.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return userId.hashCode();
     }
 
     @Override

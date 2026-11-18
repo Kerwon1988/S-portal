@@ -15,6 +15,7 @@ public record ErrorRecord(
         String correlationId,
         String severity,
         String status,
+        String resolutionNote,
         String sqlState,
         int databaseErrorCode,
         String firstSeen,

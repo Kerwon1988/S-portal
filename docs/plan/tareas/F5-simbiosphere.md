@@ -47,7 +47,7 @@
 - UI: n/a (test de protocolo).
 - Seguridad: secretos/firmas efímeros; stubs sin PII real; comprobar no envío de password y no logging de body.
 - Criterios de aceptación (Given/When/Then):
-  - Given OpenAPI del contrato When se generan stubs Then operaciones, códigos y schemas se validan en `mvn verify`.
+  - Given OpenAPI del contrato When se generan stubs Then operaciones, códigos y schemas se validan en `mvn test`.
   - Given firma inválida, 409/422/503 o payload incompatible When corre test Then fallo queda clasificado sin llamada de red a DEMO.
 - Tests: TC-SIM-004: CT (WireMock/OpenAPI), UT (errores/HMAC), IT (build offline).
 - Documentación a actualizar: DIARIO + INVENTARIO; contrato en 05

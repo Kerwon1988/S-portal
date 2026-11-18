@@ -25,7 +25,7 @@ public class FileValidationService {
     private final Tika tika = new Tika();
 
     public ValidatedFile validate(byte[] bytes, String submittedName, long declaredSize, FilePurpose purpose) {
-        if (bytes == null || bytes.length == 0 || bytes.length != declaredSize) {
+        if (bytes == null || bytes.length == 0 || bytes.length != declaredSize || purpose == null) {
             throw new InvalidFileException();
         }
         long limit = purpose == FilePurpose.IMAGE ? MAX_IMAGE_BYTES : MAX_ATTACHMENT_BYTES;

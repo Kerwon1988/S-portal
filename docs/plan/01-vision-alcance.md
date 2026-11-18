@@ -15,7 +15,7 @@ Nombre empresarial: **Simbio** (confirmado por el owner; “Symbio” es incorre
 | Solicitudes y operación | Recorrido cliente→solicitud→asignación→presupuesto→aceptación probado; aislamiento owner/notes INTERNAL |
 | Mensajería | Contacto distinto de solicitud; bandeja interna y respuesta; adjuntos/audios validados |
 | Integración conjunta | Saga/outbox, reintentos idempotentes y estados visibles contra API DEMO y stubs; ninguna llamada remota dentro de transacción |
-| Gobernanza sostenible | `ApplicationModules.verify()`/ArchUnit sin ciclos, cobertura ≥80 % domain/application, paridad i18n y docs enlazadas |
+| Gobernanza sostenible | Chequeos Spring Modulith/ArchUnit sin ciclos, cobertura ≥80 % domain/application, paridad i18n y docs enlazadas |
 | Registro operativo de errores | Inventario deduplicado de backend, frontend y BD; funciona con SQL Server caído, payload saneado y visor/resolución ADMIN-only |
 
 Los indicadores se verifican en [08-calidad-testing.md](08-calidad-testing.md), tareas y gates; no constituyen compromiso de calendario.

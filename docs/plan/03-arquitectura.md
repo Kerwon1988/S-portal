@@ -1,7 +1,7 @@
 # 03 — Arquitectura
 
 ## Decisiones de diseño
-S-portal es un monolito modular Spring Boot/Thymeleaf, un desplegable y una BD SQL Server. `com.simbio.core` es el `groupId` y paquete raíz confirmados por el owner; `artifactId` provisional: `portal` (validar el build en FND-002). La integración de SimbioSphere es HTTP M2M; no hay acceso a su BD, scraping ni transacción distribuida. Arquitectura y contratos son planificados, no implementados.
+S-portal es un monolito modular Spring Boot/Thymeleaf, un desplegable y una BD SQL Server. `com.simbio.core` es el `groupId` y paquete raíz confirmados por el owner; `artifactId` provisional: `portal` (validar el build en FND-002). La integración de SimbioSphere es HTTP M2M; no hay acceso a su BD, scraping ni transacción distribuida. Este documento define el objetivo; la implementación observable y sus límites se registran en [INVENTARIO.md](../../INVENTARIO.md). NTF/IAM de PROMPT 09 tienen código, aún sin validación Maven.
 
 ## C4 — Contexto
 ```mermaid
@@ -74,21 +74,23 @@ Las flechas en la columna «Depende de» indican dependencias Java permitidas ha
 
 | Módulo | Responsabilidad / API publicada | Eventos | Tablas owner (propuesta) | Depende de |
 |---|---|---|---|---|
-| `audit` | Registro inmutable; `AuditRecorder` | ninguno | `audit.audit_entry` | `shared` |
+| `audit` | Registro inmutable; `AuditRecorder`; implementa `shared.spi.AuditEventRecorder` | ninguno | `audit.audit_entry` | `shared` |
 | `files` | Puerto `FileStorage`, metadata y escaneo | ninguno | `files.file_metadata`, `files.file_variant` | `shared` |
-| `notification` | `EmailSender`, envío/plantillas | consumidores de eventos; no publica PII | `notification.outbox_message`, `notification.preference` | `shared` |
+| `notification` | `EmailSender`, SMTP, plantillas y worker de outbox | consumidores de eventos; no publica PII | `notification.outbox_message` (implementada); preferencias futuras | `shared` |
 | `content` | CMS, render, SEO y páginas públicas | `PagePublished` (IDs) | `content.page`, `page_translation`, `content_block`, `page_version`, `team_member`, `legal_document_version`, `slug_redirect` | `shared`, `files`, `audit` |
-| `legal` | Consentimientos, derechos, retención | `DataSubjectErasureRequested` | `legal.consent_record`, `data_subject_request`, `retention_policy` | `shared`, `content`, `audit` |
-| `identity` | Usuarios, autenticación, permisos, tokens, MFA | `ClientRegistered`, `EmailVerified`, `InvitationAccepted` (IDs) | `identity.user_account`, `role`, `permission`, `one_time_token`, `mfa_factor` | `shared`, `legal`, `notification`, `audit` |
-| `customer` | ClientAccount, miembros y registro | `ClientRegistered` (IDs) | `customer.client_account`, `account_member` | `shared`, `identity`, `legal`, `audit` |
+| `legal` | Consentimientos, derechos, retención | `DataSubjectErasureRequested` | `legal.consent_record`; `data_subject_request` y `retention_policy` propuestos | `shared`, `content`, `audit` |
+| `identity` | Usuarios, autenticación, permisos, tokens, MFA y perfil | `ClientRegistered`, `EmailVerified`, `InvitationAccepted` (IDs) | `identity.user_account`, `role`, `permission`, `one_time_token`, `mfa_factor` | `shared`, `legal`, `notification`, `audit` |
+| `customer` | ClientAccount, miembros, registro, invitaciones y directorio administrativo | `ClientRegistered` (IDs); consume `InvitationAccepted` (IDs + referencia opaca) | `customer.client_account`, `account_member`, `client_invitation` | `shared`, `identity`, `legal`, `staff`, `audit` |
 | `staff` | Perfil, especialidades y estado de trabajador | consume `InvitationAccepted` | `staff.staff_profile`, `staff_specialty` | `shared`, `identity`, `audit` |
 | `simbiosphere` | Saga, API M2M y vínculos externos | `ProvisioningStateChanged` (IDs) | `simbiosphere.provisioning`, `account_link`, `linked_business` | `shared`, `customer`, `identity`, `notification`, `audit` |
 | `messaging` | Conversaciones CONTACT/REQUEST y visibilidad | `MessagePosted`, `MessageReceived` (IDs) | `messaging.conversation`, `message`, `message_attachment`, `thread_access_token` | `shared`, `files`, `customer`, `notification`, `audit` |
 | `request` | Solicitudes, asignación, estados y presupuestos | `RequestStatusChanged` (IDs) | `request.request`, `assignment`, `quote`, `quote_version`, `request_attachment`, `status_history` | `shared`, `content` (lectura publicada), `customer`, `staff`, `messaging`, `files`, `simbiosphere`, `notification`, `audit` |
-| `shared` | Kernel mínimo y SPIs (`CurrentUser`, `RecipientDirectory`, `PersonalDataContributor`, `NavContribution`, `ErrorReporter`) | n/a | ninguna | ninguno; OPEN |
-| `config` | Web, security, i18n, tema, rate limit, observabilidad, `ErrorInventoryService` y visor ADMIN | n/a | ninguna; inventario JSON externo a SQL | `shared`; OPEN, sin dependencia de negocio |
+| `shared` | Kernel mínimo y SPIs (`CurrentUser`, `RecipientDirectory`, `ThemePreference`, `LocalePreference`, `SensitiveDataProtector`, `AntiBotVerification`, `PersonalDataContributor`, `NavContribution`, `ErrorReporter`, `AuditEventRecorder`) | n/a | ninguna | ninguno; OPEN |
+| `config` | Web, security, i18n, tema, rate limit, anti-bot, observabilidad, `ErrorInventoryService` y visor ADMIN | n/a | ninguna; inventario JSON externo a SQL | `shared`; OPEN, sin dependencia de negocio |
 
 `site` se integra en `content`; presupuestos son parte del agregado `request`; `staff` y `customer` conservan owners distintos. No se crean módulos vacíos.
+
+PROMPT 09 añade código a `notification`, `identity` y `config`; PROMPT 10 añade código parcial a `legal` y `customer`. `compile` y `test-compile` pasaron con Java 21 el 2026-11-18, pero no se ejecutaron tests porque falta una dependencia Surefire en la caché offline. `/registro` usa el servicio anti-bot local y alta de identidad, consentimiento y cuenta; `/gestion/clientes/nuevo` crea la cuenta tras la aceptación de invitación. El proof-of-work/honeypot no usa la biblioteca/protocolo oficial ALTCHA y su replay guard no coordina réplicas. Las invitaciones customer retienen metadatos cifrados sin caducidad/limpieza propia. LGL-002/003 continúan pendientes: faltan contributors de todos los owners, aprobación de anonimización y plazos de retención. El MFA es obligatorio para ADMIN y los usuarios EMPLOYEE pueden optar por enrolarse; el login desafía a cualquier usuario con factor activo. Ver [INVENTARIO.md](../../INVENTARIO.md) para el estado y las limitaciones.
 
 ## DAG de dependencias
 ```mermaid
@@ -110,6 +112,7 @@ flowchart LR
   customer --> shared
   customer --> identity
   customer --> legal
+  customer --> staff
   customer --> audit
   staff --> shared
   staff --> identity

@@ -24,3 +24,7 @@ Backup incluye volumen y DB; purgas coordinan metadata/bytes. Ficheros en cuaren
 ## Implementación observada — 2026-11-13
 
 Existe un avance parcial de FIL-001 con `FileStorage`, metadata JPA y adaptador local bajo un directorio configurable. Las pruebas focalizadas se añadieron pero no pudieron ejecutarse por fallo PKIX del repositorio Maven corporativo. El ADR permanece en borrador: la ruta durable, volumen, backup, antivirus y entrega HTTP siguen pendientes de validación/aprobación.
+
+## Actualización observada — 2026-11-17
+
+El workspace incluye ahora validación Tika, cuarentena/estado CLEAN con adaptador ClamAV fail-closed, la API `files.api.ImageVariants`, generación de variantes WebP y la migración aditiva de `size_bytes`; existen tests unitarios y H2, pero no se pudieron compilar ni ejecutar. Tika 3.2.3, Commons IO 2.20.0, WebP 0.1.6, CommonMark 0.24.0 y OWASP Java HTML Sanitizer 20240325.1 están en el repositorio local activo. La ejecución offline más reciente se bloquea al cargar el descriptor de Maven Enforcer porque el POM local `org.apache.maven:maven-parent:42` está marcado con otro ID de repositorio. El JDK activo es 17.0.21 frente al requisito 21. El ADR y FIL-001..004 permanecen sin validar; el volumen/backup durables, entrega HTTP y compatibilidad real con SQL Server siguen pendientes.

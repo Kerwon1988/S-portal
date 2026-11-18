@@ -80,12 +80,12 @@
          th:attr="aria-label=#{nav.pagination}">
         <a th:if="${auditPage.page > 0}"
            class="inline-flex min-h-11 items-center rounded border border-border px-3"
-           th:href="@{/gestion/auditoria(page=${auditPage.page - 1},actorId=${actorId},actionCode=${actionCode},fromDate=${fromDate},toDate=${toDate})}"
+           th:href="@{/gestion/auditoria(page=${auditPage.page - 1},actorId=${actorId},actionCode=${actionCode},fromDate=${fromDate},toDate=${toDate},entityType=${entityType},entityId=${entityPublicId})}"
            th:text="#{audit.pagination.previous}">Previous</a>
         <span th:text="#{audit.pagination.current(${auditPage.page + 1},${auditPage.totalPages})}">Page 1</span>
         <a th:if="${auditPage.page + 1 < auditPage.totalPages}"
            class="inline-flex min-h-11 items-center rounded border border-border px-3"
-           th:href="@{/gestion/auditoria(page=${auditPage.page + 1},actorId=${actorId},actionCode=${actionCode},fromDate=${fromDate},toDate=${toDate})}"
+           th:href="@{/gestion/auditoria(page=${auditPage.page + 1},actorId=${actorId},actionCode=${actionCode},fromDate=${fromDate},toDate=${toDate},entityType=${entityType},entityId=${entityPublicId})}"
            th:text="#{audit.pagination.next}">Next</a>
     </nav>
 </main>

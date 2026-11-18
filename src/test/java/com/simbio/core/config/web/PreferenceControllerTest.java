@@ -25,7 +25,8 @@ class PreferenceControllerTest {
         PreferenceController controller = new PreferenceController(
                 new AcceptHeaderLocaleResolver(),
                 beans.getBeanProvider(CurrentUser.class),
-                beans.getBeanProvider(ThemePreference.class));
+                beans.getBeanProvider(ThemePreference.class),
+                beans.getBeanProvider(com.simbio.core.shared.spi.LocalePreference.class));
 
         assertThat(controller.updateTheme("dark").getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }

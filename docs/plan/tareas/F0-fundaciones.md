@@ -32,8 +32,8 @@ La ejecución del análisis Dependency-Check, la revisión de licencias y el lan
 - UI: n/a (spike sin interfaz).
 - Seguridad: sin secretos ni datos reales. Dependency-Check está configurado en CI por FND-008; ejecutar el análisis y revisar licencias no son gates para aceptar FND-001.
 - Criterios de aceptación (Given/When/Then):
-  - Given el spike When `mvn -B verify` se ejecuta con Java 21 y H2, incluyendo Thymeleaf+Security y Flyway Then pasa y ADR-001 fija las versiones probadas; SQL Server queda documentado como destino no verificado, no como gate.
-  - Given un componente incompatible con la versión estable elegida When falla su verificación Then ADR-001 anota la alternativa y FND-002 no empieza hasta Aceptado.
+  - Given el spike When `mvn -B test` se ejecuta con Java 21 y H2, incluyendo Thymeleaf+Security y Flyway Then pasa y ADR-001 fija las versiones probadas; SQL Server queda documentado como destino no verificado, no como gate.
+  - Given un componente incompatible con la versión estable elegida When falla su prueba Then ADR-001 anota la alternativa y FND-002 no empieza hasta Aceptado.
 - Tests: TC-FND-001: WT (Thymeleaf+Security), UT (Argon2id) y persistencia de prueba con H2. No se requieren Testcontainers ni pruebas MSSQL.
 - Documentación a actualizar: ADR-001; GOV-004 registra DIARIO e INVENTARIO a partir de evidencia observable del workspace y las tareas ejecutadas.
 - Estimación: M (≤ 1 d)
@@ -49,8 +49,8 @@ La ejecución del análisis Dependency-Check, la revisión de licencias y el lan
 - UI: n/a (sin plantillas aún).
 - Seguridad: sin starter de seguridad (FND-009) ni endpoints; secretos en variables de entorno y `.env` local protegido, nunca en documentación ni salidas; versiones del BOM de ADR-001.
 - Criterios de aceptación (Given/When/Then):
-  - Given un clon limpio con JDK 21 When ejecuto `./mvnw -B verify` Then compila y pasa `PortalApplicationTests` con `server.port=8090`.
-  - Given JDK 17 When ejecuto `./mvnw verify` Then el enforcer falla indicando Java 21; no hay una versión mínima de Maven como gate.
+  - Given un clon limpio con JDK 21 When ejecuto `./mvnw -B test` Then compila y pasa `PortalApplicationTests` con `server.port=8090`.
+  - Given JDK 17 When ejecuto `./mvnw test` Then el enforcer falla indicando Java 21; no hay una versión mínima de Maven como gate.
 - Tests: TC-FND-002: IT (`@SpringBootTest`: contexto carga, `server.port=8090`, `Runtime.version().feature()==21`).
 - Documentación a actualizar: DIARIO + INVENTARIO; GOV-004 registra cambios y evidencias observables del workspace, sin consultar historial de Git.
 - Estimación: S (≤ 0,5 d)
@@ -73,19 +73,19 @@ La ejecución del análisis Dependency-Check, la revisión de licencias y el lan
 - Estimación: M (≤ 1 d)
 - Riesgos: kernel como cajón de sastre (lo vigila FND-004); un SPI mal diseñado se paga en varios módulos.
 
-### FND-004 — Gates modulares: Modulith verify + reglas ArchUnit de capas
+### FND-004 — Gates modulares: Spring Modulith + reglas ArchUnit de capas
 - Fase / épica / módulo owner: F0 / FND / build
 - Tipo: test
 - Depende de: FND-003
-- Descripción: Cubre: RF-GOV-02, RNF-TST-01; Modulith 2.1.2 + ArchUnit: `ApplicationModules.verify()`, `ModuleDagTest` y 6 reglas (`web→application→domain`, infraestructura implementa puertos, `@Entity` solo en `domain`, controladores sin repositorios, `api` sin `web`/`infrastructure`, `shared`/`config` sin negocio).
+- Descripción: Cubre: RF-GOV-02, RNF-TST-01; Modulith 2.1.2 + ArchUnit: análisis de módulos, `ModuleDagTest` y 6 reglas (`web→application→domain`, infraestructura implementa puertos, `@Entity` solo en `domain`, controladores sin repositorios, `api` sin `web`/`infrastructure`, `shared`/`config` sin negocio).
 - Ficheros/paquetes a crear o modificar (aproximado): `pom.xml`; `src/test/java/com/symbio/portal/architecture/{ModularityTests,LayerRulesTest,ModuleDagTest}`, `fixtures/`, `src/test/resources/architecture/module-dag.csv`.
-- Impacto modular: protege el DAG (`audit`, `files`, `notification` hojas; negocio→`api` ajenas) en `module-dag.csv`. Sin tablas ni eventos. Ciclo: ninguno; `verify()` los detecta.
+- Impacto modular: protege el DAG (`audit`, `files`, `notification` hojas; negocio→`api` ajenas) en `module-dag.csv`. Sin tablas ni eventos. Ciclo: ninguno; las pruebas de arquitectura detectan las infracciones.
 - UI: n/a (sin interfaz).
 - Seguridad: sin repositorios en controladores, la autorización por propietario (anti-IDOR) queda en `application`; prohibido `@Disabled` en estos tests.
 - Criterios de aceptación (Given/When/Then):
-  - Given solo `shared` When `./mvnw -B verify` Then los 3 tests de arquitectura pasan.
+  - Given solo `shared` When `./mvnw -B test` Then los 3 tests de arquitectura pasan.
   - Given un fixture `web` con repositorio o una arista fuera de `module-dag.csv` When se evalúa Then falla nombrando clase y regla.
-- Tests: TC-FND-004: MT (`verify()`), UT (6 reglas; fixtures que DEBEN fallar; `ModuleDagTest`).
+- Tests: TC-FND-004: MT (pruebas de arquitectura Modulith), UT (6 reglas; fixtures que DEBEN fallar; `ModuleDagTest`).
 - Documentación a actualizar: DIARIO + INVENTARIO (gates)
 - Estimación: M (≤ 1 d)
 - Riesgos: VERIFICAR en FND-001 `allowedDependencies={}` y módulos OPEN; ArchUnit falla con reglas vacías: `allowEmptyShould(true)` hasta tener módulos.

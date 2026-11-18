@@ -5,12 +5,15 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.simbio.core.audit.api.AuditRecord;
 import com.simbio.core.audit.api.AuditRecorder;
+import com.simbio.core.identity.api.IdentityAccountChanged;
 
 @Service
 public class AdminBootstrapService {
@@ -20,20 +23,25 @@ public class AdminBootstrapService {
     private final PasswordPolicy passwordPolicy;
     private final PasswordEncoder passwordEncoder;
     private final AuditRecorder auditRecorder;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
+    @Autowired
     public AdminBootstrapService(UserAccountStore accounts, BootstrapStateStore bootstrapState,
-            PasswordPolicy passwordPolicy, PasswordEncoder passwordEncoder, AuditRecorder auditRecorder) {
-        this(accounts, bootstrapState, passwordPolicy, passwordEncoder, auditRecorder, Clock.systemUTC());
+            PasswordPolicy passwordPolicy, PasswordEncoder passwordEncoder, AuditRecorder auditRecorder,
+            ApplicationEventPublisher events) {
+        this(accounts, bootstrapState, passwordPolicy, passwordEncoder, auditRecorder, events, Clock.systemUTC());
     }
 
     AdminBootstrapService(UserAccountStore accounts, BootstrapStateStore bootstrapState,
-            PasswordPolicy passwordPolicy, PasswordEncoder passwordEncoder, AuditRecorder auditRecorder, Clock clock) {
+            PasswordPolicy passwordPolicy, PasswordEncoder passwordEncoder, AuditRecorder auditRecorder,
+            ApplicationEventPublisher events, Clock clock) {
         this.accounts = Objects.requireNonNull(accounts);
         this.bootstrapState = Objects.requireNonNull(bootstrapState);
         this.passwordPolicy = Objects.requireNonNull(passwordPolicy);
         this.passwordEncoder = Objects.requireNonNull(passwordEncoder);
         this.auditRecorder = Objects.requireNonNull(auditRecorder);
+        this.events = Objects.requireNonNull(events);
         this.clock = Objects.requireNonNull(clock);
     }
 
@@ -51,6 +59,7 @@ public class AdminBootstrapService {
         passwordPolicy.requireAccepted(password);
         var administrator = accounts.createAdmin(normalizedEmail, passwordEncoder.encode(password),
                 "en".equals(locale) ? "en" : "es");
+        events.publishEvent(new IdentityAccountChanged(administrator.getPublicId(), "ADMIN", "ACTIVE"));
         bootstrapState.consume(now);
         auditRecorder.record(new AuditRecord(null, "IDENTITY.ADMIN_BOOTSTRAP", "USER",
                 administrator.getPublicId(), "bootstrap"));

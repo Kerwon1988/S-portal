@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/public :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-10" tabindex="-1">
+    <article class="space-y-8">
+        <header class="rounded-xl bg-surface p-6 sm:p-10">
+            <p class="text-sm font-semibold uppercase tracking-wide text-accent-text"
+               th:if="${isPreview}" th:text="#{content.preview.label}">Private preview</p>
+            <img th:if="${page.pageKey == 'home'}"
+                 class="mb-6 mx-auto h-auto w-full max-w-4xl rounded-lg object-contain"
+                 th:src="${assets['simbio-logo.png']}" width="2869" height="929"
+                 th:alt="#{content.home.logo.alt}"
+                 loading="eager" fetchpriority="high" decoding="async">
+            <h1 class="mt-2 font-heading text-4xl sm:text-6xl" th:text="${page.title}">Page title</h1>
+            <p class="mt-4 max-w-3xl text-lg text-text-muted" th:text="${page.metaDescription}">
+                Page introduction
+            </p>
+        </header>
+        <section th:each="block : ${page.blocks}" class="rounded-xl bg-surface p-6 sm:p-8">
+            <h2 class="text-2xl font-semibold" th:if="${!#strings.isEmpty(block.heading)}"
+                th:text="${block.heading}">Section heading</h2>
+            <div class="mt-4 max-w-4xl space-y-3 text-text-muted"
+                 th:if="${!#strings.isEmpty(block.bodyHtml.value)}"
+                 th:utext="${block.bodyHtml.value}">Sanitized page content</div>
+            <img th:if="${block.type.name() == 'IMAGE' or block.type.name() == 'HERO'}"
+                 class="mt-4 h-auto max-w-full rounded-lg"
+                 th:src="${block.imageUrl}" th:srcset="${block.imageSrcSet}"
+                 sizes="(max-width: 900px) 100vw, 900px"
+                 th:alt="${block.imageAlt}" loading="lazy">
+            <a th:if="${block.type.name() == 'CTA' and !#strings.isEmpty(block.targetUrl)}"
+               class="mt-5 inline-flex min-h-11 items-center rounded bg-primary px-5 text-on-primary"
+               th:href="${block.targetUrl}" th:text="${block.heading}">Continue</a>
+        </section>
+        <section th:if="${teamMembers != null and !#lists.isEmpty(teamMembers)}"
+                 class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <article th:each="member : ${teamMembers}" class="rounded-xl border border-border bg-surface p-5">
+                <img th:if="${member.photoUrl != null}" class="mb-4 h-auto max-w-full rounded-lg"
+                     th:src="${member.photoUrl}" th:srcset="${member.photoSrcSet}"
+                     sizes="(max-width: 900px) 100vw, 900px"
+                     th:alt="${member.photoAlt}" loading="lazy">
+                <h2 class="text-xl font-semibold" th:text="${member.name}">Team member</h2>
+                <p class="mt-1 text-text-muted" th:text="${member.role}">Role</p>
+                <div class="mt-3 space-y-2 text-text-muted" th:utext="${member.bio.value}">
+                    Sanitized biography
+                </div>
+                <a th:if="${member.profileUrl != null}" class="mt-3 inline-flex min-h-11 items-center text-accent-text"
+                   th:href="${member.profileUrl}" rel="noopener noreferrer"
+                   th:text="#{content.team.profile}">Profile</a>
+            </article>
+        </section>
+    </article>
+</main>
+</html>

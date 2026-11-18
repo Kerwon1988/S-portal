@@ -69,7 +69,16 @@ Esta evidencia se incorpora por la ampliación solicitada. El diseño de S-porta
 
 Conclusiones: el contrato nuevo debe adaptarse al servicio interno (H11/H18), no exponer H24, crear idempotencia pre-tenant (H25), definir `modules` omitido/null frente a `[]` (H16/H17) y no heredar patrones inseguros de H20/H29/H33. Las únicas afirmaciones de estado actual de DEMO son las filas con evidencia; el resto de esta sección se marca como propuesta.
 
-## Borrador OpenAPI — no existente aún
+## Contrato OpenAPI vigente — propuesta no publicada
+
+La fuente estructurada del borrador es [simbiosphere-platform-v1.yaml](contracts/simbiosphere-platform-v1.yaml). Define alta del owner, consulta de disponibilidad del slug y creación just-in-time del enlace de activación, con HMAC, scopes, idempotencia, respuestas RFC 7807 y sin contraseña. La prueba `SimbioSphereOpenApiContractTest` valida su estructura y fixtures WireMock locales; no valida un servidor WireMock ni una API DEMO.
+
+El contrato permanece **propuesto/no publicado**: DEMO-01 y la revisión/acuerdo de los owners Portal y DEMO siguen pendientes. No se han realizado llamadas a DEMO ni cambios en su repositorio. La especificación no autoriza la implementación del cliente ni acredita integración real.
+
+### Borrador inicial sustituido (histórico, no contractual)
+
+El fragmento siguiente se conserva como antecedente. No debe usarse como fuente contractual; prevalece el YAML enlazado arriba.
+
 Contrato futuro bajo `/api/platform/v1/**`. M2M con HMAC-SHA256: `X-Platform-Key-Id`, `X-Platform-Timestamp`, `X-Platform-Signature`; canonical propuesto `timestamp\nMETHOD\npath\nquery\nsha256(body)\nIdempotency-Key`; ventana ±300 s, dos keys activas durante rotación, scopes `provisioning:write/read`, rate limit por key ID. Secreto en gestor externo; allowlist IP opcional. **No se reutiliza `X-API-Key` tenant** (H05).
 
 ```yaml

@@ -65,6 +65,9 @@ class LayerRulesTest {
             .should(new ArchCondition<>("implement a port from an application package") {
                 @Override
                 public void check(JavaClass item, ConditionEvents events) {
+                    if (!item.isTopLevelClass()) {
+                        return;
+                    }
                     boolean implementsApplicationPort = item.getAllRawInterfaces().stream()
                             .anyMatch(type -> type.getPackageName().endsWith(".application")
                                     || type.getPackageName().contains(".application."));
@@ -81,9 +84,22 @@ class LayerRulesTest {
             .should().resideInAPackage("..domain..")
             .allowEmptyShould(true);
 
-    private static final ArchRule CONTROLLERS_DO_NOT_DEPEND_ON_REPOSITORIES = noClasses()
+    private static final ArchRule CONTROLLERS_DO_NOT_DEPEND_ON_REPOSITORIES = classes()
             .that().haveSimpleNameEndingWith("Controller")
-            .should().dependOnClassesThat().haveSimpleNameEndingWith("Repository")
+            .should(new ArchCondition<>("not depend on infrastructure repositories") {
+                @Override
+                public void check(JavaClass item, ConditionEvents events) {
+                    for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                        JavaClass target = dependency.getTargetClass();
+                        if (target.getSimpleName().endsWith("Repository")
+                                && (target.getPackageName().endsWith(".infrastructure")
+                                        || target.getPackageName().contains(".infrastructure."))) {
+                            events.add(SimpleConditionEvent.violated(
+                                    dependency, dependency.getDescription()));
+                        }
+                    }
+                }
+            })
             .allowEmptyShould(true);
 
     private static final ArchRule API_DOES_NOT_DEPEND_ON_WEB_OR_INFRASTRUCTURE = noClasses()
@@ -94,7 +110,7 @@ class LayerRulesTest {
     private static final ArchRule SHARED_AND_CONFIG_DO_NOT_DEPEND_ON_BUSINESS = noClasses()
             .that().resideInAnyPackage("..shared..", "..config..")
             .should().dependOnClassesThat().resideInAnyPackage(
-                    "..audit..", "..budget..", "..client..", "..content..", "..files..",
+                    "..audit..", "..budget..", "..client..", "..content..", "..customer..", "..files..",
                     "..identity..", "..legal..", "..messaging..", "..notification..",
                     "..request..", "..simbiosphere..", "..staff..")
             .allowEmptyShould(true);

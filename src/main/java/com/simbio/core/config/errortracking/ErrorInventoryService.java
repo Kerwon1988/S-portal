@@ -19,11 +19,14 @@ import com.simbio.core.shared.spi.ErrorReporter;
 import com.simbio.core.shared.spi.ErrorReporter.ErrorReport;
 
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ErrorInventoryService implements ErrorReporter {
 
     private static final int SCHEMA_VERSION = 1;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ErrorInventoryService.class);
 
     private final Path inventoryPath;
     private final int maxEntries;
@@ -31,6 +34,7 @@ public class ErrorInventoryService implements ErrorReporter {
     private final int maxFieldLength;
     private final ObjectMapper objectMapper;
     private final Map<String, ErrorRecord> records = new LinkedHashMap<>();
+    private boolean available = true;
 
     public ErrorInventoryService(
             ErrorTrackingProperties properties,
@@ -46,6 +50,7 @@ public class ErrorInventoryService implements ErrorReporter {
 
     @Override
     public synchronized void report(ErrorReport report) {
+        requireAvailable();
         ErrorTrackingSanitizer.SanitizedError sanitized =
                 ErrorTrackingSanitizer.sanitize(report, maxFieldLength);
         Map<String, ErrorRecord> updatedRecords = new LinkedHashMap<>(records);
@@ -64,7 +69,8 @@ public class ErrorInventoryService implements ErrorReporter {
                     existing.locale(),
                     existing.correlationId(),
                     existing.severity(),
-                    existing.status(),
+                    "OPEN",
+                    "",
                     existing.sqlState(),
                     existing.databaseErrorCode(),
                     existing.firstSeen(),
@@ -85,30 +91,83 @@ public class ErrorInventoryService implements ErrorReporter {
                     sanitized.correlationId(),
                     sanitized.severity(),
                     "OPEN",
+                    "",
                     sanitized.sqlState(),
                     sanitized.databaseErrorCode(),
                     now.toString(),
                     now.toString(),
                     1));
         }
-        persist(updatedRecords);
+        persistOrDegrade(updatedRecords);
         records.clear();
         records.putAll(updatedRecords);
     }
 
-    public synchronized ErrorInventory snapshot() {
-        return new ErrorInventory(
-                SCHEMA_VERSION,
-                records.values().stream()
+    public synchronized ErrorInventorySnapshot snapshot() {
+        return new ErrorInventorySnapshot(
+                available,
+                maxEntries,
+                available ? records.values().stream()
                         .sorted(Comparator.comparing(record -> Instant.parse(record.firstSeen())))
-                        .toList());
+                        .toList() : List.of());
+    }
+
+    public synchronized void updateStatus(String fingerprint, String status, String resolutionNote) {
+        requireAvailable();
+        if (!List.of("RESOLVED", "IGNORED").contains(status)) {
+            throw new IllegalArgumentException("Unsupported error inventory status");
+        }
+        ErrorRecord existing = records.get(fingerprint);
+        if (existing == null) {
+            throw new java.util.NoSuchElementException("Error inventory entry was not found");
+        }
+        String safeNote = ErrorResolutionNoteSanitizer.sanitize(resolutionNote);
+        Map<String, ErrorRecord> updatedRecords = new LinkedHashMap<>(records);
+        updatedRecords.put(fingerprint, new ErrorRecord(
+                existing.fingerprint(),
+                existing.source(),
+                existing.category(),
+                existing.errorCode(),
+                existing.exceptionType(),
+                existing.sanitizedStack(),
+                existing.path(),
+                existing.release(),
+                existing.locale(),
+                existing.correlationId(),
+                existing.severity(),
+                status,
+                safeNote,
+                existing.sqlState(),
+                existing.databaseErrorCode(),
+                existing.firstSeen(),
+                existing.lastSeen(),
+                existing.occurrences()));
+        persistOrDegrade(updatedRecords);
+        records.clear();
+        records.putAll(updatedRecords);
+    }
+
+    private void requireAvailable() {
+        if (!available) {
+            throw new ErrorInventoryUnavailableException();
+        }
+    }
+
+    private void persistOrDegrade(Map<String, ErrorRecord> updatedRecords) {
+        try {
+            persist(updatedRecords);
+        } catch (ErrorInventoryPersistenceException exception) {
+            available = false;
+            LOGGER.error("Error inventory storage is unavailable; ADMIN viewer is degraded");
+            throw exception;
+        }
     }
 
     private void loadExistingInventory() {
-        if (!Files.exists(inventoryPath)) {
-            return;
-        }
         try {
+            if (!Files.exists(inventoryPath)) {
+                return;
+            }
             long fileSize = Files.size(inventoryPath);
             if (fileSize > maxFileBytes) {
                 throw new IllegalStateException("Error inventory exceeds portal.error-tracking.max-file-bytes");
@@ -121,8 +180,10 @@ public class ErrorInventoryService implements ErrorReporter {
                 validateLoadedRecord(record);
                 records.put(record.fingerprint(), record);
             }
-        } catch (IOException | JacksonException exception) {
-            throw new IllegalStateException("Could not load the error inventory", exception);
+        } catch (IOException | JacksonException | IllegalStateException | SecurityException exception) {
+            records.clear();
+            available = false;
+            LOGGER.error("Error inventory storage is unavailable; ADMIN viewer is degraded");
         }
     }
 

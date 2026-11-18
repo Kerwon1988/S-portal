@@ -20,6 +20,8 @@ D03 fija logins separados y una API M2M nueva en DEMO, adaptada sobre `OwnerOnbo
 ## Consecuencias
 La API M2M debe aceptar evidencia de email verificado y persistir aceptación de términos. `modules` omitido/null debe distinguirse de `[]` (defaults por tipo frente a cero opcionales). Las llamadas remotas van fuera de transacciones; saga local y EPR/outbox. API y provider tests se acuerdan antes de implementación.
 
+En PROMPT 09 se añadieron flujos locales para verificar email, recuperar/cambiar la contraseña e invitar a definir una credencial propia; el token es opaco, de un uso y se persiste hasheado. No se sincronizan contraseñas con SimbioSphere y el correo de perfil no se cambia desde el formulario actual. No se modificó DEMO ni se afirma alta/provisión externa. La compilación y los tests de estos flujos siguen pendientes de validación Maven.
+
 ## Verificaciones pendientes
 - FND-001: Argon2id/DelegatingPasswordEncoder y crypto.
 - DEMO-01/02a/02b/03a/03b/03c/06a/06b/07/08: contrato, HMAC, idempotencia, activación, evidencia y defaults.

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('customer.registration.result-title', ~{::main}, 'public')}">
+<main id="main-content" class="mx-auto w-full max-w-xl px-4 py-10" tabindex="-1">
+    <section class="rounded-xl border border-border bg-surface p-6 sm:p-8">
+        <h1 class="font-heading text-3xl" th:text="#{customer.registration.result-title}">Check your email</h1>
+        <p class="mt-4" role="status" th:text="#{customer.registration.submitted}">
+            If the request can be processed, instructions will be sent to the address provided.
+        </p>
+        <a class="mt-5 inline-flex min-h-11 items-center text-primary" th:href="@{/acceso}"
+           th:text="#{customer.registration.sign-in}">Go to sign in</a>
+    </section>
+</main>
+</html>

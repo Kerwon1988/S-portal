@@ -61,6 +61,8 @@ public class RateLimitProperties {
 
     public Set<String> protectedPaths() {
         return Set.of("/acceso", "/registro", "/recuperar", "/restablecer", "/contacto",
-                "/es/contacto", "/en/contacto");
+                "/es/contacto", "/en/contacto", "/verificar-email/reenviar",
+                "/invitacion/aceptar", "/cuenta/seguridad/mfa/verificar",
+                "/cuenta/seguridad/mfa/enrolar");
     }
 }

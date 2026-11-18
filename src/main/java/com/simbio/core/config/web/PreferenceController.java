@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import com.simbio.core.shared.security.AuthenticatedUser;
 import com.simbio.core.shared.spi.CurrentUser;
+import com.simbio.core.shared.spi.LocalePreference;
 import com.simbio.core.shared.spi.ThemePreference;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
@@ -25,14 +26,17 @@ public class PreferenceController {
     private final LocaleResolver localeResolver;
     private final ObjectProvider<CurrentUser> currentUserProvider;
     private final ObjectProvider<ThemePreference> themePreferenceProvider;
+    private final ObjectProvider<LocalePreference> localePreferenceProvider;
 
     public PreferenceController(
             LocaleResolver localeResolver,
             ObjectProvider<CurrentUser> currentUserProvider,
-            ObjectProvider<ThemePreference> themePreferenceProvider) {
+            ObjectProvider<ThemePreference> themePreferenceProvider,
+            ObjectProvider<LocalePreference> localePreferenceProvider) {
         this.localeResolver = localeResolver;
         this.currentUserProvider = currentUserProvider;
         this.themePreferenceProvider = themePreferenceProvider;
+        this.localePreferenceProvider = localePreferenceProvider;
     }
 
     @PostMapping("/preferences/locale/{lang}")
@@ -45,6 +49,16 @@ public class PreferenceController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported locale");
         }
         localeResolver.setLocale(request, response, Locale.forLanguageTag(lang));
+        CurrentUser currentUser = currentUserProvider.getIfAvailable();
+        Optional<AuthenticatedUser> user = currentUser == null
+                ? Optional.empty()
+                : currentUser.currentUser();
+        if (user.isPresent()) {
+            LocalePreference preference = localePreferenceProvider.getIfAvailable();
+            if (preference != null) {
+                preference.saveLocale(user.get().userId(), lang);
+            }
+        }
         return "redirect:" + localReturnPath(returnTo, lang);
     }
 

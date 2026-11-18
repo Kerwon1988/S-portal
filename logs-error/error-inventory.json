@@ -16,8 +16,8 @@
     "sqlState" : "",
     "databaseErrorCode" : 0,
     "firstSeen" : "2026-11-12T10:59:16.369248100Z",
-    "lastSeen" : "2026-11-13T16:13:25.887122400Z",
-    "occurrences" : 18
+    "lastSeen" : "2026-11-17T16:18:24.679774700Z",
+    "occurrences" : 22
   }, {
     "fingerprint" : "671c8d02672cd5ce3985156f7865833023a0a5d7035d36ada418e8af8f308a9c",
     "source" : "BACKEND",
@@ -34,8 +34,8 @@
     "sqlState" : "",
     "databaseErrorCode" : 0,
     "firstSeen" : "2026-11-12T11:34:17.665756600Z",
-    "lastSeen" : "2026-11-13T15:30:49.170713Z",
-    "occurrences" : 4
+    "lastSeen" : "2026-11-17T13:13:11.473682100Z",
+    "occurrences" : 5
   }, {
     "fingerprint" : "6f31ae9cf782d7202497d574d6056b15129473291e4288cf319b6f33f6125a4b",
     "source" : "BACKEND",
@@ -52,8 +52,8 @@
     "sqlState" : "",
     "databaseErrorCode" : 0,
     "firstSeen" : "2026-11-13T07:57:40.095580900Z",
-    "lastSeen" : "2026-11-13T16:12:24.756734100Z",
-    "occurrences" : 8
+    "lastSeen" : "2026-11-17T16:16:59.201287500Z",
+    "occurrences" : 15
   }, {
     "fingerprint" : "3720cd3bfe61f71a3f0ba02f34730425a76326f21b58c61a4e899d0fc5180617",
     "source" : "BACKEND",
@@ -70,7 +70,61 @@
     "sqlState" : "",
     "databaseErrorCode" : 0,
     "firstSeen" : "2026-11-13T07:57:49.903291700Z",
-    "lastSeen" : "2026-11-13T16:12:29.061235400Z",
-    "occurrences" : 8
+    "lastSeen" : "2026-11-17T16:17:09.100137800Z",
+    "occurrences" : 15
+  }, {
+    "fingerprint" : "3e51c197484ef6298e470913a588c126c0c243d5844c59c4b6a17bc05702841f",
+    "source" : "DATABASE",
+    "category" : "PERSISTENCE_FAILURE",
+    "errorCode" : "DataIntegrityViolationException",
+    "exceptionType" : "org.springframework.dao.DataIntegrityViolationException",
+    "sanitizedStack" : "org.springframework.dao.DataIntegrityViolationException\n at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.convertHibernateAccessException\n at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.convertHibernateAccessException\n at org.springframework.orm.jpa.hibernate.HibernateExceptionTranslator.translateExceptionIfPossible\n at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible\n at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.translateExceptionIfPossible\n at org.springframework.dao.support.ChainedPersistenceExceptionTranslator.translateExceptionIfPossible\n at org.springframework.dao.support.DataAccessUtils.translateIfNecessary\n at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke\n at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed\n at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke\n at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed\n at org.springframework.aop.framework.JdkDynamicAopProxy.invoke <- org.hibernate.exception.ConstraintViolationException\n at org.hibernate.dialect.H2Dialect.lambda$buildSQLExceptionConversionDelegate$0\n at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert\n at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert\n at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate\n at org.hibernate.id.insert.GetGeneratedKeysDelegate.performMutation\n at org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched.performNonBatchedOperations\n at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute\n at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute\n at org.hibernate.persister.entity.mutation.InsertCoordinatorStandard.doStaticInserts\n at org.hibernate.persister.entity.mutation.InsertCoordinatorStandard.coordinateInsert\n at org.hibernate.persister.entity.m",
+    "path" : "/{unmatched}",
+    "release" : "",
+    "locale" : "",
+    "correlationId" : "",
+    "severity" : "HIGH",
+    "status" : "OPEN",
+    "sqlState" : "23505",
+    "databaseErrorCode" : 23505,
+    "firstSeen" : "2026-11-17T13:09:33.050868700Z",
+    "lastSeen" : "2026-11-17T13:09:48.209807100Z",
+    "occurrences" : 6
+  }, {
+    "fingerprint" : "3a07a20e6124d43291dddbc031c9f4cd8dfb6ce89df0186b4af08a465a9bb547",
+    "source" : "BACKEND",
+    "category" : "MVC_EXCEPTION",
+    "errorCode" : "ContentPermissionException",
+    "exceptionType" : "com.simbio.core.content.application.ContentPermissionException",
+    "sanitizedStack" : "com.simbio.core.content.application.ContentPermissionException\n at java.util.Optional.orElseThrow\n at com.simbio.core.content.web.ContentAdminController.user\n at com.simbio.core.content.web.ContentAdminController.newPage\n at jdk.internal.reflect.DirectMethodHandleAccessor.invoke\n at java.lang.reflect.Method.invoke\n at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke\n at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest\n at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle\n at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod\n at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal\n at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle\n at org.springframework.web.servlet.DispatcherServlet.doDispatch",
+    "path" : "/gestion/contenido/nuevo",
+    "release" : "",
+    "locale" : "en",
+    "correlationId" : "4e04a078-be75-47fd-8339-840005b04025",
+    "severity" : "HIGH",
+    "status" : "OPEN",
+    "sqlState" : "",
+    "databaseErrorCode" : 0,
+    "firstSeen" : "2026-11-17T13:12:53.376991400Z",
+    "lastSeen" : "2026-11-17T13:12:53.376991400Z",
+    "occurrences" : 1
+  }, {
+    "fingerprint" : "57c720d3442e0d6b940ad0e6380a60402999ca1852bea17a36d26a99aa2cb2cf",
+    "source" : "BACKEND",
+    "category" : "MVC_EXCEPTION",
+    "errorCode" : "ContentNotFoundException",
+    "exceptionType" : "com.simbio.core.content.application.ContentNotFoundException",
+    "sanitizedStack" : "com.simbio.core.content.application.ContentNotFoundException\n at java.util.Optional.orElseThrow\n at com.simbio.core.content.application.ContentService.lambda$resolvePublic$19\n at java.util.Optional.orElseGet\n at com.simbio.core.content.application.ContentService.lambda$resolvePublic$20\n at java.util.Optional.orElseGet\n at com.simbio.core.content.application.ContentService.resolvePublic\n at jdk.internal.reflect.DirectMethodHandleAccessor.invoke\n at java.lang.reflect.Method.invoke\n at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection\n at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint\n at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed\n at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation",
+    "path" : "/{lang:es|en}/{*slug}",
+    "release" : "",
+    "locale" : "en",
+    "correlationId" : "56555661-9f81-465f-9079-20cbf4d43362",
+    "severity" : "LOW",
+    "status" : "OPEN",
+    "sqlState" : "",
+    "databaseErrorCode" : 0,
+    "firstSeen" : "2026-11-17T13:33:26.491004600Z",
+    "lastSeen" : "2026-11-17T16:17:09.193247600Z",
+    "occurrences" : 7
   } ]
 }

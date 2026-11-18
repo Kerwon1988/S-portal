@@ -1,9 +1,11 @@
 module,depends_on
 audit,shared
 config,
+content,audit;files;shared
+customer,audit;identity;legal;shared;staff
 files,shared
-identity,audit;shared
-audit,
-files,
-identity,audit;shared
+identity,audit;notification;shared
+legal,audit;content;shared
+notification,shared
+staff,audit;identity;shared
 shared,

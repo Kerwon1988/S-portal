@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-7xl px-4 py-8" tabindex="-1">
+    <header class="mb-6">
+        <h1 th:if="${role == 'CLIENT'}" class="font-heading text-3xl" th:text="#{customer.directory.clients}">Clients</h1>
+        <h1 th:if="${role == 'STAFF'}" class="font-heading text-3xl" th:text="#{customer.directory.staff}">Staff</h1>
+    </header>
+    <div th:if="${role == 'CLIENT'}" class="mb-4">
+        <a th:href="@{/gestion/clientes/nuevo}" class="inline-flex min-h-11 items-center text-primary underline"
+           th:text="#{customer.invitation.heading}">Invite a customer</a>
+    </div>
+    <form method="get" th:action="${searchPath}" class="mb-6 grid gap-4 rounded-xl border border-border bg-surface p-4 md:grid-cols-3">
+        <div>
+            <label for="directory-search" th:text="#{customer.directory.search}">Search</label>
+            <input id="directory-search" name="q" type="search" maxlength="120" th:value="${q}"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+        </div>
+        <div>
+            <label for="directory-status" th:text="#{customer.directory.status}">Status</label>
+            <select id="directory-status" name="status" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                <option value="" th:selected="${status == ''}" th:text="#{customer.directory.any-status}">Any status</option>
+                <option value="ACTIVE" th:selected="${status == 'ACTIVE'}" th:text="#{customer.directory.active}">Active</option>
+                <option value="INACTIVE" th:selected="${status == 'INACTIVE'}" th:text="#{customer.directory.inactive}">Inactive</option>
+            </select>
+        </div>
+        <div>
+            <label for="directory-locale" th:text="#{customer.directory.locale}">Language</label>
+            <select id="directory-locale" name="locale" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                <option value="" th:selected="${locale == ''}" th:text="#{customer.directory.any-locale}">Any language</option>
+                <option value="es" th:selected="${locale == 'es'}" th:text="#{customer.directory.spanish}">Spanish</option>
+                <option value="en" th:selected="${locale == 'en'}" th:text="#{customer.directory.english}">English</option>
+            </select>
+        </div>
+        <div>
+            <label for="directory-created-from" th:text="#{customer.directory.created-from}">Created from</label>
+            <input id="directory-created-from" name="createdFrom" type="date" th:value="${createdFrom}"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+        </div>
+        <div>
+            <label for="directory-created-to" th:text="#{customer.directory.created-to}">Created to</label>
+            <input id="directory-created-to" name="createdTo" type="date" th:value="${createdTo}"
+                   class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+        </div>
+        <div>
+            <label for="directory-sort" th:text="#{customer.directory.sort}">Sort by</label>
+            <select id="directory-sort" name="sort"
+                    class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                <option value="CREATED_AT" th:selected="${sort.name() == 'CREATED_AT'}"
+                        th:text="#{customer.directory.created}">Created</option>
+                <option value="DISPLAY_NAME" th:selected="${sort.name() == 'DISPLAY_NAME'}"
+                        th:text="#{customer.directory.name}">Name</option>
+                <option value="EMAIL" th:selected="${sort.name() == 'EMAIL'}"
+                        th:text="#{customer.directory.email}">Email</option>
+            </select>
+        </div>
+        <div>
+            <label for="directory-direction" th:text="#{customer.directory.direction}">Sort direction</label>
+            <select id="directory-direction" name="direction"
+                    class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                <option value="DESC" th:selected="${direction.name() == 'DESC'}"
+                        th:text="#{customer.directory.descending}">Descending</option>
+                <option value="ASC" th:selected="${direction.name() == 'ASC'}"
+                        th:text="#{customer.directory.ascending}">Ascending</option>
+            </select>
+        </div>
+        <div class="flex items-end gap-3">
+            <button type="submit" class="min-h-11 rounded bg-primary px-4 text-on-primary"
+                    th:text="#{customer.directory.apply}">Apply filters</button>
+            <a th:href="${searchPath}" class="min-h-11 content-center underline"
+               th:text="#{customer.directory.clear}">Clear</a>
+        </div>
+    </form>
+    <p class="mb-4 text-text-muted" th:text="#{customer.directory.total(${users.totalElements})}">Total users</p>
+    <div th:if="${role == 'CLIENT'}" class="mb-4">
+        <a th:href="@{/gestion/clientes/export.csv(q=${q},status=${status},locale=${locale},createdFrom=${createdFrom},createdTo=${createdTo},sort=${sort},direction=${direction})}"
+           class="underline" th:text="#{customer.directory.export}">Export CSV</a>
+    </div>
+    <div class="overflow-x-auto rounded-xl border border-border">
+        <table class="w-full border-collapse text-left">
+            <caption class="sr-only" th:text="#{customer.directory.caption}">User directory</caption>
+            <thead>
+            <tr>
+                <th scope="col" class="border-b border-border p-3" th:text="#{customer.directory.name}">Name</th>
+                <th scope="col" class="border-b border-border p-3" th:text="#{customer.directory.email}">Email</th>
+                <th scope="col" class="border-b border-border p-3" th:text="#{customer.directory.status}">Status</th>
+                <th scope="col" class="border-b border-border p-3" th:text="#{customer.directory.locale}">Language</th>
+                <th scope="col" class="border-b border-border p-3" th:text="#{customer.directory.created}">Created</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="managedUser : ${users.content}">
+                <td class="border-b border-border p-3">
+                    <a class="underline" th:href="@{/gestion/usuarios/{id}(id=${managedUser.identity.publicId})}"
+                       th:text="${managedUser.identity.displayName}">User</a>
+                </td>
+                <td class="border-b border-border p-3" th:text="${managedUser.identity.email}">user@example.test</td>
+                <td class="border-b border-border p-3" th:text="${managedUser.identity.status}">ACTIVE</td>
+                <td class="border-b border-border p-3" th:text="${managedUser.identity.locale}">es</td>
+                <td class="border-b border-border p-3" th:text="${managedUser.identity.createdAt}">date</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(users.content)}">
+                <td colspan="5" class="p-3 text-text-muted" th:text="#{customer.directory.empty}">No users found</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav class="mt-6 flex items-center justify-between" th:aria-label="#{customer.directory.pagination}">
+        <a th:if="${hasPrevious && role == 'CLIENT'}" th:href="@{/gestion/clientes(q=${q},status=${status},locale=${locale},createdFrom=${createdFrom},createdTo=${createdTo},sort=${sort},direction=${direction},page=${page - 1})}"
+           class="min-h-11 content-center underline" th:text="#{customer.directory.previous}">Previous</a>
+        <a th:if="${hasPrevious && role == 'STAFF'}" th:href="@{/gestion/trabajadores(q=${q},status=${status},locale=${locale},createdFrom=${createdFrom},createdTo=${createdTo},sort=${sort},direction=${direction},page=${page - 1})}"
+           class="min-h-11 content-center underline" th:text="#{customer.directory.previous}">Previous</a>
+        <span th:unless="${hasPrevious}"></span>
+        <span th:text="#{customer.directory.page(${page + 1})}">Page 1</span>
+        <a th:if="${hasNext && role == 'CLIENT'}" th:href="@{/gestion/clientes(q=${q},status=${status},locale=${locale},createdFrom=${createdFrom},createdTo=${createdTo},sort=${sort},direction=${direction},page=${page + 1})}"
+           class="min-h-11 content-center underline" th:text="#{customer.directory.next}">Next</a>
+        <a th:if="${hasNext && role == 'STAFF'}" th:href="@{/gestion/trabajadores(q=${q},status=${status},locale=${locale},createdFrom=${createdFrom},createdTo=${createdTo},sort=${sort},direction=${direction},page=${page + 1})}"
+           class="min-h-11 content-center underline" th:text="#{customer.directory.next}">Next</a>
+        <span th:unless="${hasNext}"></span>
+    </nav>
+</main>
+</html>

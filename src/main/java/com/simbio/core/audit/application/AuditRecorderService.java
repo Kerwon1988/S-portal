@@ -2,18 +2,22 @@ package com.simbio.core.audit.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.simbio.core.audit.api.AuditRecord;
 import com.simbio.core.audit.api.AuditRecorder;
 import com.simbio.core.audit.domain.AuditEntryEntity;
+import com.simbio.core.shared.spi.AuditEvent;
+import com.simbio.core.shared.spi.AuditEventRecorder;
 
 @Service
-public class AuditRecorderService implements AuditRecorder {
+public class AuditRecorderService implements AuditRecorder, AuditEventRecorder {
 
     private static final Pattern CODE = Pattern.compile("[A-Z0-9][A-Z0-9_.-]{0,63}");
     private static final Pattern EMAIL = Pattern.compile("(?i)[\\w.+-]+@[\\w.-]+\\.[a-z]{2,}");
@@ -22,6 +26,7 @@ public class AuditRecorderService implements AuditRecorder {
     private final AuditEntryStore store;
     private final Clock clock;
 
+    @Autowired
     public AuditRecorderService(AuditEntryStore store) {
         this(store, Clock.systemUTC());
     }
@@ -43,6 +48,17 @@ public class AuditRecorderService implements AuditRecorder {
                 safeCorrelationId(record.correlationId())));
     }
 
+    @Override
+    public void record(AuditEvent event) {
+        Objects.requireNonNull(event, "event must not be null");
+        record(new AuditRecord(
+                event.actorId(),
+                event.actionCode(),
+                event.entityType(),
+                event.entityPublicId(),
+                event.correlationId()));
+    }
+
     public AuditPage page(AuditFilter filter, int page, int size) {
         var pageable = org.springframework.data.domain.PageRequest.of(page, size,
                 org.springframework.data.domain.Sort.by("occurredAt").descending());
@@ -59,7 +75,8 @@ public class AuditRecorderService implements AuditRecorder {
     }
 
     public long purgeExpired(Instant now) {
-        return store.deleteBefore(Objects.requireNonNull(now).minus(java.time.Duration.ofDays(365L * 3)));
+        Instant cutoff = Objects.requireNonNull(now).atZone(ZoneOffset.UTC).minusYears(3).toInstant();
+        return store.deleteBefore(cutoff);
     }
 
     private static String safeCode(String value) {

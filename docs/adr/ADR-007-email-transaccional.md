@@ -1,6 +1,6 @@
 # ADR-007 — Email transaccional
 
-- Estado: Borrador
+- Estado: Borrador; implementación parcial en desarrollo, pendiente de validación
 - Fecha: 2026-11-10
 
 ## Contexto
@@ -17,6 +17,9 @@ Publicar puerto `EmailSender` en `notification.api`, enviar por SMTP vía adapta
 ## Consecuencias
 Outbox garantiza reintento eventual, no exactly-once extremo a extremo; emails deben tolerar duplicado raro y usar Message-ID estable. Logs solo métricas/correlation ID, no destinatario ni cuerpo.
 
+El código NTF-001..003 implementa outbox con payload cifrado, adapter SMTP, plantillas HTML/texto plano ES/EN, leases, reintentos y health/métricas. La configuración de producción exige credenciales y remitente externos. No se validaron compilación/tests, Mailpit, proveedor/región, entregabilidad ni retención legal productiva. La limpieza de payload y los reintentos no eliminan la posibilidad de duplicado tras aceptación SMTP y fallo antes de confirmar el envío.
+
 ## Verificaciones pendientes
-- NTF-001..003: outbox, SMTP/plantillas y worker.
+- NTF-001..003: implementación añadida; compilación y tests aún pendientes por fallo TLS al resolver dependencias Maven.
 - NTF-004/005, HRD-009: notificaciones de dominio, preferencias y DNS/entregabilidad.
+- Aprobación de proveedor/región, credenciales, SPF/DKIM/DMARC y política de retención productiva.

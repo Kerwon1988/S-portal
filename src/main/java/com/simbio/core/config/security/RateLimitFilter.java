@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -87,7 +88,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private void reject(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Metrics.counter("portal.security.rate-limit.rejected").increment();
-        response.setStatus(HttpServletResponse.SC_TOO_MANY_REQUESTS);
+        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setHeader("Retry-After", Long.toString(Math.max(1, properties.window().toSeconds())));
         response.setContentType("text/plain;charset=UTF-8");
         response.getWriter().write(messageSource.getMessage("security.rate-limit", null,

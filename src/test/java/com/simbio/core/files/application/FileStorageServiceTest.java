@@ -71,6 +71,20 @@ class FileStorageServiceTest {
                 .isInstanceOf(FileNotFoundException.class);
     }
 
+    @Test
+    void keepsFileQuarantinedWhenScannerReturnsNoResult() {
+        byte[] image = png();
+        InMemoryMetadataStore metadata = new InMemoryMetadataStore();
+        LocalFileStorage objectStore = new LocalFileStorage(temporaryDirectory.resolve("private-files"));
+        FileStorageService service = service(objectStore, metadata, path -> null);
+
+        StoredFile stored = service.store(new ByteArrayInputStream(image), "logo.png", image.length, FilePurpose.IMAGE);
+
+        assertThat(stored.scanState()).isEqualTo(ScanState.QUARANTINED);
+        assertThatThrownBy(() -> service.open(stored.publicId(), ignored -> true))
+                .isInstanceOf(FileNotFoundException.class);
+    }
+
     private static FileStorageService service(
             FileObjectStore objectStore, FileMetadataStore metadata, MalwareScanner scanner) {
         return new FileStorageService(objectStore, metadata, new FileValidationService(), scanner);

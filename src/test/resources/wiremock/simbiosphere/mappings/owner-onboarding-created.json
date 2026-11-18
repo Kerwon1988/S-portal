@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/platform/v1/owner-onboardings",
+    "headers": {
+      "X-Platform-Key-Id": { "equalTo": "portal-contract-test" },
+      "X-Platform-Timestamp": { "matches": "^[0-9]{10}$" },
+      "X-Platform-Signature": { "matches": "^v1=[a-f0-9]{64}$" },
+      "Idempotency-Key": { "matches": "^[A-Za-z0-9._:-]{16,128}$" }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store"
+    },
+    "jsonBody": {
+      "externalAccountId": "portal-account-contract-1",
+      "customerAccountId": 1001,
+      "tenantId": 2001,
+      "tenantSlug": "contract-shop",
+      "modulesApplied": [],
+      "status": "PENDING_ACTIVATION"
+    }
+  }
+}

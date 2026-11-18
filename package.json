@@ -6,7 +6,8 @@
     "build": "npm run css:build && node scripts/fingerprint-assets.mjs",
     "css:build": "tailwindcss -i src/main/frontend/css/app.css -o target/frontend/app.css --minify",
     "e2e": "playwright test",
-    "e2e:install": "playwright install chromium"
+    "e2e:install": "playwright install chromium",
+    "test:privacy": "node --test scripts/test-error-reporter.test.mjs"
   },
   "dependencies": {
     "@alpinejs/csp": "3.17.5",

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-4xl px-4 py-10" tabindex="-1">
+    <h1 class="mb-6 font-heading text-3xl" th:text="#{content.history.title}">Publication history</h1>
+    <ol class="space-y-3">
+        <li th:each="version : ${versions}" class="rounded border border-border bg-surface p-4">
+            <p><span th:text="#{content.history.version}">Version</span>
+                <span th:text="${version.version}">1</span></p>
+            <time th:datetime="${version.createdAt}" th:text="${version.createdAt}">Date</time>
+        </li>
+    </ol>
+    <a class="mt-6 inline-flex min-h-11 items-center rounded border border-border px-4"
+       th:href="@{/gestion/contenido/{id}(id=${pagePublicId})}" th:text="#{content.action.back}">Back</a>
+</main>
+</html>

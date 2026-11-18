@@ -6,13 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -66,7 +66,7 @@ class IdentityLoginMvcTest {
                         .param("password", "synthetic-password-4")
                         .param("continue", "/gestion/auditoria"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/gestion/auditoria"));
+                .andExpect(redirectedUrl("/cuenta/seguridad/mfa/enrolar"));
 
         mockMvc.perform(post("/acceso")
                         .with(csrf())
@@ -74,7 +74,26 @@ class IdentityLoginMvcTest {
                         .param("password", "synthetic-password-4")
                         .param("continue", "//external.example"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/gestion/auditoria"));
+                .andExpect(redirectedUrl("/cuenta/seguridad/mfa/enrolar"));
+
+        mockMvc.perform(post("/acceso")
+                        .with(csrf())
+                        .param("username", "admin@example.test")
+                        .param("password", "synthetic-password-4"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/cuenta/seguridad/mfa/enrolar"));
+
+        var authenticatedResult = mockMvc.perform(post("/acceso")
+                        .with(csrf())
+                        .param("username", "ADMIN@EXAMPLE.TEST")
+                        .param("password", "synthetic-password-4"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+        MockHttpSession authenticatedSession =
+                (MockHttpSession) authenticatedResult.getRequest().getSession(false);
+        mockMvc.perform(post("/logout").with(csrf()).session(authenticatedSession))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/acceso?logout"));
 
         org.assertj.core.api.Assertions.assertThat(
                 passwordEncoder.encode("synthetic-password-4"))

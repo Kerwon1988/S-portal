@@ -10,8 +10,10 @@ import com.simbio.core.shared.spi.ErrorReporter;
 import com.simbio.core.shared.spi.ErrorReporter.ErrorReport;
 import com.simbio.core.shared.spi.ErrorReporter.Source;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.server.ResponseStatusException;
 
 class ErrorTrackingExceptionResolverTest {
 
@@ -64,6 +66,20 @@ class ErrorTrackingExceptionResolverTest {
                 new MockHttpServletResponse(),
                 null,
                 new IllegalArgumentException("invalid telemetry payload"));
+
+        assertThat(reports).isEmpty();
+    }
+
+    @Test
+    void doesNotTrackExpectedClientErrors() {
+        List<ErrorReport> reports = new ArrayList<>();
+        ErrorTrackingExceptionResolver resolver = new ErrorTrackingExceptionResolver(reports::add);
+
+        resolver.resolveException(
+                new MockHttpServletRequest(),
+                new MockHttpServletResponse(),
+                null,
+                new ResponseStatusException(HttpStatus.BAD_REQUEST));
 
         assertThat(reports).isEmpty();
     }

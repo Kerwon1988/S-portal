@@ -1,6 +1,17 @@
 spring:
   application:
     name: portal
+  mail:
+    host: ${PORTAL_SMTP_HOST:localhost}
+    port: ${PORTAL_SMTP_PORT:1026}
+    username: ${PORTAL_SMTP_USERNAME:}
+    password: ${PORTAL_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${PORTAL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${PORTAL_SMTP_STARTTLS:false}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
 server:
   port: 8090
@@ -46,10 +57,20 @@ portal:
       ip-capacity: 30
       email-capacity: 5
       window: 1m
-  files:
-    storage-root: ${PORTAL_FILE_STORAGE_ROOT:${java.io.tmpdir}/s-portal-files}
-    clamav:
-      enabled: ${PORTAL_CLAMAV_ENABLED:true}
-      host: ${PORTAL_CLAMAV_HOST:localhost}
-      port: ${PORTAL_CLAMAV_PORT:3310}
-      timeout: ${PORTAL_CLAMAV_TIMEOUT:5000}
+    anti-bot:
+      proof-difficulty: 16
+      ttl-seconds: 120
+  encryption:
+    current-key-id: ${PORTAL_ENCRYPTION_CURRENT_KEY_ID:}
+    keys: ${PORTAL_ENCRYPTION_KEYS:}
+  notification:
+    from-address: ${PORTAL_SMTP_FROM:portal@localhost}
+    retention: ${PORTAL_NOTIFICATION_RETENTION:30d}
+    maximum-attempts: 6
+    initial-backoff: 30s
+    maximum-backoff: 1h
+    claim-lease: 2m
+    poll-interval: 5s
+    purge-cron: "0 0 3 * * *"
+    worker:
+      enabled: true

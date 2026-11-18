@@ -1,6 +1,6 @@
 # ADR-009 — Cifrado de PII
 
-- Estado: Borrador
+- Estado: Borrador; cifrado de payload/token/MFA implementado parcialmente, pendiente de validación
 - Fecha: 2026-11-10
 
 ## Contexto
@@ -17,8 +17,10 @@ Cifrado por columna AES-256-GCM con nonce aleatorio y key versioning desde gesto
 ## Consecuencias
 Rotación/recuperación de claves se prueba; backups cifrados y restauración usan versión de clave disponible. Logs y métricas nunca incluyen PII. La base legal, campos y retenciones dependen de responsable legal.
 
+`shared.spi.SensitiveDataProtector` tiene implementación AES-256-GCM con nonce aleatorio y key ID externo; se usa para payload de outbox, secreto TOTP y material anti-bot. Los tokens de un solo uso y códigos de recuperación se guardan como hashes. El índice de invitaciones `identity.one_time_token.email_key` usa HMAC-SHA-256 con clave derivada y separación por propósito; no es un SHA-256 sin clave del correo para registros nuevos. La revocación consulta fingerprints generados con todas las claves del key ring configurado y el hash heredado durante la transición, por lo que las claves anteriores deben conservarse hasta que hayan caducado o se hayan revocado las invitaciones asociadas. El hash heredado solo se consulta para revocar invitaciones previas; su eliminación persistente depende de la política y el mecanismo de purga de tokens, aún pendientes. Los tests unitarios de cifrado/fingerprint se añadieron, pero no se ejecutaron por el bloqueo TLS de Maven. No se ha validado rotación, recuperación de claves, almacenamiento real en gestor de secretos ni política de retención aprobada.
+
 ## Verificaciones pendientes
-- FND-001: crypto/Argon2/BCrypt adapter y cifrado con Boot 4.
+- FND-001: crypto/Argon2/BCrypt adapter y cifrado con Boot 4 (la implementación Prompt 09 sigue sin compilación/tests ejecutados).
 - ADR-006/HRD-013: revisar edición, TDE, backups y licencia SQL Server con fuentes oficiales; no se requiere una prueba MSSQL para los gates de desarrollo.
 - HRD-008/LGL-003: RAT, campos/retención y aprobación legal.
-- HRD-010: gestor, key versioning y rotación.
+- HRD-010: gestor, key versioning y rotación operacional.

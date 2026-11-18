@@ -71,7 +71,7 @@ Fuente de verdad de IDs, dependencias y estimaciones. El detalle de cada tarea (
 | FND-001 | F0 | Spike de stack y verificación de versiones (cierra ADR-001) | build | — | RF-GOV-01, RNF-DB-01 | M |
 | FND-002 | F0 | Esqueleto Maven (Boot estable, Java 21), paquete base y wrapper | build | FND-001 | RNF-OPS-03 | S |
 | FND-003 | F0 | Kernel `shared` y SPIs (CurrentUser, RecipientDirectory, PersonalDataContributor, NavContribution) | shared | FND-002 | RF-GOV-01 | M |
-| FND-004 | F0 | Gates modulares: Modulith verify + reglas ArchUnit de capas | build | FND-003 | RF-GOV-02, RNF-TST-01 | M |
+| FND-004 | F0 | Gates modulares: Spring Modulith + reglas ArchUnit de capas | build | FND-003 | RF-GOV-02, RNF-TST-01 | M |
 | FND-005 | F0 | docker-compose dev (SQL Server 2022, Mailpit, ClamAV) y `.env.example` | infra | FND-002 | RNF-DB-01, RNF-OPS-03 | S |
 | FND-006 | F0 | Flyway + H2 para pruebas + convención de migraciones por módulo | build | FND-002, FND-005 | RNF-DB-01, RNF-DB-02, RNF-DB-03 | M |
 | FND-007 | F0 | Perfiles dev/test/prod, propiedades tipadas y secretos por entorno | config | FND-002 | RNF-SEC-09, RNF-OPS-03 | S |

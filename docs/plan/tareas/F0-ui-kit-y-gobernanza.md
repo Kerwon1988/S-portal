@@ -24,7 +24,7 @@ Implementación iniciada el 2026-11-11. No se declaran tareas completadas hasta 
 | GOV-005 | VALIDADO | `DocumentationArchitectureTest` (3 tests) pasó: inventario↔Modulith, rechazo de módulo no inventariado y generación del artefacto Documenter. |
 | GOV-006 | VALIDADO | `AdrDocumentRulesTest` (4) pasa contra todos los ADR y comprueba metadatos, plantilla, referencias y enlaces. |
 
-El perfil Maven `frontend-build` no se ejecutó localmente porque ejecuta `npm ci`; esta integración permanece disponible para CI, pero no es un criterio de cierre de PROMPT 03. `npm run build`, `FrontendAssetPipelineTest` (5) y el `mvn clean verify -Plocal-h2` previamente ejecutado pasan; el `verify` completo registró 73 tests, 0 fallos/errores y JaCoCo aprobado. No hay bloqueo de licencia tipográfica: se usa `system-ui, sans-serif`.
+El perfil Maven `frontend-build` no se ejecutó localmente porque ejecuta `npm ci`; esta integración permanece disponible para CI, pero no es un criterio de cierre de PROMPT 03. `npm run build`, `FrontendAssetPipelineTest` (5) y la ejecución Maven completa previamente registrada pasan; se registraron 73 tests, 0 fallos/errores y JaCoCo aprobado. No hay bloqueo de licencia tipográfica: se usa `system-ui, sans-serif`.
 
 ### UIK-002 — Tokens de tema claro/oscuro, mapeo Tailwind y test de contraste
 - Fase / épica / módulo owner: F0 / UIK / config
@@ -178,7 +178,7 @@ El perfil Maven `frontend-build` no se ejecutó localmente porque ejecuta `npm c
 - Tests: TC-GOV-001: UT (validador/checklist documental detecta reglas P01–P12 incompletas).
 - Documentación a actualizar: DIARIO + INVENTARIO; enlazar desde README
 - Estimación: M (≤ 1 d)
-- Riesgos: divergencia con `ApplicationModules.verify()`; sincronizar reglas con FND-004.
+- Riesgos: divergencia con las pruebas de arquitectura Spring Modulith; sincronizar reglas con FND-004.
 
 ### GOV-002 — `.github/copilot-instructions.md`
 - Fase / épica / módulo owner: F0 / GOV / docs

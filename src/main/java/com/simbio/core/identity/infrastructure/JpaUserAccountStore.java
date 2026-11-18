@@ -2,10 +2,13 @@ package com.simbio.core.identity.infrastructure;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +49,24 @@ class JpaUserAccountStore implements UserAccountStore {
 
     @Override
     @Transactional
+    public UserAccountEntity createUser(String normalizedEmail, String passwordHash, String locale,
+            String roleCode, String displayName) {
+        RoleEntity role = findRole(roleCode);
+        return users.save(new UserAccountEntity(UUID.randomUUID(), normalizeEmail(normalizedEmail),
+                passwordHash, locale, Instant.now(Clock.systemUTC()), role, displayName));
+    }
+
+    @Override
+    @Transactional
+    public UserAccountEntity createUnverifiedUser(String normalizedEmail, String passwordHash, String locale,
+            String roleCode, String displayName) {
+        RoleEntity role = findRole(roleCode);
+        return users.save(new UserAccountEntity(UUID.randomUUID(), normalizeEmail(normalizedEmail),
+                passwordHash, locale, Instant.now(Clock.systemUTC()), role, displayName, false));
+    }
+
+    @Override
+    @Transactional
     public UserAccountEntity save(UserAccountEntity account) {
         return users.save(account);
     }
@@ -60,6 +81,25 @@ class JpaUserAccountStore implements UserAccountStore {
     @Transactional(readOnly = true)
     public RoleEntity findRole(String code) {
         return roles.findById(code).orElseThrow(() -> new IllegalStateException("Required role is not seeded"));
+    }
+
+    @Override
+    @Transactional
+    public List<UserAccountEntity> lockActiveAdmins() {
+        return users.lockActiveAdmins();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserAccountEntity> search(
+            String search,
+            String role,
+            String status,
+            String locale,
+            Instant createdFrom,
+            Instant createdBefore,
+            Pageable pageable) {
+        return users.search(search, role, status, locale, createdFrom, createdBefore, pageable);
     }
 
     private static String normalizeEmail(String email) {

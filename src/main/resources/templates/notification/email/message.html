@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es" th:lang="${#locale.language}">
+<body style="margin:0;background:#f4f6f8;color:#18212b;font-family:Arial,sans-serif">
+<main style="max-width:600px;margin:0 auto;padding:24px">
+    <article style="border:1px solid #d5dbe1;border-radius:12px;background:#fff;padding:24px">
+        <p style="font-size:14px;color:#465564" th:text="${brand}">Simbio</p>
+        <h1 style="font-size:24px" th:text="${subject}">Notification</h1>
+        <p th:text="${body}">You received a notification.</p>
+        <p th:if="${!#strings.isEmpty(actionUrl)}">
+            <a th:href="${actionUrl}" style="display:inline-block;padding:12px 18px;border-radius:6px;background:#174ea6;color:#fff;text-decoration:none"
+               th:text="${actionLabel}">Continue</a>
+        </p>
+        <p th:if="${!#strings.isEmpty(actionUrl)}" style="overflow-wrap:anywhere">
+            <span th:text="${fallback}">If the button does not work, copy this link:</span>
+            <br><a th:href="${actionUrl}" th:text="${actionUrl}">link</a>
+        </p>
+    </article>
+</main>
+</body>
+</html>

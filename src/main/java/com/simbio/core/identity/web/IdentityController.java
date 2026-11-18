@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class IdentityController {
 
     @GetMapping("/acceso")
-    public String login(@RequestParam(name = "continue", required = false) String continueTo, Model model) {
+    public String login(@RequestParam(name = "continue", required = false) String continueTo,
+            @RequestParam(name = "error", required = false) String error, Model model) {
         model.addAttribute("continueTo", continueTo);
+        model.addAttribute("loginFailed", error != null);
         return "identity/login";
     }
 }

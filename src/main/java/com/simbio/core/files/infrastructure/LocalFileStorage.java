@@ -51,7 +51,7 @@ public final class LocalFileStorage implements FileObjectStore {
     @Override
     public Path writeQuarantined(InputStream content, String storageKey) throws IOException {
         Objects.requireNonNull(content, "content must not be null");
-        Path target = resolve(storageKey);
+        Path target = resolve(quarantineDirectory, storageKey);
         Path temporary = Files.createTempFile(quarantineDirectory, ".upload-", ".tmp");
         try {
             Files.copy(content, temporary, StandardCopyOption.REPLACE_EXISTING);
