@@ -8,6 +8,8 @@
 
 **Regla de Maven:** los agentes solo pueden invocar Maven para compilar (`compile`), ejecutar pruebas (`test`) o arrancar la aplicación (`spring-boot:run`). Usa JDK 21 y las dependencias locales proporcionadas por el usuario. No ejecutes metas de descarga, inspección o gestión de dependencias/caché, metas directas de plugins, `clean`, `install` u otros objetivos. No investigues ni comuniques registros de origen/metadata de la caché local, ni solicites volver a descargar dependencias. Si una operación básica no llega a ejecutarse, registra únicamente que compilación/pruebas/arranque no se ejecutaron y continúa con el trabajo independiente. No omitas ni desactives gates.
 
+**Política transversal de implementación y pruebas:** desarrolla el código, configuración y tests requeridos aunque el servicio/herramienta de validación no esté disponible en esta máquina. Ejecuta todos los tests y gates que sí estén disponibles; si uno falla, no avances a tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, registrando caso, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarlo en otra máquina habilitada como `POSTPONED` (o `PREPARADO_NO_EJECUTADO` para PRE), nunca como `PASS`. La ausencia no bloquea implementar ni continuar trabajo que no dependa de ese resultado, pero el ID queda parcial/abierto hasta completar cualquier validación obligatoria. La compatibilidad SQL Server y las comprobaciones externas siguen sujetas a sus gates específicos.
+
 **Estrategia de pruebas:** H2 es el único motor de pruebas automatizadas; no se requieren Docker, SQL Server, Testcontainers ni evidencia de VPS para cerrar tareas o gates de desarrollo. Se mantiene un único árbol Flyway dirigido a SQL Server para producción, pero sus migraciones y la compatibilidad real con ese motor quedan sin verificar y no se declaran certificadas.
 
 ## Cómo usar los prompts
@@ -48,6 +50,8 @@
 ## PROMPT 00 — Coordinador de ejecución y paralelismo
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Actúa como coordinador técnico principal de S-portal. Trabajas en el repositorio S-portal abierto en el workspace; no des por supuesto que una tarea previa está hecha solo porque exista en el plan.
 
 CONTEXTO AUTÓNOMO DEL PRODUCTO
@@ -68,6 +72,8 @@ Entrega una propuesta de oleadas con: IDs listos según DAG, prompt/ficha corres
 ## PROMPT 01 — Contratos UI↔backend y reparto de ownership
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Actúa como arquitecto/a de aplicación y diseñador/a de contratos de S-portal. Trabajas en el repositorio S-portal; este encargo es de diseño/documentación previo o simultáneo a la implementación, no una autorización para cambiar código de producción.
 
 CONTEXTO AUTÓNOMO DEL PRODUCTO
@@ -88,6 +94,8 @@ Valida enlaces/IDs y comprueba que cada operación corresponde a requisitos y ta
 ## PROMPT 02 — F0 Fundaciones (FND)
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa exclusivamente las tareas asignadas de la ficha `docs/plan/tareas/F0-fundaciones.md`: FND-001..FND-010. Trabaja en S-portal y no modifiques el repositorio DEMO.
 
 CONTEXTO AUTÓNOMO
@@ -108,6 +116,8 @@ Para cada ID: implementa el criterio de aceptación literal, añade el test indi
 ## PROMPT 03 — F0 UI Kit y gobernanza (UIK/GOV)
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa exclusivamente UIK-002..UIK-009 y GOV-001..GOV-006 de `docs/plan/tareas/F0-ui-kit-y-gobernanza.md`, sujeto a sus dependencias del roadmap. No cambies código del repositorio DEMO.
 
 CONTEXTO AUTÓNOMO
@@ -127,6 +137,8 @@ Añade tests y claves bilingües de tu alcance; ejecuta los validadores aplicabl
 **Estado en este workspace: COMPLETADO el 2026-11-13.** ERR-001..003 y sus criterios de desarrollo quedaron validados localmente. Las comprobaciones contra SQL Server real, despliegue multi-réplica, retención productiva y revisión legal no son gates para cerrar este prompt; sus decisiones siguen pendientes antes de producción.
 
 ```text
+Si este encargo incluye implementación, desarrolla el código/configuración y prepara los tests requeridos aunque el servicio o herramienta no esté disponible. Ejecuta todos los tests/gates que sí puedan correrse aquí; un fallo disponible bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente: registra caso, herramienta/entorno, motivo y evidencia pendiente como `POSTPONED` (o `PREPARADO_NO_EJECUTADO` para PRE), nunca `PASS`. La ausencia no bloquea implementar ni trabajo que no dependa de ese resultado, pero el ID queda parcial/abierto hasta completar cualquier validación obligatoria.
+
 Implementa exclusivamente ERR-001, ERR-002 y ERR-003 de `docs/plan/tareas/F0-error-inventory.md`, respetando dependencias exactas. No modifiques DEMO ni reemplaces el tracker con CustomErrorController.
 
 CONTEXTO AUTÓNOMO
@@ -144,6 +156,8 @@ Prueba los criterios `TC-ERR-001..003`: UT de huella/redacción; IT JSON/restart
 ## PROMPT 05 — F1 Auditoría, ficheros e identidad núcleo
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa exclusivamente AUD-001, AUD-002, FIL-001, FIL-002, FIL-003, FIL-004, IAM-001, IAM-002, IAM-004, IAM-005, IAM-012 e IAM-014 de `docs/plan/tareas/F1-audit-files-identidad.md`, solo cuando las dependencias del DAG estén satisfechas.
 
 CONTEXTO AUTÓNOMO
@@ -167,6 +181,8 @@ Actualiza README/INVENTARIO/DIARIO según corresponda. Informa IDs, permisos y m
 ## PROMPT 06 — F1 CMS bilingüe (CMS-001..013)
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa exclusivamente CMS-001..CMS-013 de `docs/plan/tareas/F1-cms.md`, respetando dependencias e integrando con los contratos del Prompt 01. No cambies DEMO.
 
 CONTEXTO AUTÓNOMO
@@ -184,6 +200,8 @@ Prueba por ID (`TC-CMS-001..013`), incluidos control de permisos, XSS/sanitizaci
 ## PROMPT 07 — F1 Visor ADMIN de errores (ERR-004)
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa exclusivamente ERR-004 de `docs/plan/tareas/F1-error-inventory.md`. Conserva los prerrequisitos ERR-001..003, IAM-012 y UIK-008 tal como están declarados en el DAG; no añadas una fase separada para volver a verificar esas dependencias. Los criterios y pruebas propios de ERR-004 sí son obligatorios para declarar su cierre.
 
 CONTEXTO AUTÓNOMO
@@ -199,6 +217,8 @@ Integra con el servicio/DTO existentes; no dupliques registrador ni cambies form
 ## PROMPT 08 — F1 Web pública, SEO y contrato inicial SimbioSphere
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa WEB-001..WEB-007, SEO-001..SEO-002 y SIM-002 de `docs/plan/tareas/F1-web-seo-contrato.md`, respetando cada dependencia. Si el Prompt 01 identificó contratos UI↔backend ausentes, resuélvelos antes de crear rutas.
 
 CONTEXTO AUTÓNOMO
@@ -225,7 +245,11 @@ Ejecuta TC de cada ID cuando el comando de test esté disponible, además de pru
 
 ## PROMPT 09 — F2 Notificaciones e identidad extendida
 
+**Estado de este workspace (2026-11-19): COMPLETADO EN LOCAL.** El último `verify -Plocal-h2` completo pasó con 321 tests Surefire, 29 Failsafe aprobados, `SmtpMailpitIT` omitido por opt-in y JaCoCo aprobado. Un intento Maven posterior se detuvo antes de compilar por el POM no disponible `org.sonatype.oss:oss-parent:7`; no ejecutó tests ni invalida el resultado anterior. La prueba real SMTP/Mailpit y la interoperabilidad con el widget npm oficial permanecen `POSTPONED`; no se consideran aprobadas ni impiden registrar el cierre del trabajo local.
+
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. Registra por separado el estado de desarrollo local (`COMPLETADO_LOCAL` cuando el código y todos los gates disponibles pasan) y el estado global del ID; una validación obligatoria pospuesta mantiene abierto el ID global, pero no bloquea declarar completo el trabajo local.
+
 Implementa NTF-001..NTF-003 e IAM-003/IAM-006..IAM-011/IAM-013 de `docs/plan/tareas/F2-notificaciones-identidad.md`, respetando las dependencias del roadmap. No modifiques DEMO.
 
 CONTEXTO AUTÓNOMO
@@ -241,6 +265,8 @@ Comprueba las dependencias efectivas, incluidas las piezas núcleo F1; no implem
 ## PROMPT 10 — F2 Legal y clientes
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa exclusivamente LGL-001..LGL-003 y CUS-001..CUS-004 de `docs/plan/tareas/F2-legal-clientes.md`, conforme al DAG.
 
 CONTEXTO AUTÓNOMO
@@ -256,6 +282,8 @@ Implementa tareas con migraciones SQL Server únicas, constraints/índices, test
 ## PROMPT 11 — F2 Trabajadores, gestión de usuarios y E2E
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa STF-001..STF-002, USR-001..USR-004 y E2E-001 de `docs/plan/tareas/F2-staff-gestion-usuarios.md`, solo cuando estén satisfechas las dependencias.
 
 CONTEXTO AUTÓNOMO
@@ -271,6 +299,8 @@ Implementa alta/gestión de trabajador, gestión de usuarios y E2E de registro/i
 ## PROMPT 12 — F3 Modelo, estados, cliente y solicitudes
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa MSG-001..MSG-002 y REQ-001..REQ-011 de `docs/plan/tareas/F3-modelo-estados-cliente.md`, respetando las dependencias y sin adelantar F4.
 
 CONTEXTO AUTÓNOMO
@@ -286,6 +316,8 @@ Implementa modelo, reglas/transiciones, creación/listado/detalle/adjuntos si es
 ## PROMPT 13 — F3 Presupuestos y portal de empleados
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa QUO-001..QUO-004, EMP-001..EMP-007 y E2E-002 de `docs/plan/tareas/F3-presupuestos-empleados.md`, solo tras las dependencias de F3.
 
 CONTEXTO AUTÓNOMO
@@ -301,6 +333,8 @@ Implementa vistas HTMX por fragmentos con contrato UI aprobado, assignment 1..N,
 ## PROMPT 14 — F4 Contacto, bandeja y notificaciones de dominio
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa MSG-003..MSG-013, NTF-004..NTF-005 y E2E-003 de `docs/plan/tareas/F4-contacto-bandeja.md`, conforme a dependencias.
 
 CONTEXTO AUTÓNOMO
@@ -316,6 +350,8 @@ Implementa contacto, canales configurables sin inventar número, bandeja, respue
 ## PROMPT 15 — F5 Integración Portal↔SimbioSphere
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa SIM-001 y SIM-003..SIM-014 más E2E-004 de `docs/plan/tareas/F5-simbiosphere.md`. SIM-002 es contrato previo de F1 y debe estar aprobado; comprueba el DAG antes de iniciar. Trabaja solo en S-portal.
 
 CONTEXTO AUTÓNOMO
@@ -333,6 +369,8 @@ Entrega evidencia separando portal local (WireMock) de entorno DEMO real. Si DEM
 ## PROMPT 16 — F6 Endurecimiento y salida
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Implementa HRD-001..HRD-014 de `docs/plan/tareas/F6-endurecimiento.md`, tras integrar F0–F5 y sin declarar PRE probado si no existe acceso autorizado.
 
 CONTEXTO AUTÓNOMO
@@ -350,6 +388,8 @@ Corrige hallazgos solo dentro de IDs asignados y con cambios pequeños; no silen
 ## PROMPT 17 — Pista DEMO (solo con autorización y workspace DEMO)
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Este prompt SOLO se ejecuta en el repositorio `DEMO-orders-thymeleaf`, nunca desde el workspace S-portal, y requiere autorización explícita para cambiar DEMO. Si el workspace no es el repo DEMO aprobado o no existe permiso, detente sin editar.
 
 CONTEXTO AUTÓNOMO
@@ -364,13 +404,15 @@ Usa solo datos sintéticos, tests SQL Server requeridos por el repo DEMO y segur
 ## PROMPT 18 — Gate final: checklist LOCAL y preparación para PRE (incluida SQL)
 
 ```text
+PRUEBAS Y HERRAMIENTAS: si este encargo incluye implementación, crea el código/configuración y los tests aunque falte la herramienta de validación. Ejecuta los gates disponibles; un fallo bloquea avanzar tareas dependientes hasta corregirlo. Pospón solo el test que requiera la herramienta ausente, documentando prueba, herramienta/entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada como `POSTPONED` (para PRE: `PREPARADO_NO_EJECUTADO`), nunca `PASS`. La ausencia no bloquea la implementación ni tareas independientes; el ID queda parcial/abierto hasta completar las validaciones obligatorias.
+
 Actúa como agente final independiente de verificación e integración de S-portal. Tu objetivo es comprobar rigurosamente que el MVP funciona y está listo para revisión en LOCAL, y dejar documentado todo lo necesario para que otra persona pueda revisar PRE cuando exista entorno. NO afirmes que PRE funciona si no puedes probarlo con autorización y evidencia.
 
 CONTEXTO AUTÓNOMO
 S-portal es la aplicación nueva de Simbio, un MONOLITO MODULAR Java 21/Spring Boot estable, Spring MVC, Thymeleaf/HTMX, Spring Security, JPA/Flyway, Modulith/ArchUnit y SQL Server 2022. Un solo artefacto desplegable y una BD; no microservicios ni SPA. Paquete raíz `com.simbio.core`, `artifactId` provisional `portal`. Lee las fuentes de verdad `docs/prompt-plan-desarrollo.md`, `docs/idea.md` y la documentación completa bajo `docs/plan/`, especialmente 02–13, roadmap, ADRs, fichas y `docs/plan/tareas/F6-endurecimiento.md`.
 
 REGLAS DE VERIFICACIÓN
-No borres datos ni uses `flyway clean` sobre una BD persistente. No uses credenciales reales, no conectes a PRE/prod sin autorización, no cambies servicios externos ni DEMO. No marques un gate por inferencia: registra comando exacto, entorno, resultado, fecha y evidencia. Distingue PASS, FAIL, BLOCKED y NOT_RUN. Si faltan prerequisitos, explica causa y responsable. Puedes corregir un defecto pequeño directamente atribuible a IDs ya planificados, pero no cambies arquitectura, alcance, esquema o datos sensibles sin aprobación; repite las pruebas tras cada corrección. No enmascares fallos con skips o reducción de umbrales.
+NO borres datos ni uses `flyway clean` sobre una BD persistente. No uses credenciales reales, no conectes a PRE/prod sin autorización, no cambies servicios externos ni DEMO. No marques un gate por inferencia: registra comando exacto, entorno, resultado, fecha y evidencia. Distingue PASS, FAIL, BLOCKED, NOT_RUN y POSTPONED; una prueba pospuesta debe indicar la herramienta/entorno pendiente y nunca se presenta como PASS. Si faltan prerequisitos, explica causa y responsable. Puedes corregir un defecto pequeño directamente atribuible a IDs ya planificados, pero no cambies arquitectura, alcance, esquema o datos sensibles sin aprobación; repite las pruebas tras cada corrección. No enmascares fallos con skips o reducción de umbrales.
 
 CHECKLIST LOCAL OBLIGATORIO
 1. Estado de integración: verifica que las tareas F0–F6 aplicables están integradas, dependencias satisfechas, no hay cambios ajenos perdidos, tests/TC y documentación vinculada. Comprueba los gates de Spring Modulith/ArchUnit y las capas/owners.

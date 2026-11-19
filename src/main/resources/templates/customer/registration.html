@@ -10,7 +10,8 @@
            th:text="#{customer.registration.unavailable}">Registration is temporarily unavailable.</p>
         <div th:if="${registrationAvailable}">
             <form method="post" th:action="@{/registro}" th:object="${registrationForm}"
-                  class="mt-6 space-y-5" data-anti-bot>
+                  class="mt-6 space-y-5" data-anti-bot
+                  th:attr="data-challenge-url=@{/anti-bot/challenge}">
                 <p th:if="${#fields.hasGlobalErrors()}" class="rounded border border-danger p-3 text-danger"
                    role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
                 <input type="hidden" th:field="*{termsVersion}">

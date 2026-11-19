@@ -145,6 +145,22 @@ class AuthorizationMatrixTest {
                 .filteredOn(rule -> rule.path().equals("/gestion/usuarios/**"))
                 .extracting(AuthorizationRules.RoutePermission::method)
                 .contains(HttpMethod.GET, HttpMethod.POST);
+        assertThat(AuthorizationRules.routes())
+                .filteredOn(rule -> rule.path().contains("/gestion/identidad/invitaciones/pendientes/clientes"))
+                .allSatisfy(rule -> {
+                    assertThat(rule.permission()).isEqualTo("USERS_MANAGE");
+                    assertThat(rule.role()).isEqualTo("ADMIN");
+                })
+                .extracting(AuthorizationRules.RoutePermission::method)
+                .contains(HttpMethod.GET, HttpMethod.POST);
+        assertThat(AuthorizationRules.routes())
+                .filteredOn(rule -> rule.path().contains("/gestion/identidad/invitaciones/pendientes/trabajadores"))
+                .allSatisfy(rule -> {
+                    assertThat(rule.permission()).isEqualTo("STAFF_MANAGE");
+                    assertThat(rule.role()).isEqualTo("ADMIN");
+                })
+                .extracting(AuthorizationRules.RoutePermission::method)
+                .contains(HttpMethod.GET, HttpMethod.POST);
 
         mockMvc.perform(get("/gestion/clientes")
                         .with(user("admin").roles("ADMIN")))
@@ -160,6 +176,23 @@ class AuthorizationMatrixTest {
                                 new org.springframework.security.core.authority.SimpleGrantedAuthority("USERS_MANAGE")))
                         .param("active", "false")
                         .param("confirmed", "true"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/gestion/identidad/invitaciones/pendientes/clientes")
+                        .with(user("admin").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"),
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("STAFF_MANAGE"))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/gestion/identidad/invitaciones/pendientes/trabajadores")
+                        .with(user("admin").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"),
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("USERS_MANAGE"))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post(
+                        "/gestion/identidad/invitaciones/pendientes/clientes/"
+                                + "00000000-0000-0000-0000-000000000001/reenviar")
+                        .with(user("admin").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"),
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("USERS_MANAGE"))))
                 .andExpect(status().isForbidden());
     }
 }

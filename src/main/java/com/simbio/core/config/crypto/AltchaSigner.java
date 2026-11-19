@@ -21,15 +21,15 @@ public class AltchaSigner {
         this.encryptionProperties = encryptionProperties;
     }
 
-    public String sign(String salt) {
-        return HexFormat.of().formatHex(signature(salt));
+    public String sign(String challenge) {
+        return HexFormat.of().formatHex(signature(challenge));
     }
 
-    public boolean verifies(String salt, String suppliedSignature) {
-        if (salt == null || suppliedSignature == null || !suppliedSignature.matches("[0-9a-f]{64}")) {
+    public boolean verifies(String challenge, String suppliedSignature) {
+        if (challenge == null || suppliedSignature == null || !suppliedSignature.matches("[0-9a-f]{64}")) {
             return false;
         }
-        byte[] expected = signature(salt);
+        byte[] expected = signature(challenge);
         byte[] supplied;
         try {
             supplied = HexFormat.of().parseHex(suppliedSignature);
@@ -39,16 +39,16 @@ public class AltchaSigner {
         return MessageDigest.isEqual(expected, supplied);
     }
 
-    private byte[] signature(String salt) {
-        if (salt == null || salt.isBlank()) {
-            throw new IllegalArgumentException("ALTCHA salt is required");
+    private byte[] signature(String challenge) {
+        if (challenge == null || challenge.isBlank()) {
+            throw new IllegalArgumentException("ALTCHA challenge is required");
         }
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(encryptionProperties.currentKeyMaterial(), "HmacSHA256"));
             byte[] signingKey = mac.doFinal(KEY_DERIVATION_LABEL);
             mac.init(new SecretKeySpec(signingKey, "HmacSHA256"));
-            return mac.doFinal(salt.getBytes(StandardCharsets.UTF_8));
+            return mac.doFinal(challenge.getBytes(StandardCharsets.UTF_8));
         } catch (java.security.GeneralSecurityException exception) {
             throw new IllegalStateException("HmacSHA256 is required by the runtime", exception);
         }

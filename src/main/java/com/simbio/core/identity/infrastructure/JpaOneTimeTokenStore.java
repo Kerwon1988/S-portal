@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,18 @@ class JpaOneTimeTokenStore implements OneTimeTokenStore {
     @Transactional(readOnly = true)
     public Optional<OneTimeToken> find(String tokenHash, String purpose) {
         return tokens.findByTokenHashAndPurpose(tokenHash, purpose);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OneTimeToken> findPendingInvitations(Set<String> roleCodes, Pageable pageable) {
+        return tokens.findPendingInvitations(roleCodes, pageable);
+    }
+
+    @Override
+    @Transactional
+    public Optional<OneTimeToken> findPendingInvitationForUpdate(UUID id, String roleCode) {
+        return tokens.findPendingInvitationForUpdate(id, roleCode);
     }
 
     @Override

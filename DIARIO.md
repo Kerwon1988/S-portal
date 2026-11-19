@@ -1,5 +1,110 @@
 # Diario de desarrollo
 
+## 2026-11-19 — Base local de mensajería F3 (MSG-001/002 parcial)
+
+- Se completó la separación de tipos de conversación/mensaje en `messaging::api`, se alineó el filtro JPQL de mensajes públicos con ese paquete, y se declaró `context_public_id` no nulo en el mapeo JPA igual que en la migración. El esquema H2 crea `messaging` antes del ciclo de Hibernate.
+- Con Java 21, Maven 3.6.3, dependencias offline y `local-h2`, pasaron 12 tests Surefire focales: `ConversationServiceTest` (7), `DocumentationArchitectureTest` (3), `ModularityTests` (1) y `ModuleDagTest` (1). Pasaron también los 2 tests Failsafe H2 de `ConversationPersistenceH2IT`; `test-compile` compiló todas las fuentes productivas y de test.
+- En el primer intento de persistencia falló la carga JPQL por una referencia residual al enum en su antiguo paquete; se corrigió y la repetición pasó 2/2. En la repetición no aparecieron avisos por `DROP` de un esquema inexistente.
+- MSG-001/002 permanecen parciales: no hay endpoints MVC ni vistas Thymeleaf, no se ha ejecutado la migración en SQL Server, ni está conectado un consumidor de notificaciones. El formulario público CONTACT y la bandeja pertenecen a F4 y no se implementaron aquí. REQ-001..011 siguen bloqueados por STF-001 parcial. No se afirma cobertura completa del proyecto ni validación externa.
+
+## 2026-11-19 — Reanudación local de PROMPT 10
+
+- Con Java 21, Maven 3.6.3, repositorio offline y perfil `local-h2`, la fase `test-compile` terminó `BUILD SUCCESS`; Maven indicó que las fuentes productivas y de test ya estaban al día.
+- Dos conjuntos focales de PROMPT 10 y sus prerrequisitos pasaron: 41 tests Surefire y 5 Failsafe H2, sin fallos, errores ni omisiones. Maven mostró avisos no bloqueantes por POM metadata ausente; no se instalaron herramientas ni se descargaron dependencias.
+- Se añadió en `e2e/portal-ui.spec.ts` la prueba axe de accesibilidad del formulario `/registro`; `npm run e2e -- --list --grep "customer registration form is accessible"` la descubre. No se ejecutó el navegador: `PORTAL_E2E_BASE_URL` no está configurado y no hay servidor en localhost:8090. Estado `POSTPONED`; no se instalaron herramientas.
+- LGL-001 y CUS-001..004 tienen implementación local observable. Esto no cierra por sí solo sus IDs; SQL Server no se ejecutó y el país fiscal soportado sigue limitado a España.
+- LGL-002 sigue sin flujo de solicitud/exportación completo ni contributors registrados para todos los owners. La anonimización irreversible permanece bloqueada por aprobación legal pendiente. LGL-003 no tiene política/job activo: solo está autorizado el dry-run y faltan categorías y plazos aprobados.
+- `/cuenta/datos` es informativa. Los metadatos de invitaciones customer pendientes todavía no tienen caducidad/limpieza propia. No se realizó ninguna purga ni se afirmó validación externa.
+
+## 2026-11-19 — Reanudación local de PROMPT 11 y desbloqueo Maven
+
+- Se verificó el origen del bloqueo offline: `oss-parent-7.pom` y otros artefactos transferidos estaban presentes en el repositorio Maven local, pero sus entradas `_remote.repositories` indicaban `central`; Maven usa el ID `maven-public` y en modo offline no los aceptaba. Se quitaron solo las entradas de origen de artefactos existentes, tratándolos como instalados localmente. No se descargaron artefactos ni se modificó el POM del proyecto.
+- Con Java 21, Maven 3.6.3 y el repositorio offline indicado por el usuario, `-Plocal-h2 compile` terminó `BUILD SUCCESS`. El test focal `AdminUserActionsTest` pasó 6/6. La verificación completa `-Plocal-h2 verify` terminó `BUILD SUCCESS`: 322 tests Surefire, 30 Failsafe H2 (29 aprobados y 1 omitido por opt-in), sin fallos/errores y JaCoCo aprobado.
+- PROMPT 11 sigue parcial. El código y los tests locales disponibles pasan, pero USR-002 necesita contratos/rutas aprobados por los owners `request`, `messaging` y `simbiosphere`; USR-003 mantiene bloqueadas las transiciones de rol que involucran CLIENT hasta acordar el workflow owner; USR-004 espera contributors de todos los owners y política legal de retención/anonimización aprobada. E2E-001 sigue `POSTPONED`: requiere aplicación, Mailpit, navegador y credenciales sintéticas ADMIN/MFA; no se instalaron herramientas ni se simuló su ejecución.
+- No se declara cerrado ningún ID pendiente ni compatibilidad SQL Server. El `verify` local no sustituye la ejecución de E2E-001 ni las decisiones de owners/legal.
+
+## 2026-11-19 — Refuerzo local de USR-001 (exportación CSV)
+
+- Se ampliaron las pruebas de `UserManagementControllerTest` para verificar el rechazo si falta cualquiera de los permisos de exportación, el límite de 1000 filas antes de registrar auditoría, la paginación multi-página conservando filtros/orden, la neutralización de fórmulas y la auditoría sin PII.
+- Con Java 21, Maven 3.6.3, el repositorio local indicado y `-o -B -Plocal-h2`, la clase focal pasó 5/5. La selección relacionada de cinco clases pasó 25/25: `UserManagementControllerTest`, `UserManagementServiceTest`, `AuthorizationMatrixTest`, `StaffManagementControllerTest` y `AdminUserActionsTest`. No se instalaron herramientas ni se iniciaron servicios externos.
+- El último `verify` completo (322 Surefire y 30 Failsafe H2, uno omitido, JaCoCo aprobado) fue anterior a estas pruebas nuevas; no se presenta como verificación del árbol actual completo. E2E-001 sigue `POSTPONED`; USR-001 permanece parcial hasta completar las validaciones requeridas.
+
+## 2026-11-19 — Revisión de disponibilidad Maven/npm
+
+- En esa ejecución histórica de `test-compile` en modo offline, Maven no pudo cargar el modelo por el registro de origen de `org.sonatype.oss:oss-parent:pom:7`; la entrada fue corregida posteriormente como se documenta arriba. La anotación anterior de que el POM faltaba físicamente y la caché no se había modificado queda supersedida.
+- `npm ls --depth=0` encontró las dependencias frontend declaradas y `npm run build` terminó correctamente; solo informó de que `caniuse-lite` está desactualizado. No hace falta descargar de nuevo las dependencias npm para continuar con los gates frontend actuales.
+- El último full run previo a esta incidencia seguía siendo exitoso (321 Surefire, 29 Failsafe H2 aprobados y uno omitido por opt-in, JaCoCo aprobado); el resultado más reciente de 322 Surefire y 30 Failsafe se registra en la entrada nueva de este diario.
+
+## 2026-11-19 — Implementación local de IAM-006 y verificación final de PROMPT 09
+
+- Se completó IAM-006 en `config`: `GET /anti-bot/challenge` devuelve el formato de desafío ALTCHA con `Cache-Control: no-store`; el cliente local resuelve SHA-256, serializa el payload, y el verificador comprueba firma, expiración, honeypot, confirmación accesible y consumo de un solo uso. El GET queda rate-limited. `/registro` usa asset fingerprintado y fallback accesible si JavaScript no está disponible. No existe formulario de contacto en el workspace.
+- Se añadieron tests para payload y desafío, firma inválida, expiración, replay secuencial y concurrente, honeypot, fallback, endpoint JSON/no-store/rate limit y binding del formulario. También se añadió `npm run test:anti-bot` (3/3 tests). Las 16 pruebas Java focales pasaron; `npm run build` pasó con el aviso no bloqueante de `caniuse-lite` desactualizado.
+- Se preparó `SmtpMailpitIT`, que envía una verificación sintética por SMTP y revisa en la API de Mailpit el asunto y las partes HTML/texto. Se opta con `-Dportal.test.mailpit.enabled=true`; el `verify` local lo omitió (1 test skipped) porque Mailpit no se habilitó. Estado `POSTPONED`, no PASS. Para ejecutar en entorno habilitado: arrancar `mailpit` con `docker compose -f docker-compose.dev.yml up -d mailpit` y correr `$env:JAVA_HOME='C:\Users\x455035\2Programs\temurin-21.0.11'; $env:Path="$env:JAVA_HOME\bin;$env:Path"; & 'C:\Users\x455035\2Programs\maven-3.6.3\bin\mvn.cmd' -o -B "-Dmaven.repo.local=C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias" -Plocal-h2 -Dportal.test.mailpit.enabled=true -Dportal.test.mailpit.smtp-host=localhost -Dportal.test.mailpit.smtp-port=1026 -Dportal.test.mailpit.http-base-url=http://localhost:8026 verify`. No se presenta la entrega real como PASS mientras no se ejecute.
+- Se intentó obtener `altcha@3.6.0` para probar el widget oficial, pero npm falló con `ECONNRESET` al conectar con `registry.npmjs.org`; no se añadió la dependencia ni se modificó el lockfile. La implementación local usa el formato/payload ALTCHA y pasó sus pruebas, pero la interoperabilidad con el paquete oficial queda `POSTPONED` hasta poder obtenerlo y ejecutarlo. La caché anti-replay es por proceso y no coordina varias réplicas; no se añadió tabla, pues IAM-006 declara expresamente que no crea tablas/eventos.
+- Verificación final con Java 21, Maven 3.6.3, `-o -B -Plocal-h2`: `BUILD SUCCESS`, 321 tests Surefire sin fallos, 30 Failsafe (29 aprobados, `SmtpMailpitIT` omitido por opt-in) y JaCoCo aprobado. `npm run build` y `npm run test:anti-bot` también pasaron. No se ejecutó SQL Server, Mailpit real, Playwright ni despliegue. PROMPT 09 se marca `COMPLETADO_LOCAL`; NTF-002 permanece abierto para la entrega real Mailpit y la interoperabilidad del widget oficial sigue pospuesta, sin presentarse como PASS.
+
+## 2026-11-19 — Política transversal para herramientas de prueba no disponibles
+
+- Se armonizó en los prompts autónomos, el prompt maestro, calidad/testing, operación y la skill del proyecto la regla de continuar implementando código, configuración y tests aunque falte localmente el ejecutor externo.
+- Se ejecutan todos los gates disponibles; un fallo bloquea avanzar tareas dependientes. Solo se pospone la ejecución que dependa estrictamente del recurso ausente, con estado `POSTPONED` (`PREPARADO_NO_EJECUTADO` para PRE), test, motivo, entorno, evidencia requerida e instrucciones reproducibles para ejecutarla en otra máquina habilitada; nunca se presenta como PASS. La ausencia no bloquea la implementación o el trabajo independiente; los IDs con validación obligatoria pendiente siguen abiertos.
+- README e inventario distinguen la entrega local de la prueba real Mailpit, que queda pospuesta hasta disponer de un entorno habilitado. IAM-006 ya tiene implementación y pruebas locales; la interoperabilidad del widget oficial y replay multi-réplica siguen sin validar.
+- Evidencia documental vigente: la última `verify -Plocal-h2` pasó con 321 Surefire, 30 Failsafe H2 (29 aprobados, 1 omitido por opt-in) y JaCoCo aprobado. La suite se ejecutó para el cambio de código, no para el ajuste documental.
+
+## 2026-11-19 — Verificación completa del estado actual
+
+- Se repitió `verify` con Java 21, Maven 3.6.3, `-o -B`, perfil `local-h2` y el repositorio local indicado. Resultado: `BUILD SUCCESS`, 304 tests Surefire y 29 Failsafe H2, sin fallos ni errores; JaCoCo aprobó todos los umbrales. Esta ejecución completa supersede la revalidación anterior que había fallado en Surefire y la verificación selectiva de 76 pruebas.
+- No se descargaron dependencias ni se aplicaron migraciones a SQL Server. La propuesta documental de USR-002 no altera el comportamiento implementado.
+
+## 2026-11-19 — Revalidación selectiva de los fallos Surefire
+
+- Se abordaron las clases que fallaron en la ejecución completa: corrección del key-id ausente en `AesGcmSensitiveDataProtector`; uso de `SpringTemplateEngine` en el render de correo; y regla ArchUnit limitada a clases top-level para los adapters de infraestructura. El workspace también contiene el nombre de bean diferenciado para el servicio de registro de identity, `AuthenticatedUser` del shared en controladores de staff/customer, owner `staff` en el inventario y los ajustes de datos/assertions para auditoría y CSV.
+- La sintaxis de `AuditController` ya no bloqueó la compilación. Se generaron los assets con `npm run build` y se ejecutaron solo las 23 clases que aparecían en el informe anterior. Resultado: 76 tests, 0 fallos, 0 errores, `BUILD SUCCESS`. Incluyó las pruebas MVC/contexto y las de arquitectura y SMTP que anteriormente habían fallado.
+- Este gate selectivo no vuelve a ejecutar los demás tests, Failsafe ni JaCoCo, por lo que no equivale a aprobación del verify completo. Se conserva el resultado anterior de 266 Surefire (1 fallo, 36 errores) y Failsafe separado 29/29 hasta una nueva ejecución completa.
+
+## 2026-11-18 — Investigación de contratos USR-002
+
+- Se buscó una base H2 persistida en `DEMO-orders-thymeleaf`; no hay archivo de base de datos. Las pruebas crean bases `jdbc:h2:mem:` temporales con tenants/usuarios sintéticos. Se acepta usar H2 solo como fixture de prueba; no representa ni certifica el esquema SQL Server futuro.
+- La inspección de fuentes del proyecto DEMO encontró una administración de usuarios scoped por tenant y APIs Java internas de órdenes/reparaciones con `tenantId` y `locationId` explícitos; no son contratos UI ni API HTTP de S-portal. No existen allí módulos equivalentes de messaging o SimbioSphere que permitan derivar sus rutas.
+- Se redactó en `contratos-ui-backend.md` una propuesta no aprobada para fragmentos GET de request, messaging y SimbioSphere. La futura interoperabilidad DEMO queda condicionada a un mapping server-side de cuenta→tenant/location y una proyección mínima; se excluyen IDs internos en navegador, joins cross-module y campos de detalle sensibles. Los tests H2 `mem:` de DEMO aportan fixtures sintéticos para aislamiento, no un modelo SQL Server. No se implementaron rutas ni integración; aprobación owners y contrato HTTP futuro siguen bloqueando el cierre de USR-002.
+
+## 2026-11-18 — Auditoría de dependencias locales y de roadmap
+
+- Con Java 21 y Maven offline, `compile`, `test-compile` y `package` terminaron correctamente. El empaquetado advirtió que falta el POM de `org.tukaani:xz:1.10`, pero generó el JAR. El parent Artemis no volvió a bloquear la resolución; Surefire y Failsafe resolvieron el provider/plugin con `plexus-utils:3.5.1`.
+- Surefire ejecutó 266 pruebas: 1 fallo y 36 errores. La ejecución separada de Failsafe ejecutó 29 pruebas H2 sin errores. JaCoCo no se ejecutó después del resultado Surefire. No se clasifican los fallos de pruebas como dependencias ausentes.
+- `npm run build` pasó con aviso de base Browserslist antigua. Los paquetes declarados están instalados y Chromium headless de Playwright se lanzó localmente. Node/npm globales son 24.22.1/11.19.1; el perfil Maven `frontend-build` fija Node 22.14.0/npm 10.9.2 y plugin 1.15.1, pero no se probó ese perfil.
+- La revisión del roadmap identificó previsiones no incorporadas: Resilience4j Retry/CircuitBreaker 2.3.0 para SIM-003; se proponen WireMock 3.13.1 y Swagger Parser 2.1.27 para SIM-004 (no se encontraron pins en los POM/package de DEMO inspeccionados); para IAM-006 se propone la biblioteca oficial Java `org.altcha:altcha:2.1.1`, con `org.json:json:20240303` requerido en runtime, y el widget npm `altcha@3.6.0`. Son propuestas, no se añadieron ni validaron juntas. Thymeleaf Layout Dialect 3.3.0 y Thymeleaf Extras Spring Security 3.1.2.RELEASE están mencionados en ADR-001, pero no se usan y la compatibilidad Boot 4/Security sigue pendiente; no se solicitan. Dependency-Check 11.1.1 del perfil CI no se ejecutó ni tiene resolución offline comprobada. El plugin Maven frontend 1.15.1 resuelve offline, pero la comprobación omitió sus goals: la máquina tiene Node/npm globales 24.22.1/11.19.1 y no tiene instalado el toolchain fijado 22.14.0/10.9.2. Las imágenes de desarrollo declaradas son SQL Server `2022-latest`, Mailpit `v1.27.8` y ClamAV `1.4`; no son necesarias para el perfil H2.
+- No se descargaron dependencias, no se inspeccionó ni modificó la caché Maven y no se ejecutaron los servicios Docker. El resultado actual no certifica SQL Server ni el perfil CI.
+
+## 2026-11-18 — Revalidación de PROMPT 09 tras actualizar caché Maven
+
+- Se confirmó que `surefire-junit-platform:3.5.6` ya estaba presente. El verify offline ejecutó 265 tests Surefire: 7 fallos y 39 errores. Failsafe y JaCoCo no llegaron a ejecutarse. La verificación exitosa anterior de 303 Surefire/29 Failsafe sigue siendo una evidencia válida para el estado que entonces se compiló, pero no sustituye esta revalidación fallida.
+- En las pruebas de PROMPT 09 pasaron `OneTimeTokenServiceTest` (4/4), `MfaServiceTest` (2/2), `AdminMfaFilterTest` (6/6), `OutboxServiceTest` (2/2), `OutboxWorkerTest` (5/5) y `AccountLoginSuccessHandlerTest` (1/1). `AesGcmSensitiveDataProtectorTest` detectó que un key ID ausente provocaba NPE. Se añadió guard para key ID null/vacío; luego las pruebas focales AES-GCM y token pasaron 7/7.
+- Tres pruebas de render en `SmtpEmailSenderTest` dieron `NoClassDefFoundError: ognl/PropertyAccessor`; no se halló el JAR OGNL en el repositorio offline. Se cambió el motor de texto plano y el helper de test a `SpringTemplateEngine`, pero esa edición posterior no se pudo recompilar: Maven encontró sintaxis inválida en `audit.web.AuditController.java:83`, archivo ajeno al alcance. El owner pidió dejarlo intacto.
+- La regla de arquitectura también trató una clase anónima y una excepción interna de `SmtpEmailSender` como implementaciones top-level de infraestructura; se ajustó el test ArchUnit para aplicar esa regla solo a clases top-level. Esta edición tampoco se pudo recompilar por el error concurrente de AuditController.
+- No se afirma que el verify esté aprobado: además de Prompt 09, fallaron gates de arquitectura, algunos tests MVC/contexto y otras pruebas del workspace. No se ejecutó Failsafe/H2 ni JaCoCo en esta revalidación.
+
+## 2026-11-18 — Continuación PROMPT 11: reenvío paginado de invitaciones
+
+- `identity` añade listados separados de invitaciones pendientes para clientes y trabajadores, con paginación de 25, orden estable por creación descendente/ID ascendente y correo enmascarado. Se incluyen invitaciones expiradas para que puedan reenviarse; consumidas y revocadas no aparecen.
+- El reenvío está protegido por el permiso de gestión del ámbito y CSRF. En una transacción, revoca el token anterior y emite uno nuevo manteniendo la referencia opaca de la invitación. La ruta devuelve un resultado genérico y no expone email completo ni token.
+- Se añadieron pruebas unitarias, de controlador, matriz de autorización y H2 para listado, rotación, conservación de correlación y límites de página. La verificación Java 21/Maven 3.6.3, offline y con `local-h2` terminó en `BUILD SUCCESS`: 303 tests Surefire y 29 Failsafe H2 sin fallos; JaCoCo aprobó todos los umbrales.
+- Se actualizaron README, INVENTARIO, contratos UI/backend, rutas y seguridad. PROMPT 11 sigue parcial: faltan paneles de request/messaging/SimbioSphere por contratos de owners, transiciones de rol que incluyen CLIENT, exportación/anónimo RGPD hasta contributors y política legal aprobados, y E2E-001 con MFA/Mailpit/CMS. SQL Server no se verificó.
+
+## 2026-11-18 — Cobertura Java y validación final
+
+- Se fijó `org.codehaus.plexus:plexus-utils:3.5.1` también en `maven-failsafe-plugin`, igual que en Surefire, para que la ejecución offline no intentara resolver `1.1`.
+- Se añadieron tests unitarios para recuperación de contraseña, verificación de email, invitaciones, perfil, enrolamiento y recuperación MFA, directorios de cliente/staff y reglas del dominio de identidad.
+- La prueba focal de plantillas pasó 6/6; el conjunto focal de cobertura pasó 42/42. La verificación completa con Java 21, Maven 3.6.3, `-o -B`, `-Plocal-h2` y el repositorio local indicado terminó en BUILD SUCCESS: 298 tests Surefire y 27 Failsafe H2, sin fallos ni errores.
+- JaCoCo pasó el mínimo del 80%: `customer.application` 88.4%, `identity.domain` 97.8%, `staff.application` 94.5% e `identity.application` 87.3%. No se pasó `-s`; Maven usó sus settings predeterminados. No se descargaron dependencias.
+- PROMPT 07 ERR-004 está completado en el alcance de desarrollo local. PROMPT 08/09/10/11 siguen parciales por trabajo funcional pendiente. SQL Server, Mailpit real, despliegue, runtime y validaciones externas no se probaron.
+
+## 2026-11-18 — Verificación inicial de PROMPT 11 (antes de ampliar cobertura)
+
+- Con Java 21, Maven 3.6.3, `local-h2` y el repositorio offline indicado, `verify` ejecutó 266 tests unitarios y 27 tests Failsafe de integración H2; todos finalizaron sin fallos ni errores.
+- Failsafe ya no solicita `org.codehaus.plexus:plexus-utils:1.1`; la ejecución superó las fases de pruebas de integración y JaCoCo generó el reporte.
+- BUILD FAILURE ocurre únicamente en `check-domain-application-coverage`: `customer.application` 75.7%, `identity.domain` 75.8%, `staff.application` 68.1% e `identity.application` 55.1%, frente al mínimo del 80%.
+- Los tests focales del directorio de identidad, panel de auditoría y matriz de autorización pasaron 12/12. PROMPT 11 sigue parcial por criterios funcionales pendientes y el gate de cobertura. SQL Server, Mailpit, MFA real y E2E-001 no se verificaron.
+
 ## 2026-11-18 — Evaluación offline de versiones de Spring Boot
 
 - Para retirar el requisito de `org.apache.artemis:artemis-project:2.53.0` se intentaron los parents Spring Boot 4.0.0, 4.1.1 y 4.1.0 con la compilación offline autorizada. Maven no pudo cargar el proyecto porque ninguno de esos POM parent está disponible en el repositorio local proporcionado.
@@ -376,3 +481,38 @@
 - Se añadieron claves ES/EN, una prueba de aplicación que verifica el orden tipado y el desempate, y se actualizaron contrato UI, rutas, README e inventario. No se alteraron flujos legales.
 - `mvn -o -B "-Dmaven.repo.local=C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\dependecias" -Plocal-h2 clean test-compile` pasó: 343 fuentes de producción y 119 de test compiladas con Java 21.
 - La ejecución focal de `IdentityUserDirectoryServiceTest` falló antes de iniciar tests porque falta `org.junit.platform:junit-platform-commons:1.12.2` en el repositorio Maven offline. No se descargó ni se cambió la configuración del repositorio. SQL Server y E2E siguen sin validar.
+
+## 2026-11-18 — Verificación de cierre de PROMPT 07 (ERR-004)
+
+- Se verificó el viewer bajo `config`, con rol ADMIN y `ERROR_INVENTORY_MANAGE`, CSRF en cambios, filtros/paginación, resumen saneado, auditoría mínima y estado degradado sin detalles internos. No se añadieron tablas ni migraciones.
+- Con JDK 21, Maven 3.6.3, `local-h2` y el repositorio offline documentado, los tests focales pasaron: `ErrorInventoryServiceTest` 4/4, `ErrorInventoryControllerTest` 9/9 y `ErrorInventoryUnavailableIT` 2/2.
+- El `verify` completo pasó: 298 tests Surefire, 27 Failsafe, sin fallos/errores y JaCoCo aprobado. La ejecución previa con un error intermitente de timeout de ClamAV no se toma como resultado final.
+- ERR-004 queda validada para los criterios de desarrollo. No se verificaron SQL Server, despliegue productivo, almacenamiento multi-réplica ni aprobaciones de retención/límites operativos.
+
+## 2026-11-19 — Refuerzo de accesibilidad focal de PROMPT 07
+
+- Se añadió a `ErrorInventoryControllerTest` una comprobación MVC de encabezado principal, caption/encabezados de tabla, labels asociados a filtros, resumen de detalles y controles de cambio de estado.
+- Se ejecutó únicamente `ErrorInventoryControllerTest` con Maven offline, JDK 21 y `local-h2`: 9/9 tests pasaron. No se lanzó la suite completa.
+
+## 2026-11-18 — Reanudación de PROMPT 07 (ERR-004)
+
+- Con JDK 21, Maven 3.6.3 y el repositorio offline documentado, `ErrorInventoryServiceTest` pasó 4/4 y `ErrorInventoryControllerTest` 8/8. `ErrorInventoryUnavailableIT` pasó 2/2 al seleccionarla directamente con Surefire; esto valida lectura y actualización cuando el almacenamiento no está disponible, pero no equivale a ejecutar el goal Failsafe.
+- El `verify` completo ejecutó 266 tests y terminó fallando por un error de `TemplateRulesTest`: `notification/email/message.html` infringe la regla de color directo. Los tests focales de ERR-004 pasaron; no se modificó ese archivo ajeno al alcance.
+- El verify focal con Failsafe no pudo completar su fase de integración porque el plugin aún solicita `org.codehaus.plexus:plexus-utils:1.1` en offline. ERR-004 permanece abierto hasta que pase el gate aplicable; SQL Server y despliegue no se verificaron.
+
+## 2026-11-19 — Cierre local de PROMPT 07 (ERR-004)
+
+- Se confirmó el estado actual ejecutando exclusivamente `ErrorInventoryServiceTest`, `ErrorInventoryControllerTest` y `ErrorInventoryUnavailableIT`: 15/15 tests pasaron con JDK 21, Maven offline y `local-h2`.
+- PROMPT 07 / ERR-004 queda completada para el alcance de desarrollo local. El `verify` completo anterior había pasado (303 Surefire, 29 Failsafe y JaCoCo), pero la revalidación más reciente del workspace ejecutó 266 tests Surefire con 1 fallo y 36 errores; JaCoCo no corrió. No se atribuye esa ejecución global fallida a ERR-004 sin evidencia focal que lo confirme.
+- Retención/límites aprobados, alertas, despliegue multi-réplica y SQL Server quedan pendientes operativos/de producción; no bloquean el cierre local de desarrollo.
+
+## 2026-11-19 — Continuación local de PROMPT 11
+
+- Se añadieron tests MVC para los controladores de staff e identity: autorización por rol/permisos, CSRF en mutaciones, validación de formularios, rechazo de cuentas CLIENT en la ficha laboral, acciones administrativas confirmadas y no exposición de cuentas no visibles. Los 12 tests focales pasaron.
+- Se corrigió el reemplazo del bean de invitaciones en el contexto de test para mockear el tipo concreto `InvitationService`; el mock de la interfaz `InvitationIssuer` causaba un conflicto de tipo porque el controlador de identidad también inyecta la implementación concreta.
+- E2E-001 quedó preparado en Playwright: login ADMIN con MFA, invitación a dirección sintética, token obtenido de Mailpit local, aceptación y rechazo de reutilización, comprobación del acceso denegado al CMS para EMPLOYEE y edición de borrador por ADMIN. El test no guarda capturas ni trazas. `npm run e2e -- --list` descubrió 17 tests y el filtro E2E-001 descubrió 1; esto valida el descubrimiento, no el runtime.
+- Se comprobó sin mostrar valores que 8090, 8026 y 1026 están cerrados y faltan las variables de entorno E2E. El recorrido de navegador queda pospuesto hasta disponer de aplicación local con perfiles `local-h2,e2e`, Mailpit y credenciales sintéticas de ADMIN/MFA. No se validó SQL Server.
+- Maven offline con JDK 21 y `local-h2` pasó el `verify`: 320 tests Surefire y 30 Failsafe (1 omitido), sin fallos/errores y con JaCoCo aprobado. Los IDs de PROMPT 11 siguen parciales/abiertos por dependencias y decisiones owner/legal; no se declara cerrado el prompt.
+- El usuario confirmó mantener la política actual de CMS: EMPLOYEE no recibe `CONTENT_EDIT`, se prueba su denegación y ADMIN realiza la edición autorizada. No se amplió ninguna autoridad.
+- Tras registrar esa decisión se repitió el gate documental focal; Maven se detuvo antes de cargar el proyecto porque la caché offline no contiene `org.sonatype.oss:oss-parent:pom:7`. Los 11 tests documentales habían pasado en la ejecución focal inmediatamente anterior; no se descargó ni alteró la caché.
+- Se añadió a `AdminUserActionsTest` un caso positivo que verifica persistencia, auditoría, notificación y evento al activar una cuenta. Su ejecución focal se intentó y queda `POSTPONED` porque Maven vuelve a detenerse antes de cargar el proyecto por el POM padre `org.sonatype.oss:oss-parent:7`; el test no está incluido en el `verify` previo.

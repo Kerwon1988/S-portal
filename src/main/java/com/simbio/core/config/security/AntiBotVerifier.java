@@ -8,11 +8,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.simbio.core.shared.spi.AntiBotChallenge;
@@ -30,17 +32,27 @@ public class AntiBotVerifier implements AntiBotVerification {
     private final Clock clock;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public AntiBotVerifier(
             AntiBotProperties properties,
             AltchaSigner signer,
             MeterRegistry meterRegistry,
             ObjectMapper objectMapper) {
+        this(properties, signer, meterRegistry, objectMapper, Clock.systemUTC());
+    }
+
+    AntiBotVerifier(
+            AntiBotProperties properties,
+            AltchaSigner signer,
+            MeterRegistry meterRegistry,
+            ObjectMapper objectMapper,
+            Clock clock) {
         this.properties = properties;
         this.signer = signer;
         this.meterRegistry = meterRegistry;
         this.objectMapper = objectMapper;
         this.secureRandom = new SecureRandom();
-        this.clock = Clock.systemUTC();
+        this.clock = Objects.requireNonNull(clock);
     }
 
     @Override
@@ -58,7 +70,7 @@ public class AntiBotVerifier implements AntiBotVerification {
         int maxNumber = 1 << properties.getProofDifficulty();
         int target = secureRandom.nextInt(maxNumber + 1);
         String challenge = sha256(salt + target);
-        return new AntiBotChallenge("SHA-256", challenge, maxNumber, salt, signer.sign(salt), expires);
+        return new AntiBotChallenge("SHA-256", challenge, maxNumber, salt, signer.sign(challenge), expires);
     }
 
     @Override
@@ -81,7 +93,7 @@ public class AntiBotVerifier implements AntiBotVerification {
         if (payload == null || !"SHA-256".equals(payload.algorithm())
                 || payload.challenge() == null || !payload.challenge().matches("[0-9a-f]{64}")
                 || payload.salt() == null || !payload.salt().matches("[0-9a-f]{48}\\|[0-9]{1,12}")
-                || !signer.verifies(payload.salt(), payload.signature())) {
+                || !signer.verifies(payload.challenge(), payload.signature())) {
             rejected();
             return false;
         }
@@ -98,12 +110,15 @@ public class AntiBotVerifier implements AntiBotVerification {
                 && payload.number() >= 0
                 && payload.number() <= maxNumber
                 && challengeMatches(payload.salt(), payload.number(), payload.challenge());
-        if (expiry <= now.getEpochSecond() || (!validProof && !accessibleConfirmation)) {
+        boolean accessibleFallback = accessibleConfirmation
+                && payload.number() != null
+                && payload.number() == -1;
+        if (expiry <= now.getEpochSecond() || (!validProof && !accessibleFallback)) {
             rejected();
             return false;
         }
         purgeConsumed(now);
-        String challengeId = digest(payload.salt() + payload.signature());
+        String challengeId = digest(payload.challenge());
         if (consumedChallenges.size() >= properties.getMaximumChallenges()
                 || consumedChallenges.putIfAbsent(challengeId, Instant.ofEpochSecond(expiry)) != null) {
             rejected();

@@ -37,8 +37,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !HttpMethod.POST.matches(request.getMethod())
-                || !properties.protectedPaths().contains(request.getServletPath());
+        String path = request.getServletPath();
+        boolean challengeRequest = HttpMethod.GET.matches(request.getMethod())
+                && "/anti-bot/challenge".equals(path);
+        boolean protectedMutation = HttpMethod.POST.matches(request.getMethod())
+                && properties.protectedPaths().contains(path);
+        return !challengeRequest && !protectedMutation;
     }
 
     @Override

@@ -24,6 +24,7 @@ public record CustomerRegistrationForm(
         int privacyVersion,
         int marketingVersion,
         @Size(max = 4096) String altcha,
+        @Size(max = 4096) String altchaFallback,
         @Size(max = 256) String websiteAddress,
         boolean humanConfirmation) {
 
@@ -32,13 +33,14 @@ public record CustomerRegistrationForm(
         int privacy = versions == null ? 0 : versions.privacyVersion();
         int marketing = versions == null ? 0 : versions.marketingVersion();
         return new CustomerRegistrationForm("", "", "", "", "INDIVIDUAL", "", "ES", "",
-                false, false, false, terms, privacy, marketing, "", "", false);
+                false, false, false, terms, privacy, marketing, "", "", "", false);
     }
 
     public CustomerRegistrationCommand toCommand(String locale) {
+        String antiBotPayload = altcha == null || altcha.isBlank() ? altchaFallback : altcha;
         return new CustomerRegistrationCommand(email, password, personName, accountName, accountType,
                 locale, phoneNumber, countryCode, taxIdentifier, termsAccepted, privacyAccepted,
-                marketingAccepted, termsVersion, privacyVersion, marketingVersion, altcha,
+                marketingAccepted, termsVersion, privacyVersion, marketingVersion, antiBotPayload,
                 websiteAddress, humanConfirmation);
     }
 

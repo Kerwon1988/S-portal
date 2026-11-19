@@ -81,6 +81,8 @@ erDiagram
 | `messaging.message_attachment` | `message_id`, `file_public_id`, `created_at` | Relación local; descarga pasa autorización por conversación y FileStorage |
 | `messaging.thread_access_token` | `conversation_id`, `token_hash`, `expires_at`, `consumed_at`, `revoked_at` | Hash único, TTL, scope a un hilo y consumo atómico |
 
+El ownership CLIENT se valida mediante `shared.spi.ClientAccountOwnership`, implementado por customer; messaging no importa entidades ni repositorios de ese módulo. `MessagePosted` y `MessageReceived` contienen exclusivamente los UUID públicos de conversación y mensaje; los cuerpos se consultan mediante `messaging::api` con la política de visibilidad aplicada en persistencia.
+
 ## Notificación e integración
 ```mermaid
 erDiagram

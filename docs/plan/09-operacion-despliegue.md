@@ -14,6 +14,7 @@ Puertos separados de DEMO: app local `8090`. Los puertos SQL `14330`, Mailpit `1
 - El tag SQL Server, CU/digest y EULA quedan pendientes de la plataforma de despliegue. El prompt original menciona `mcr.microsoft.com/mssql/server:2022`, que se trata como **VERIFICAR** antes de desplegar, no como gate de desarrollo.
 - Producción: Dockerfile multi-stage, runtime no-root, filesystem mínimo, assets con huella, imagen base fijada, SBOM, healthcheck, TLS terminado en proxy. Un único desplegable y una BD; no separar módulos en microservicios.
 - Parámetros obligatorios validan al arranque (`portal.*`, URL pública, DB, SMTP, cifrado, endpoints DEMO); `dev/test/prod` no heredan secretos entre sí. `.env` nunca se publica.
+- La falta de Docker, Mailpit, ClamAV, SQL Server, PRE o credenciales en una máquina solo pospone las pruebas que dependan de esos recursos; no deja pendiente el código, la configuración ni los tests que se puedan preparar localmente. Ejecuta las pruebas disponibles; un fallo local bloquea las tareas dependientes. Registra cada ejecución externa no realizada como `POSTPONED` (o `PREPARADO_NO_EJECUTADO` para PRE), indicando prueba, recurso/entorno, motivo, evidencia requerida e instrucciones reproducibles para otra máquina habilitada; nunca como aprobada.
 
 ## SQL Server y ficheros
 - SQL Server 2022 es la única persistencia de producción; un árbol Flyway `db/migration/<module>/...`; esquema por módulo, `NVARCHAR`, UTC `datetime2(3)`, importes `DECIMAL(19,4)`, collation por confirmar. La ejecución SQL Server/Flyway no forma parte de los gates automatizados.
@@ -34,7 +35,7 @@ Puertos separados de DEMO: app local `8090`. Los puertos SQL `14330`, Mailpit `1
 - Health readiness comprueba DB y dependencias locales indispensables; liveness no depende de DEMO/SMTP para evitar reinicios en cascada. Circuit breaker gestiona dependencia externa.
 
 ## Email, secretos y seguridad operativa
-- Email por puerto `EmailSender`; Mailpit local. Proveedor productivo y región quedan abiertos (ADR-007). DNS SPF/DKIM/DMARC y prueba de entrega en HRD-009.
+- Email por puerto `EmailSender`; Mailpit es el destino de integración local cuando el servicio esté disponible. Si no está disponible, pospón la prueba de entrega y ejecútala en un entorno habilitado; esto no bloquea implementar el adapter, la configuración tipada ni sus pruebas locales. Proveedor productivo y región quedan abiertos (ADR-007). DNS SPF/DKIM/DMARC y prueba de entrega en HRD-009.
 - Secret manager o mecanismo de plataforma por decidir; ningún secreto en YAML, Compose, imagen, artefactos, logs o documentación. Rotar keys DB/SMTP/HMAC/cifrado; transición con dos claves activas para HMAC.
 - Egress mínimo a SQL, ClamAV, SMTP y host DEMO configurado; política de red bloquea destinos arbitrarios. HSTS solo bajo HTTPS; TLS mínimo y certificados gestionados por plataforma.
 - Si se despliegan varias réplicas, worker reclama outbox/provisioning con lease y locking DB; decidir estrategia de sesiones compartidas antes de escalar (SUPUESTO: despliegue inicial puede operar una réplica).

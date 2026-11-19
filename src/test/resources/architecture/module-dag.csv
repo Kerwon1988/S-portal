@@ -6,6 +6,7 @@ customer,audit;identity;legal;shared;staff
 files,shared
 identity,audit;notification;shared
 legal,audit;content;shared
-notification,shared
+messaging,audit;files;shared
+notification,messaging;shared
 staff,audit;identity;shared
 shared,

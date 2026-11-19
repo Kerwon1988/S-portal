@@ -19,6 +19,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 
 import com.simbio.core.audit.api.AuditRecord;
@@ -127,5 +129,89 @@ class StaffProfileServiceTest {
         verify(auditRecorder, Mockito.times(2)).record(auditRecords.capture());
         assertThat(auditRecords.getAllValues()).extracting(AuditRecord::actionCode)
                 .containsExactly("STAFF_PROFILE_UPDATED", "STAFF_STATUS_CHANGED");
+    }
+
+    @Test
+    void updateWithUnchangedStatusDoesNotChangeIdentityAccountState() {
+        UUID actorId = UUID.randomUUID();
+        UUID workerId = UUID.randomUUID();
+        StaffProfileEntity profile = new StaffProfileEntity(
+                workerId, LocalDate.of(2026, 11, 18), Instant.parse("2026-11-18T12:00:00Z"));
+        StaffAccountAccessManager accountAccess = Mockito.mock(StaffAccountAccessManager.class);
+        StaffProfileService service = new StaffProfileService(store, auditRecorder, accountAccess);
+        when(store.find(workerId)).thenReturn(Optional.of(profile));
+        when(store.specialties(workerId)).thenReturn(List.of("Analysis"));
+        AuthenticatedUser admin = new AuthenticatedUser(actorId, Role.ADMIN, Set.of(Permission.STAFF_MANAGE));
+
+        var result = service.update(admin, workerId, "  Specialist  ", "ACTIVE", List.of(" Analysis "));
+
+        assertThat(result.jobTitle()).isEqualTo("Specialist");
+        assertThat(result.specialties()).containsExactly("Analysis");
+        verify(accountAccess, never()).setActive(any(), any(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(auditRecorder).record(any(AuditRecord.class));
+        verify(store).replaceSpecialties(workerId, List.of("Analysis"));
+    }
+
+    @Test
+    void rejectsMissingProfilesAndInvalidSpecialties() {
+        UUID actorId = UUID.randomUUID();
+        UUID workerId = UUID.randomUUID();
+        StaffProfileService service = new StaffProfileService(
+                store, auditRecorder, Mockito.mock(StaffAccountAccessManager.class));
+        AuthenticatedUser admin = new AuthenticatedUser(actorId, Role.ADMIN, Set.of(Permission.STAFF_MANAGE));
+        when(store.find(workerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(admin, workerId, null, "ACTIVE", List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Worker profile is unavailable");
+        when(store.find(workerId)).thenReturn(Optional.of(new StaffProfileEntity(
+                workerId, LocalDate.of(2026, 11, 18), Instant.parse("2026-11-18T12:00:00Z"))));
+        assertThatThrownBy(() -> service.update(admin, workerId, null, "ACTIVE", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("At most 20 specialties are allowed");
+        assertThatThrownBy(() -> service.update(admin, workerId, null, "ACTIVE", List.of(" ")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid worker specialty");
+        assertThatThrownBy(() -> service.update(admin, workerId, null, "ACTIVE",
+                List.of("x".repeat(81))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid worker specialty");
+        verify(store, never()).replaceSpecialties(workerId, List.of());
+    }
+
+    @Test
+    void synchronizesIdentityStatusAndSearchesWithNormalizedFilters() {
+        UUID workerId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-11-18T12:00:00Z");
+        StaffProfileEntity profile = new StaffProfileEntity(
+                workerId, LocalDate.of(2026, 11, 18), now);
+        StaffProfileService service = new StaffProfileService(
+                store, auditRecorder, Mockito.mock(StaffAccountAccessManager.class),
+                Clock.fixed(now, ZoneOffset.UTC));
+        when(store.find(workerId)).thenReturn(Optional.of(profile));
+        when(store.save(profile)).thenReturn(profile);
+        when(store.search("Synthetic", "INACTIVE", PageRequest.of(0, 10,
+                org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))))
+                .thenReturn(new PageImpl<>(List.of(profile)));
+        when(store.specialties(workerId)).thenReturn(List.of("Analysis"));
+
+        service.synchronizeIdentityAccount(new IdentityAccountChanged(workerId, "CLIENT", "ACTIVE"));
+        assertThat(profile.getStatus()).isEqualTo("INACTIVE");
+        service.synchronizeIdentityAccount(null);
+        var results = service.search(" Synthetic ", " inactive ", new com.simbio.core.shared.paging.PageQuery(0, 10));
+
+        assertThat(results.content()).singleElement()
+                .extracting(com.simbio.core.staff.api.StaffSummary::userPublicId)
+                .isEqualTo(workerId);
+        assertThat(service.findByUserId(UUID.randomUUID())).isEmpty();
+        assertThatThrownBy(() -> service.search("x".repeat(121), null,
+                new com.simbio.core.shared.paging.PageQuery(0, 10)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Search text exceeds the allowed length");
+        assertThatThrownBy(() -> service.search(null, "pending",
+                new com.simbio.core.shared.paging.PageQuery(0, 10)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsupported worker status");
     }
 }

@@ -5,6 +5,9 @@ flowchart LR
   files["files — private storage and clean-file metadata"]
   identity["identity — users, roles and permissions"]
   content["content — bilingual CMS and public pages"]
+  messaging["messaging — conversations and public/internal messages"]
+  notification["notification — encrypted outbox and email delivery"]
+  customer["customer — client accounts and ownership"]
   config --> shared
   audit --> shared
   files --> shared
@@ -13,3 +16,8 @@ flowchart LR
   content --> shared
   content --> files
   content --> audit
+  messaging --> shared
+  messaging --> files
+  messaging --> audit
+  notification --> shared
+  notification --> messaging

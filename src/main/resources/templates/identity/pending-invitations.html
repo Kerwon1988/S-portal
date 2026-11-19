@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/backoffice :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-3xl px-4 py-8" tabindex="-1">
+    <section class="rounded-xl border border-border bg-surface p-6 sm:p-8">
+        <h1 th:if="${scope == 'clientes'}" class="font-heading text-3xl"
+            th:text="#{identity.invitation.pending.clients-title}">Pending client invitations</h1>
+        <h1 th:if="${scope == 'trabajadores'}" class="font-heading text-3xl"
+            th:text="#{identity.invitation.pending.employees-title}">Pending worker invitations</h1>
+        <p th:if="${resendResult == true}" class="mt-4" role="status"
+           th:text="#{identity.invitation.pending.resent}">The invitation was resent.</p>
+        <p th:if="${resendResult == false}" class="mt-4" role="status"
+           th:text="#{identity.invitation.pending.unavailable}">The invitation is no longer pending.</p>
+        <p th:if="${invitations.totalElements == 0}" class="mt-6"
+           th:text="#{identity.invitation.pending.empty}">There are no pending invitations.</p>
+        <p th:if="${invitations.totalElements > 0 and #lists.isEmpty(invitations.content)}"
+           class="mt-6" th:text="#{identity.invitation.pending.page-empty}">
+            There are no invitations on this page.
+        </p>
+        <ul th:if="${!#lists.isEmpty(invitations.content)}" class="mt-6 grid gap-4">
+            <li th:each="invitation : ${invitations.content}"
+                class="rounded-lg border border-border p-4 sm:flex sm:items-center sm:justify-between sm:gap-6">
+                <div>
+                    <h2 class="font-medium" th:text="${invitation.maskedEmail}">u***@example.test</h2>
+                    <p class="mt-2 text-sm text-muted">
+                        <span th:text="#{identity.invitation.pending.expires}">Expires</span>
+                        <time th:attr="datetime=${invitation.expiresAt}" th:text="${invitation.expiresAt}">
+                            2026-11-18T12:00:00Z
+                        </time>
+                    </p>
+                    <p th:if="${invitation.expired}" class="mt-2 text-sm text-danger" role="status"
+                       th:text="#{identity.invitation.pending.expired}">
+                        This invitation has expired and can be resent.
+                    </p>
+                </div>
+                <form method="post" class="mt-4 sm:mt-0"
+                      th:action="@{/gestion/identidad/invitaciones/pendientes/{scope}/{id}/reenviar(
+                          scope=${scope},id=${invitation.id})}">
+                    <button type="submit"
+                            class="min-h-11 w-full rounded bg-primary px-4 text-on-primary sm:w-auto"
+                            th:text="#{identity.invitation.pending.resend}"
+                            th:attr="aria-label=|#{identity.invitation.pending.resend} ${invitation.maskedEmail}|">
+                        Resend invitation
+                    </button>
+                </form>
+            </li>
+        </ul>
+        <nav th:if="${hasPrevious or hasNext}" class="mt-6 flex items-center justify-between"
+             th:attr="aria-label=#{identity.invitation.pending.pagination}">
+            <a th:if="${hasPrevious}"
+               th:href="@{/gestion/identidad/invitaciones/pendientes/{scope}(scope=${scope},page=${invitations.page - 1})}"
+               class="min-h-11 inline-flex items-center underline"
+               th:text="#{identity.invitation.pending.previous}">Previous</a>
+            <span th:text="${invitations.page + 1}" aria-current="page">1</span>
+            <a th:if="${hasNext}"
+               th:href="@{/gestion/identidad/invitaciones/pendientes/{scope}(scope=${scope},page=${invitations.page + 1})}"
+               class="min-h-11 inline-flex items-center underline"
+               th:text="#{identity.invitation.pending.next}">Next</a>
+        </nav>
+        <a th:if="${scope == 'clientes'}" th:href="@{/gestion/clientes/nuevo}"
+           class="mt-6 inline-block underline" th:text="#{identity.invitation.pending.create}">
+            Invite another person
+        </a>
+        <a th:if="${scope == 'trabajadores'}" th:href="@{/gestion/trabajadores/invitacion}"
+           class="mt-6 inline-block underline" th:text="#{identity.invitation.pending.create}">
+            Invite another person
+        </a>
+    </section>
+</main>
+</html>

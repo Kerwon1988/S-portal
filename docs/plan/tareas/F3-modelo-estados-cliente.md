@@ -9,7 +9,7 @@
 - Depende de: FND-006, FIL-001
 - Descripción: Cubre: RF-MSG-07; crea conversación/mensaje con contexto CONTACT o REQUEST y estado de bandeja independiente.
 - Ficheros/paquetes a crear o modificar (aproximado): `messaging.{api,domain,application,infrastructure}`, `messaging.conversation`, `messaging.message`.
-- Impacto modular: tablas owner `messaging`; referencia a cliente/request por IDs sin FK/JPA cruzadas; publica API de conversación. Ciclo: messaging solo depende de shared/files/audit.
+- Impacto modular: tablas owner `messaging`; referencia a cliente/request por IDs sin FK/JPA cruzadas; publica API de conversación. Depende de `shared`, `files::api` y `audit::api`. MSG-002 comprueba ownership mediante el SPI mínimo `shared.spi.ClientAccountOwnership`, implementado por `customer` sin crear una dependencia Java `messaging→customer`. `notification` depende de `messaging::api` para consumir eventos; `messaging` no depende de `notification`, `request` ni `identity`.
 - UI: n/a (modelo; bandeja en F4).
 - Seguridad: autor, timestamp y contexto obligatorios; mensajes y adjuntos privados por defecto.
 - Criterios de aceptación (Given/When/Then):
@@ -19,6 +19,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; modelo ER de messaging
 - Estimación: M (≤ 1 d)
 - Riesgos: conversación no debe convertirse en solicitud automáticamente; conservar distinción D07.
+- Estado local 2026-11-19: PARCIAL. Modelo, API Java, migración y persistencia H2 implementados; 2 tests H2 y compilación de todas las fuentes pasan. La migración no se ha ejecutado en SQL Server. La entrada pública de contacto se mantiene en MSG-003/F4.
 
 ### MSG-002 — Visibilidad PUBLIC/INTERNAL, API de conversación y eventos
 - Fase / épica / módulo owner: F3 / MSG / messaging
@@ -26,7 +27,7 @@
 - Depende de: MSG-001, AUD-001
 - Descripción: Cubre: RF-MSG-07, RF-MSG-09, RNF-SEC-01; separa mensajes públicos e internos y publica eventos con IDs solamente.
 - Ficheros/paquetes a crear o modificar (aproximado): `messaging.api.ConversationApi`, `MessagePosted/MessageReceived`, policies y queries autorizadas.
-- Impacto modular: request consume `messaging.api`; notification recibe eventos; messaging no importa request/identity. Sin ciclo.
+- Impacto modular: `request` consume `messaging::api`; `notification` consume los eventos de `messaging::api`; `messaging` no importa `request` ni `identity`. Las comprobaciones de propiedad usan `shared.spi.ClientAccountOwnership`; el adapter owner de `customer` accede a su propio repositorio. El DAG no tiene ciclos.
 - UI: contratos para hilo de cliente/empleado; notas internas solo en vista de empleado autorizada.
 - Seguridad: filtrar visibilidad en query, no solo plantilla; comprobar propietario/rol y auditar lectura/cambio.
 - Criterios de aceptación (Given/When/Then):
@@ -36,6 +37,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; matriz 07
 - Estimación: M (≤ 1 d)
 - Riesgos: filtro aplicado solo en UI permite fuga por endpoint; query debe exigir visibilidad.
+- Estado local 2026-11-19: PARCIAL. Servicio, filtro de persistencia, permisos, auditoría y eventos solo con IDs implementados; 7 tests de servicio y 5 tests de arquitectura/modularidad pasan. Faltan rutas/vistas HTTP, prueba de vista por rol y consumidor de notificaciones; por ello no se cierra MSG-002.
 
 ### REQ-001 — request: modelo de solicitudes, categorías y asignaciones con migraciones
 - Fase / épica / módulo owner: F3 / REQ / request

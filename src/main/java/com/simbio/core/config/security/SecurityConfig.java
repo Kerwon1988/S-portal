@@ -106,7 +106,7 @@ public class SecurityConfig {
                             "/assets/**", "/error", "/acceso", "/registro", "/preferences/**",
                             "/api/telemetry/errors", "/actuator/health/**",
                             "/verificar-email", "/recuperar", "/restablecer",
-                            "/invitacion/aceptar", "/fragments/anti-bot-challenge").permitAll();
+                            "/invitacion/aceptar", "/anti-bot/challenge").permitAll();
                     authorize.requestMatchers("/logout").authenticated();
                     AuthorizationRules.routes().forEach(rule ->
                             authorize.requestMatchers(rule.method(), rule.path()).access((authentication, context) -> {

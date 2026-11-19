@@ -27,7 +27,15 @@ public final class AuthorizationRules {
             new RoutePermission(HttpMethod.GET, "/gestion/usuarios/**", "USERS_MANAGE", "ADMIN"),
             new RoutePermission(HttpMethod.POST, "/gestion/usuarios/**", "USERS_MANAGE", "ADMIN"),
             new RoutePermission(HttpMethod.GET, "/gestion/identidad/invitaciones", "USERS_MANAGE", "ADMIN"),
-            new RoutePermission(HttpMethod.POST, "/gestion/identidad/invitaciones", "USERS_MANAGE", "ADMIN"));
+            new RoutePermission(HttpMethod.POST, "/gestion/identidad/invitaciones", "USERS_MANAGE", "ADMIN"),
+            new RoutePermission(HttpMethod.GET,
+                    "/gestion/identidad/invitaciones/pendientes/clientes", "USERS_MANAGE", "ADMIN"),
+            new RoutePermission(HttpMethod.POST,
+                    "/gestion/identidad/invitaciones/pendientes/clientes/*/reenviar", "USERS_MANAGE", "ADMIN"),
+            new RoutePermission(HttpMethod.GET,
+                    "/gestion/identidad/invitaciones/pendientes/trabajadores", "STAFF_MANAGE", "ADMIN"),
+            new RoutePermission(HttpMethod.POST,
+                    "/gestion/identidad/invitaciones/pendientes/trabajadores/*/reenviar", "STAFF_MANAGE", "ADMIN"));
 
     private AuthorizationRules() {
     }

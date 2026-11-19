@@ -43,6 +43,10 @@
                     class="inline-flex min-h-11 w-full items-center justify-center rounded bg-primary px-4 text-on-primary"
                     th:text="#{customer.invitation.submit}">Send invitation</button>
         </form>
+        <a th:href="@{/gestion/identidad/invitaciones/pendientes/clientes}"
+           class="mt-5 inline-block underline" th:text="#{customer.invitation.pending-link}">
+            Manage pending invitations
+        </a>
     </section>
 </main>
 </html>

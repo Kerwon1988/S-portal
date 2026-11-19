@@ -1,6 +1,6 @@
 # ADR-012 — Inventario operativo de errores
 
-- Estado: Aceptado; ERR-001..003 y PROMPT 04 completados y validados localmente; límites operativos/retención y aprobación legal productiva siguen pendientes fuera del alcance de desarrollo
+- Estado: Aceptado; ERR-001..004 y PROMPT 04/07 validados localmente para sus alcances de desarrollo. Límites operativos/retención, despliegue productivo y aprobación legal siguen pendientes fuera del alcance de desarrollo.
 - Fecha: 2026-11-11
 
 ## Contexto
@@ -24,9 +24,9 @@ Implementación inicial: `logs-error/error-inventory.json` por defecto, configur
 
 ERR-003 incorpora `POST /api/telemetry/errors`: el cliente solo lo usa tras consentimiento explícito; CSRF activo, `Origin` exacto same-origin, JSON no comprimido, máximo 4 KiB, allowlists de evento/nombre y rate limiting en memoria (30 de ráfaga, 30/minuto; navegador cinco/minuto). Los frames permitidos se convierten en nombres técnicos de assets fingerprinted y la ruta se vuelve a sanear en servidor. No hay acceso privilegiado de usuario ni se acepta un campo `source` del cliente. El rate limiter es por proceso y debe revisarse antes de escalar.
 
-## Verificaciones pendientes
+## Estado de verificación
 - ERR-001..002: implementados; 7 UT de error-tracking, 1 IT H2 y gates de capas/Modulith/DAG ejecutados y aprobados. El inventario no depende de la BD.
 - ERR-003: opt-in, intake, CSRF, same-origin, límites y sanitización implementados; `mvn verify` local con H2, build frontend y Playwright 15/15 aprobados, incluidos denegación por defecto, aceptación, revocación y fallo de almacenamiento. Se verificó la instancia en `local-h2`; no se certifica SQL Server ni despliegue multi-réplica. El texto provisional necesita revisión legal antes de producción. UIK-006, ERR-001 y FND-009 están satisfechas.
-- ERR-004: están presentes el visor server-side ADMIN con permiso dedicado, filtros, paginación, resolución/ignorado auditados y degradación sin detalles ante storage no disponible. Las pruebas específicas y la compilación del cambio no se ejecutaron; permanece sin verificar y abierto.
+- ERR-004 / PROMPT 07: completado para el alcance de desarrollo local. El visor server-side ADMIN tiene permiso dedicado, filtros, paginación, resolución/ignorado auditados y degradación sin detalles ante storage no disponible. Los 15 tests focales pasan: 4 de servicio, 9 del controlador (incluye semántica accesible de tabla y controles) y 2 IT de almacenamiento degradado. Un `verify` completo anterior pasó con 303 Surefire, 29 Failsafe y JaCoCo; la revalidación posterior del workspace no está verde, aunque los tests focales de ERR-004 sí pasan. SQL Server, despliegue productivo/multi-réplica, retención y límites operativos siguen sin verificar.
 - HRD-005/007/008/010: backup, métricas/alertas, retención aprobada y storage/secretos.
 - 13-preguntas-abiertas.md: cap/retención, persistencia multi-réplica, clasificación/severidad y payload frontend.

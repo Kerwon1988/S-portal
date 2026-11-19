@@ -131,4 +131,15 @@ public class OneTimeToken {
     public Instant getRevokedAt() {
         return revokedAt;
     }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void revoke(Instant now) {
+        if (!"INVITATION".equals(purpose) || now == null || consumedAt != null || revokedAt != null) {
+            throw new IllegalStateException("Invitation token is not pending");
+        }
+        revokedAt = now;
+    }
 }

@@ -3,6 +3,7 @@ package com.simbio.core.identity.application;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -70,6 +71,27 @@ class AdminUserActionsTest {
     }
 
     @Test
+    void activationIsPersistedAuditedAndNotified() {
+        UUID actorId = UUID.randomUUID();
+        UUID employeeId = UUID.randomUUID();
+        UserAccountEntity employee = account(employeeId, "EMPLOYEE");
+        employee.setActive(false);
+        when(accounts.findByPublicId(employeeId)).thenReturn(java.util.Optional.of(employee));
+
+        actions.setActive(admin(actorId, Permission.USERS_MANAGE), employeeId, true);
+
+        verify(accounts).save(employee);
+        verify(auditRecorder).record(org.mockito.ArgumentMatchers.argThat(record ->
+                actorId.equals(record.actorId())
+                        && "USER_ACTIVATED".equals(record.actionCode())
+                        && employeeId.equals(record.entityPublicId())));
+        verify(emailSender).enqueue(org.mockito.ArgumentMatchers.argThat(command ->
+                command.recipientUserId().equals(employeeId)
+                        && command.template() == EmailTemplate.ACCOUNT_SECURITY_CHANGED));
+        verify(events).publishEvent(new IdentityAccountChanged(employeeId, "EMPLOYEE", "ACTIVE"));
+    }
+
+    @Test
     void publishesIdentityChangeWhenAnEmployeeIsPromotedToAdministrator() {
         UUID actorId = UUID.randomUUID();
         UUID employeeId = UUID.randomUUID();
@@ -86,6 +108,48 @@ class AdminUserActionsTest {
         verify(emailSender).enqueue(org.mockito.ArgumentMatchers.argThat(command ->
                 command.recipientUserId().equals(employeeId)
                         && command.template() == EmailTemplate.ACCOUNT_SECURITY_CHANGED));
+    }
+
+    @Test
+    void unlockClearsLoginLockPersistsAuditsAndNotifies() {
+        UUID actorId = UUID.randomUUID();
+        UUID employeeId = UUID.randomUUID();
+        UserAccountEntity employee = account(employeeId, "EMPLOYEE");
+        Instant failedLogin = Instant.parse("2026-11-18T12:00:00Z");
+        for (int attempt = 0; attempt < 5; attempt++) {
+            employee.recordFailedLogin(failedLogin.plusSeconds(attempt));
+        }
+        when(accounts.findByPublicId(employeeId)).thenReturn(java.util.Optional.of(employee));
+
+        actions.unlock(admin(actorId, Permission.USERS_MANAGE), employeeId);
+
+        org.assertj.core.api.Assertions.assertThat(employee.getLockedUntil()).isNull();
+        org.assertj.core.api.Assertions.assertThat(employee.getFailedLoginCount()).isZero();
+        verify(accounts).save(employee);
+        verify(auditRecorder).record(org.mockito.ArgumentMatchers.argThat(record ->
+                actorId.equals(record.actorId())
+                        && "USER_UNLOCKED".equals(record.actionCode())
+                        && employeeId.equals(record.entityPublicId())));
+        verify(emailSender).enqueue(org.mockito.ArgumentMatchers.argThat(command ->
+                command.recipientUserId().equals(employeeId)
+                        && command.template() == EmailTemplate.ACCOUNT_SECURITY_CHANGED));
+    }
+
+    @Test
+    void administrativePasswordResetDelegatesToRecoveryFlowAndAuditsTheRequest() {
+        UUID actorId = UUID.randomUUID();
+        UUID employeeId = UUID.randomUUID();
+        UserAccountEntity employee = account(employeeId, "EMPLOYEE");
+        when(accounts.findByPublicId(employeeId)).thenReturn(java.util.Optional.of(employee));
+
+        actions.sendPasswordReset(admin(actorId, Permission.USERS_MANAGE), employeeId);
+
+        verify(passwordRecovery).requestReset("employee@example.test");
+        verify(auditRecorder).record(org.mockito.ArgumentMatchers.argThat(record ->
+                actorId.equals(record.actorId())
+                        && "PASSWORD_RESET_REQUESTED".equals(record.actionCode())
+                        && employeeId.equals(record.entityPublicId())));
+        verifyNoInteractions(emailSender);
     }
 
     @Test

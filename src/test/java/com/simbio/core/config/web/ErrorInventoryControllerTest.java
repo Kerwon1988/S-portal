@@ -101,6 +101,28 @@ class ErrorInventoryControllerTest {
     }
 
     @Test
+    void rendersSemanticTableAndExplicitLabelsForViewerControls() throws Exception {
+        when(inventoryService.snapshot()).thenReturn(inventory(true, List.of(
+                entry(FINGERPRINT, "HIGH", "OPEN", "/gestion/{id}", ""))));
+
+        mockMvc.perform(get("/gestion/errores").with(admin()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("<h1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("<caption")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("scope=\"col\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("for=\"source\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("for=\"severity\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("for=\"status\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("<details>")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("<summary")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "for=\"resolution-note-" + FINGERPRINT + "\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "for=\"status-" + FINGERPRINT + "\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("type=\"submit\"")));
+    }
+
+    @Test
     void deniesNonAdminEvenWhenTheyHaveTheDedicatedPermission() throws Exception {
         mockMvc.perform(get("/gestion/errores")
                         .with(user("employee").authorities(

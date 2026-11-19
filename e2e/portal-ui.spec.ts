@@ -53,6 +53,19 @@ for (const { language, theme, viewport } of matrix) {
   });
 }
 
+test("customer registration form is accessible", async ({ page }) => {
+  if (!baseURL) {
+    throw new Error("E2E precondition missing: start S-portal and set PORTAL_E2E_BASE_URL.");
+  }
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/registro");
+  await expect(page.getByRole("main")).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page }).analyze();
+  expect(accessibility.violations).toEqual([]);
+});
+
 test("drawer opens and closes with the keyboard", async ({ page }) => {
   if (!baseURL) {
     throw new Error("E2E precondition missing: start S-portal and set PORTAL_E2E_BASE_URL.");

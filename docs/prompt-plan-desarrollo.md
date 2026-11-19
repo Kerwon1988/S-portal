@@ -29,6 +29,7 @@ El resultado es **solo documentación de planificación**: plan, ADR en borrador
 6. Escribe la documentación en español. Los identificadores de código, paquetes, tablas y claves i18n van en inglés.
 7. Usa diagramas Mermaid: C4 (contexto, contenedores, componentes), ER, secuencia, estados y DAG de tareas.
 8. Mantén la trazabilidad completa: cada punto de `docs/idea.md` → requisito(s) → tarea(s) → test(s).
+9. Al ejecutar las tareas planificadas, desarrolla el código, configuración y tests requeridos aunque el ejecutor externo no esté disponible. Ejecuta todos los tests disponibles; un fallo bloquea avanzar tareas dependientes. Pospón solo la ejecución que requiera la herramienta ausente, documentando prueba, entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada; no la declares aprobada ni cierres el ID si es un criterio obligatorio. La indisponibilidad no bloquea la implementación ni el trabajo independiente.
 
 ## 3. Fuentes obligatorias
 
@@ -438,6 +439,7 @@ Convierte cada punto en requisitos con ID (`RF-<ÁREA>-NN`), prioridad MoSCoW, f
 - **Por capa:**
   - Unitarios (dominio), slices `@WebMvcTest` con seguridad y `@ApplicationModuleTest` por módulo.
   - Pruebas de persistencia automatizadas con H2 en memoria y esquema generado.
+  - Implementar también código/configuración y tests para herramientas externas no disponibles localmente. Ejecutar aquí todos los gates disponibles; fallos bloquean tareas dependientes. Posponer únicamente la ejecución que requiera la herramienta ausente, con estado `POSTPONED`, entorno, motivo, evidencia pendiente e instrucciones reproducibles para ejecutarla en otra máquina habilitada; nunca confundirla con `PASS`.
   - No se requieren pruebas SQL Server/Flyway con Testcontainers para cerrar tareas. La compatibilidad SQL Server y la ejecución del árbol Flyway quedan sin verificar y se documentan como limitación, no como gate.
   - Contrato con DEMO: WireMock desde el OpenAPI en el portal + tests de proveedor en DEMO.
 - **E2E con Playwright** de los recorridos críticos:

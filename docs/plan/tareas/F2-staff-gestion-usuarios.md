@@ -49,7 +49,7 @@
 - Criterios de aceptación (Given/When/Then):
   - Given ADMIN aplica filtro y orden When lista resultados Then SQL pagina, total es consistente y CSV refleja filtro.
   - Given CLIENT o EMPLOYEE sin permiso When solicita listado/export CSV Then recibe 403 y no accede a PII.
-- Tests: TC-USR-001: WT (filtros/paginación/403), IT (consulta/index), SEC (CSV injection/PII).
+- Tests: TC-USR-001: WT (filtros/paginación/403), IT (consulta/index), SEC (CSV injection/PII); el CSV debe exigir `USERS_MANAGE` y `CLIENTS_EXPORT`, rechazar más de 1000 filas antes de auditar y preservar filtros/orden en todas las páginas exportadas.
 - Documentación a actualizar: DIARIO + INVENTARIO; índices y rutas
 - Estimación: M (≤ 1 d)
 - Riesgos: filtro global puede degradar SQL; limitar campos y tamaño de página.
@@ -109,14 +109,15 @@
 - Fase / épica / módulo owner: F2 / E2E / test
 - Tipo: test
 - Depende de: STF-001, CMS-006, UIK-009, IAM-009, IAM-012
-- Descripción: Cubre: RNF-TST-03; automatiza ADMIN con MFA invita trabajador, acepta enlace y realiza edición permitida del CMS.
+- Descripción: Cubre: RNF-TST-03; automatiza ADMIN con MFA, invita al trabajador y verifica la aceptación, la denegación CMS a EMPLOYEE y la edición autorizada del borrador por ADMIN.
 - Ficheros/paquetes a crear o modificar (aproximado): `e2e/invitation-cms.spec.ts`, fixtures de email, datos efímeros y setup TOTP.
 - Impacto modular: prueba sistema por navegador/HTTP; sin contratos o tablas de producción adicionales. Ciclo: ninguno.
 - UI: desktop/mobile, ES/EN; valida errores, foco y navegación autenticada.
 - Seguridad: secretos TOTP efímeros por entorno, no guardar screenshots con credenciales/tokens.
 - Criterios de aceptación (Given/When/Then):
-  - Given ADMIN con MFA habilitado When invita y trabajador acepta Then token se consume, perfil aparece y sesión tiene permisos esperados.
-  - Given invitación vencida o trabajador intenta editar sin CONTENT_EDIT When navega Then se deniega sin cambiar contenido.
+  - Given ADMIN con MFA habilitado When invita y el trabajador acepta Then el token se consume y aparece el perfil con los permisos esperados.
+  - Given invitación vencida o EMPLOYEE sin `CONTENT_EDIT` When acepta el enlace vencido o intenta editar CMS Then se deniega sin cambiar contenido.
+  - Given ADMIN con `CONTENT_EDIT` When edita el borrador CMS Then el cambio permitido se guarda.
 - Tests: TC-E2E-001: E2E (Playwright), A11Y (flujo), SEC (caducidad/permiso).
 - Documentación a actualizar: DIARIO + INVENTARIO; README «E2E»
 - Estimación: M (≤ 1 d)

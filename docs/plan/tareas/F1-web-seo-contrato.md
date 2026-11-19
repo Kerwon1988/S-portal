@@ -171,4 +171,4 @@
 - Tests: TC-SIM-002: CT (lint/schema y ejemplos), revisión de contrato por owners portal/DEMO.
 - Documentación a actualizar: DIARIO + INVENTARIO; 05-integracion y ADR-002
 - Estimación: M (≤ 1 d)
-- Riesgos: desfase entre contrato y DEMO; bloquear implementación hasta acuerdo y tests de proveedor.
+- Riesgos: el desacuerdo del contrato bloquea la integración/rutas que dependan de su aprobación; prepara fixtures y tests de proveedor conforme al contrato aprobado. Si el ejecutor del proveedor no está disponible localmente, pospón solo esa ejecución con instrucciones para otra máquina habilitada; no detengas código ni pruebas locales independientes.

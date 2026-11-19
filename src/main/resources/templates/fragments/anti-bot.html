@@ -4,13 +4,10 @@
     </label>
     <input id="website-address" name="websiteAddress" type="text" tabindex="-1" autocomplete="off"
            class="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
-    <input type="hidden" name="altcha" th:value="${challenge.accessiblePayload()}">
-    <input type="hidden" name="altchaAlgorithm" th:value="${challenge.algorithm}">
-    <input type="hidden" name="altchaChallenge" th:value="${challenge.challenge}">
-    <input type="hidden" name="altchaMaxnumber" th:value="${challenge.maxNumber}">
-    <input type="hidden" name="altchaSalt" th:value="${challenge.salt}">
-    <input type="hidden" name="altchaSignature" th:value="${challenge.signature}">
-    <p class="mt-2 text-sm text-muted" th:text="#{identity.antibot.processing}">
+    <input type="hidden" name="altcha" value="">
+    <input type="hidden" name="altchaFallback" th:value="${challenge.accessiblePayload()}">
+    <p class="mt-2 text-sm text-muted" data-anti-bot-status role="status" aria-live="polite"
+       th:text="#{identity.antibot.processing}">
         This form uses an automatic, accessible protection check.
     </p>
     <label class="mt-3 flex min-h-11 items-center gap-2">
@@ -18,6 +15,8 @@
         <span th:text="#{identity.antibot.fallback}">I am submitting this form myself.</span>
     </label>
     <p class="mt-2 text-sm text-danger" data-anti-bot-error role="alert" hidden
-       th:text="#{identity.antibot.error}">The automatic check could not complete. Use the accessible alternative.</p>
-    <script defer th:src="${assets['anti-bot.js']}" th:attr="nonce=${cspNonce}"></script>
+       tabindex="-1" th:text="#{identity.antibot.error}">
+        The automatic check could not complete. Use the accessible alternative.
+    </p>
+    <script type="module" defer th:src="${assets['anti-bot.js']}" th:attr="nonce=${cspNonce}"></script>
 </div>

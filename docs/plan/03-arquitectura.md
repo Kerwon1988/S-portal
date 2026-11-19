@@ -62,7 +62,7 @@ C4Component
   Rel(request, staff, "API publicada")
   Rel(request, messaging, "API publicada")
   Rel(request, simbio, "API publicada desde F5")
-  Rel(messaging, notification, "API/eventos")
+  Rel(notification, messaging, "Consume MessagePosted/MessageReceived (IDs)")
   Rel(simbio, customer, "API publicada")
   Rel(identity, notification, "RecipientDirectory por SPI shared")
 ```
@@ -76,21 +76,23 @@ Las flechas en la columna «Depende de» indican dependencias Java permitidas ha
 |---|---|---|---|---|
 | `audit` | Registro inmutable; `AuditRecorder`; implementa `shared.spi.AuditEventRecorder` | ninguno | `audit.audit_entry` | `shared` |
 | `files` | Puerto `FileStorage`, metadata y escaneo | ninguno | `files.file_metadata`, `files.file_variant` | `shared` |
-| `notification` | `EmailSender`, SMTP, plantillas y worker de outbox | consumidores de eventos; no publica PII | `notification.outbox_message` (implementada); preferencias futuras | `shared` |
+| `notification` | `EmailSender`, SMTP, plantillas y worker de outbox | consume eventos de dominio por API Modulith; no publica PII | `notification.outbox_message` (implementada); preferencias futuras | `shared`, `messaging` (API de eventos) |
 | `content` | CMS, render, SEO y páginas públicas | `PagePublished` (IDs) | `content.page`, `page_translation`, `content_block`, `page_version`, `team_member`, `legal_document_version`, `slug_redirect` | `shared`, `files`, `audit` |
 | `legal` | Consentimientos, derechos, retención | `DataSubjectErasureRequested` | `legal.consent_record`; `data_subject_request` y `retention_policy` propuestos | `shared`, `content`, `audit` |
 | `identity` | Usuarios, autenticación, permisos, tokens, MFA y perfil | `ClientRegistered`, `EmailVerified`, `InvitationAccepted` (IDs) | `identity.user_account`, `role`, `permission`, `one_time_token`, `mfa_factor` | `shared`, `legal`, `notification`, `audit` |
 | `customer` | ClientAccount, miembros, registro, invitaciones y directorio administrativo | `ClientRegistered` (IDs); consume `InvitationAccepted` (IDs + referencia opaca) | `customer.client_account`, `account_member`, `client_invitation` | `shared`, `identity`, `legal`, `staff`, `audit` |
 | `staff` | Perfil, especialidades y estado de trabajador | consume `InvitationAccepted` | `staff.staff_profile`, `staff_specialty` | `shared`, `identity`, `audit` |
 | `simbiosphere` | Saga, API M2M y vínculos externos | `ProvisioningStateChanged` (IDs) | `simbiosphere.provisioning`, `account_link`, `linked_business` | `shared`, `customer`, `identity`, `notification`, `audit` |
-| `messaging` | Conversaciones CONTACT/REQUEST y visibilidad | `MessagePosted`, `MessageReceived` (IDs) | `messaging.conversation`, `message`, `message_attachment`, `thread_access_token` | `shared`, `files`, `customer`, `notification`, `audit` |
+| `messaging` | Conversaciones CONTACT/REQUEST, mensajes y visibilidad; API consumida por `request` | publica `MessagePosted`/`MessageReceived` con IDs únicamente | `messaging.conversation`, `message`, `message_attachment`, `thread_access_token` | `shared` (SPI mínimo de ownership), `files`, `audit` |
 | `request` | Solicitudes, asignación, estados y presupuestos | `RequestStatusChanged` (IDs) | `request.request`, `assignment`, `quote`, `quote_version`, `request_attachment`, `status_history` | `shared`, `content` (lectura publicada), `customer`, `staff`, `messaging`, `files`, `simbiosphere`, `notification`, `audit` |
-| `shared` | Kernel mínimo y SPIs (`CurrentUser`, `RecipientDirectory`, `ThemePreference`, `LocalePreference`, `SensitiveDataProtector`, `AntiBotVerification`, `PersonalDataContributor`, `NavContribution`, `ErrorReporter`, `AuditEventRecorder`) | n/a | ninguna | ninguno; OPEN |
+| `shared` | Kernel mínimo y SPIs (`CurrentUser`, `RecipientDirectory`, `ThemePreference`, `LocalePreference`, `SensitiveDataProtector`, `AntiBotVerification`, `PersonalDataContributor`, `ClientAccountOwnership`, `NavContribution`, `ErrorReporter`, `AuditEventRecorder`) | n/a | ninguna | ninguno; OPEN |
 | `config` | Web, security, i18n, tema, rate limit, anti-bot, observabilidad, `ErrorInventoryService` y visor ADMIN | n/a | ninguna; inventario JSON externo a SQL | `shared`; OPEN, sin dependencia de negocio |
 
 `site` se integra en `content`; presupuestos son parte del agregado `request`; `staff` y `customer` conservan owners distintos. No se crean módulos vacíos.
 
-PROMPT 09 añade código a `notification`, `identity` y `config`; PROMPT 10 añade código parcial a `legal` y `customer`. `compile` y `test-compile` pasaron con Java 21 el 2026-11-18, pero no se ejecutaron tests porque falta una dependencia Surefire en la caché offline. `/registro` usa el servicio anti-bot local y alta de identidad, consentimiento y cuenta; `/gestion/clientes/nuevo` crea la cuenta tras la aceptación de invitación. El proof-of-work/honeypot no usa la biblioteca/protocolo oficial ALTCHA y su replay guard no coordina réplicas. Las invitaciones customer retienen metadatos cifrados sin caducidad/limpieza propia. LGL-002/003 continúan pendientes: faltan contributors de todos los owners, aprobación de anonimización y plazos de retención. El MFA es obligatorio para ADMIN y los usuarios EMPLOYEE pueden optar por enrolarse; el login desafía a cualquier usuario con factor activo. Ver [INVENTARIO.md](../../INVENTARIO.md) para el estado y las limitaciones.
+Para evitar el ciclo `customer → identity → notification → messaging → customer`, `messaging` valida si un CLIENT conserva una cuenta OWNER activa mediante el SPI `shared.spi.ClientAccountOwnership`; su adapter consulta exclusivamente el almacenamiento propio de `customer`. Los eventos permanecen en `messaging::api`, y `notification` podrá consumirlos en su propio sentido de dependencia. El DAG no incluye una llamada de `messaging` a `customer`.
+
+PROMPT 09 añade código a `notification`, `identity` y `config`; PROMPT 10 añade código parcial a `legal` y `customer`. La última verificación Java 21 `verify -Plocal-h2` pasó con 322 tests Surefire y 30 Failsafe H2 (29 pasaron, 1 opt-in se omitió), sin fallos ni errores y con JaCoCo aprobado. `/registro` usa el servicio anti-bot local y alta de identidad, consentimiento y cuenta; `/gestion/clientes/nuevo` crea la cuenta tras la aceptación de invitación. `identity` ofrece listados separados y paginados de invitaciones pendientes de clientes y trabajadores, con reenvío acotado por permiso y rotación de token. El proof-of-work/honeypot no usa la biblioteca/protocolo oficial ALTCHA y su replay guard no coordina réplicas. Las invitaciones customer retienen metadatos cifrados sin caducidad/limpieza propia. LGL-002/003 continúan pendientes: faltan contributors de todos los owners, aprobación de anonimización y plazos de retención. El MFA es obligatorio para ADMIN y los usuarios EMPLOYEE pueden optar por enrolarse; el login desafía a cualquier usuario con factor activo. Ver [INVENTARIO.md](../../INVENTARIO.md) para el estado y las limitaciones.
 
 ## DAG de dependencias
 ```mermaid
@@ -99,6 +101,7 @@ flowchart LR
   files --> shared
   request --> content
   notification --> shared
+  notification --> messaging
   content --> shared
   content --> files
   content --> audit
@@ -124,8 +127,6 @@ flowchart LR
   simbiosphere --> audit
   messaging --> shared
   messaging --> files
-  messaging --> customer
-  messaging --> notification
   messaging --> audit
   request --> shared
   request --> customer
@@ -136,7 +137,7 @@ flowchart LR
   request --> notification
   request --> audit
 ```
-El grafo es acíclico. `audit`, `files` y `notification` son hojas de negocio que solo dependen de `shared`. `config` usa `shared` y no aparece como dependencia de negocio.
+El grafo es acíclico. `audit` y `files` son hojas de negocio que solo dependen de `shared`. `notification` consume el API de eventos de `messaging`; `config` usa `shared` y no aparece como dependencia de negocio.
 
 ## Capas, paquetes y datos
 - Cada módulo vive bajo `com.simbio.core.<module>`; raíz con `package-info.java` y `@ApplicationModule(allowedDependencies=...)`.

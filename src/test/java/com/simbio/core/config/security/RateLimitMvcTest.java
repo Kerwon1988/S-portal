@@ -1,9 +1,13 @@
 package com.simbio.core.config.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -51,6 +55,29 @@ class RateLimitMvcTest {
                         .header("X-Forwarded-For", "203.0.113.2")
                         .param("username", "other@example.test")
                         .param("password", "synthetic-password"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"));
+    }
+
+    @Test
+    void servesNoStoreAltchaChallengeAndRateLimitsItsEndpoint() throws Exception {
+        RequestPostProcessor remoteClient = request -> {
+            request.setServletPath("/anti-bot/challenge");
+            request.setRemoteAddr("198.51.100.204");
+            return request;
+        };
+        mockMvc.perform(get("/anti-bot/challenge").with(remoteClient))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(header().string("Cache-Control", containsString("no-store")))
+                .andExpect(jsonPath("$.algorithm").value("SHA-256"))
+                .andExpect(jsonPath("$.challenge").isNotEmpty())
+                .andExpect(jsonPath("$.maxnumber").isNumber())
+                .andExpect(jsonPath("$.maxNumber").doesNotExist())
+                .andExpect(jsonPath("$.salt").isNotEmpty())
+                .andExpect(jsonPath("$.signature").isNotEmpty());
+
+        mockMvc.perform(get("/anti-bot/challenge").with(remoteClient))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"));
     }
