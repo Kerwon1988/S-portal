@@ -72,12 +72,17 @@ public class MessageEntity {
         this.authorType = Objects.requireNonNull(authorType, "authorType must not be null");
         this.visibility = Objects.requireNonNull(visibility, "visibility must not be null");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
-        if (authorType == MessageAuthorType.ANONYMOUS || authorType == MessageAuthorType.SYSTEM) {
+        if (authorType == MessageAuthorType.ANONYMOUS
+                || authorType == MessageAuthorType.SYSTEM
+                || authorType == MessageAuthorType.AI_AGENT) {
             if (authorId != null) {
-                throw new IllegalArgumentException("Anonymous and system messages must not carry a user id");
+                throw new IllegalArgumentException("Anonymous, system and AI messages must not carry a user id");
             }
         } else if (authorId == null) {
             throw new IllegalArgumentException("Authenticated messages require an author id");
+        }
+        if (authorType == MessageAuthorType.AI_AGENT && visibility != MessageVisibility.INTERNAL) {
+            throw new IllegalArgumentException("AI messages must remain internal until human approval");
         }
         if (body == null || body.isBlank() || body.length() > MAX_BODY_LENGTH) {
             throw new IllegalArgumentException("Message body must contain 1 to 10000 characters");
@@ -124,6 +129,10 @@ public class MessageEntity {
 
     public void markRead(Instant timestamp) {
         this.readAt = Objects.requireNonNull(timestamp, "timestamp must not be null");
+    }
+
+    public void markUnread() {
+        this.readAt = null;
     }
 
     @Override

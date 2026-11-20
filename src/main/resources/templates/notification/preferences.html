@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('notification.preferences.title', ~{::main}, 'account')}">
+<main id="main-content" class="mx-auto w-full max-w-2xl px-4 py-10" tabindex="-1">
+    <section class="rounded-xl border border-border bg-surface p-6 sm:p-8">
+        <h1 class="font-heading text-3xl" th:text="#{notification.preferences.title}">Notification preferences</h1>
+        <p class="mt-2 text-text-muted" th:text="#{notification.preferences.description}">Choose optional operational emails.</p>
+        <p th:if="${saved}" role="status" class="mt-4 text-success" th:text="#{notification.preferences.saved}">Preferences saved.</p>
+        <form method="post" th:action="@{/cuenta/notificaciones}" class="mt-6 space-y-5">
+            <fieldset class="space-y-4">
+                <legend class="font-semibold" th:text="#{notification.preferences.optional}">Optional notifications</legend>
+                <label class="flex min-h-11 items-start gap-3 rounded border border-border p-4">
+                    <input type="checkbox" name="requestUpdates" value="true" th:checked="${requestUpdates}">
+                    <span>
+                        <span class="font-medium" th:text="#{notification.preferences.requests}">Request updates</span>
+                        <span class="block text-sm text-text-muted" th:text="#{notification.preferences.requests-help}">Request status changes.</span>
+                    </span>
+                </label>
+                <label class="flex min-h-11 items-start gap-3 rounded border border-border p-4">
+                    <input type="checkbox" name="messageUpdates" value="true" th:checked="${messageUpdates}">
+                    <span>
+                        <span class="font-medium" th:text="#{notification.preferences.messages}">Conversation messages</span>
+                        <span class="block text-sm text-text-muted" th:text="#{notification.preferences.messages-help}">New public messages.</span>
+                    </span>
+                </label>
+            </fieldset>
+            <p class="rounded border border-border p-3 text-sm text-muted" th:text="#{notification.preferences.essential}">
+                Essential security and legal notices cannot be disabled.
+            </p>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="min-h-11 rounded bg-primary px-4 text-on-primary"
+                    th:text="#{notification.preferences.save}">Save preferences</button>
+        </form>
+    </section>
+</main>
+</html>

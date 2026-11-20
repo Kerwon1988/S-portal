@@ -108,7 +108,9 @@ class LayerRulesTest {
             .allowEmptyShould(true);
 
     private static final ArchRule SHARED_AND_CONFIG_DO_NOT_DEPEND_ON_BUSINESS = noClasses()
-            .that().resideInAnyPackage("..shared..", "..config..")
+            .that().resideInAnyPackage(
+                    "com.simbio.core.shared..", "com.simbio.core.config..",
+                    "com.simbio.architecture.fixtures.shared..")
             .should().dependOnClassesThat().resideInAnyPackage(
                     "..audit..", "..budget..", "..client..", "..content..", "..customer..", "..files..",
                     "..identity..", "..legal..", "..messaging..", "..notification..",

@@ -33,16 +33,38 @@ public class SmtpEmailSender implements EmailDeliveryPort {
     private final TemplateEngine htmlTemplateEngine;
     private final TemplateEngine plainTextTemplateEngine;
     private final NotificationProperties properties;
+    private final URI baseUri;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    SmtpEmailSender(
+            JavaMailSender mailSender,
+            MessageSource messageSource,
+            TemplateEngine htmlTemplateEngine,
+            NotificationProperties properties,
+            @org.springframework.beans.factory.annotation.Value("${portal.base-url}") String baseUrl) {
+        this(mailSender, messageSource, htmlTemplateEngine, properties, java.util.Objects.requireNonNull(
+                URI.create(baseUrl)));
+    }
 
     SmtpEmailSender(
             JavaMailSender mailSender,
             MessageSource messageSource,
             TemplateEngine htmlTemplateEngine,
             NotificationProperties properties) {
+        this(mailSender, messageSource, htmlTemplateEngine, properties, (URI) null);
+    }
+
+    private SmtpEmailSender(
+            JavaMailSender mailSender,
+            MessageSource messageSource,
+            TemplateEngine htmlTemplateEngine,
+            NotificationProperties properties,
+            URI baseUri) {
         this.mailSender = mailSender;
         this.messageSource = messageSource;
         this.htmlTemplateEngine = htmlTemplateEngine;
         this.properties = properties;
+        this.baseUri = baseUri;
         StringTemplateResolver resolver = new StringTemplateResolver();
         resolver.setTemplateMode(TemplateMode.TEXT);
         plainTextTemplateEngine = new SpringTemplateEngine();
@@ -59,9 +81,10 @@ public class SmtpEmailSender implements EmailDeliveryPort {
                 "body", messageSource.getMessage(key + ".body", null, locale),
                 "actionLabel", messageSource.getMessage(key + ".action", null, locale),
                 "fallback", messageSource.getMessage("notification.email.fallback", null, locale),
-                "actionUrl", actionUrl(command.variables().getOrDefault("url", "")),
+                "actionUrl", actionUrl(command.variables().getOrDefault("url",
+                        command.variables().getOrDefault("actionUrl", "")), command.isOperational(), baseUri),
                 "brand", messageSource.getMessage("notification.email.brand", null, locale)));
-        String html = htmlTemplateEngine.process("notification/email/message", context);
+        String html = htmlTemplateEngine.process(templatePath(command.template()), context);
         String plain = plainTextTemplateEngine.process("""
                 [[${brand}]]
 
@@ -91,12 +114,18 @@ public class SmtpEmailSender implements EmailDeliveryPort {
         return properties.getFromAddress();
     }
 
-    private static String actionUrl(String value) {
+    private static String actionUrl(String value, boolean operational, URI baseUri) {
         if (value.isBlank()) {
             return "";
         }
         try {
             URI uri = URI.create(value);
+            if (operational && baseUri != null) {
+                uri = baseUri.resolve(uri);
+                if (!sameOrigin(baseUri, uri)) {
+                    throw new IllegalArgumentException("Operational email URL must remain on the portal origin");
+                }
+            }
             String scheme = uri.getScheme();
             if (!uri.isAbsolute() || uri.getHost() == null || uri.getUserInfo() != null
                     || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
@@ -108,6 +137,16 @@ public class SmtpEmailSender implements EmailDeliveryPort {
         }
     }
 
+    private static boolean sameOrigin(URI left, URI right) {
+        return left.getScheme().equalsIgnoreCase(right.getScheme())
+                && left.getHost().equalsIgnoreCase(right.getHost())
+                && effectivePort(left) == effectivePort(right);
+    }
+
+    private static int effectivePort(URI uri) {
+        return uri.getPort() >= 0 ? uri.getPort() : "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+    }
+
     private static String messageKey(EmailTemplate template) {
         return "notification.email." + switch (template) {
             case EMAIL_VERIFICATION -> "verification";
@@ -115,6 +154,22 @@ public class SmtpEmailSender implements EmailDeliveryPort {
             case PASSWORD_CHANGED -> "password-changed";
             case ACCOUNT_SECURITY_CHANGED -> "account-security-changed";
             case INVITATION -> "invitation";
+            case REQUEST_CREATED -> "request-created";
+            case REQUEST_STATUS_CHANGED -> "request-status-changed";
+            case QUOTE_SENT -> "quote-sent";
+            case MESSAGE_POSTED -> "message-posted";
+            case CONTACT_ACKNOWLEDGEMENT -> "contact-acknowledgement";
+            case PROVISIONING_ACTION_REQUIRED -> "provisioning-action-required";
+            case PROVISIONING_FAILED -> "provisioning-failed";
+        };
+    }
+
+    private static String templatePath(EmailTemplate template) {
+        return "notification/email/" + switch (template) {
+            case REQUEST_CREATED, REQUEST_STATUS_CHANGED, QUOTE_SENT -> "request_status_changed";
+            case MESSAGE_POSTED -> "message_posted";
+            case PROVISIONING_ACTION_REQUIRED, PROVISIONING_FAILED -> "provisioning_alert";
+            default -> "message";
         };
     }
 

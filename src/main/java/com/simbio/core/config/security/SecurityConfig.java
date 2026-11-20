@@ -33,8 +33,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    CspNonceFilter cspNonceFilter(Environment environment) {
-        return new CspNonceFilter(environment);
+    CspNonceFilter cspNonceFilter() {
+        return new CspNonceFilter();
     }
 
     @Bean
@@ -104,19 +104,22 @@ public class SecurityConfig {
                     authorize.requestMatchers("/", "/es", "/es/**", "/en", "/en/**", "/public/**",
                             "/public/media/**", "/sitemap.xml", "/robots.txt",
                             "/assets/**", "/error", "/acceso", "/registro", "/preferences/**",
-                            "/api/telemetry/errors", "/actuator/health/**",
+                            "/api/telemetry/errors", "/actuator/health/**", "/actuator/prometheus",
                             "/verificar-email", "/recuperar", "/restablecer",
-                            "/invitacion/aceptar", "/anti-bot/challenge").permitAll();
+                            "/invitacion/aceptar", "/anti-bot/challenge", "/continuar/**").permitAll();
                     authorize.requestMatchers("/logout").authenticated();
                     AuthorizationRules.routes().forEach(rule ->
                             authorize.requestMatchers(rule.method(), rule.path()).access((authentication, context) -> {
                                 var authorities = authentication.get().getAuthorities();
-                                boolean hasPermission = authorities.stream()
-                                        .anyMatch(authority -> rule.permission().equals(authority.getAuthority()));
+                                        var requiredPermissions = rule.permissions();
+                                        boolean hasPermission = authorities.stream()
+                                                .anyMatch(authority ->
+                                                        requiredPermissions.contains(authority.getAuthority()));
                                 boolean hasRole = rule.role() == null || authorities.stream()
                                         .anyMatch(authority -> ("ROLE_" + rule.role()).equals(authority.getAuthority()));
                                 return new AuthorizationDecision(hasPermission && hasRole);
                             }));
+                    authorize.requestMatchers("/cuenta/datos").hasRole("CLIENT");
                     authorize.requestMatchers("/cuenta/**").authenticated();
                     authorize.anyRequest().denyAll();
                 })
@@ -127,7 +130,10 @@ public class SecurityConfig {
                             referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
                     headers.httpStrictTransportSecurity(hsts ->
                             hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000));
-                    headers.addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", "microphone=(self)"));
+                    headers.addHeaderWriter(new StaticHeadersWriter(
+                            "Permissions-Policy",
+                            "accelerometer=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), "
+                                    + "magnetometer=(), microphone=(self), payment=(), usb=()"));
                 });
         http.addFilterBefore(cspNonceFilter, HeaderWriterFilter.class);
         http.addFilterBefore(correlationIdFilter, CspNonceFilter.class);

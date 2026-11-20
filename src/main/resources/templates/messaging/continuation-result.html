@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('messaging.continuation.title', ~{::main}, 'public')}">
+<main id="main-content" class="mx-auto w-full max-w-xl space-y-4 px-4 py-16 text-center" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{messaging.continuation.sent.heading}">Reply received</h1>
+    <p th:text="#{messaging.continuation.sent.body}">The team can now continue the conversation.</p>
+    <a href="/" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4"
+       th:text="#{messaging.continuation.home}">Return home</a>
+</main>
+</html>

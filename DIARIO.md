@@ -1,11 +1,219 @@
 # Diario de desarrollo
 
+## 2026-11-20 — Resolución del ciclo Modulith antes de Oleada 7
+
+- Se eliminó la dependencia inversa `notification → request`. `request.application.RequestNotificationListener` consume sus eventos propios después del commit y publica el contrato owner `notification.api.RequestNotificationRequested`, que contiene solo UUID técnico, ruta interna sin token, plantilla, locale fallback y clave idempotente.
+- `notification` conserva outbox, locale efectivo, preferencias y entrega; deja de consultar `request.api` y no importa entidades/repositorios. Se retiraron `RequestNotificationApi` y `RequestNotificationTarget` del módulo request. El flujo RequestCreated/StatusChanged/QuoteSent conserva sus claves deterministas y pruebas negativas.
+- Evidencia focal final: `ModularityTests`, `ModuleDagTest`, `LayerRulesTest` y 15/15 tests de request/notification pasan; total selección 19/19. ADR-013 documenta ownership y contrato. Se actualizó el diagrama textual de arquitectura; no cambian permisos, tablas, PII ni comportamiento funcional.
+
+## 2026-11-20 — Cierre coordinador de Oleada 6
+
+- Se corrigió y revalidó `LayerRulesTest`: 2/2 pasan; los adaptadores `simbiosphere.infrastructure` implementan puertos de aplicación y `DemoHttpClient` declara constructor primario Spring. El fallo que queda en `ModularityTests` es distinto: ciclo `customer→identity→notification→request→customer`, que requiere reconciliar ownership/event wiring en una tarea separada antes del gate transversal completo.
+- PROMPT 15 quedó revalidado sin DEMO real. SIM-001/003/011/012 y el cliente/contrato loopback pasan; se añadió la vista owner-only `/cuenta/simbiosphere` sin token ni secreto. Selección final: 35/35 Surefire y 2/2 H2, con LayerRules, DAG, i18n, templates, OpenAPI y contrato HTTP local en verde. SIM-004 WireMock se pospone por dependencia/ejecutor no disponible; SIM-005/006/007/009/010/014 permanecen bloqueados por origen de intención, consentimiento/campos y worker/aprovisionamiento aprobados. SIM-013 requiere entorno externo autorizado.
+- SIM-002 se reconcilió: aceptado para desarrollo local por autorización owner común 2026-11-20 (ADR-002/DIARIO), pero no publicado ni autorizado para PRE/producción/tráfico real. El texto interno histórico del YAML conserva la copia byte-identical; la decisión normativa posterior prevalece.
+- E2E-002/E2E-003 y `E2E-004` están consolidados y descubiertos por Playwright (4 specs de oleada 6 en 3 ficheros). La ejecución sigue `POSTPONED`: faltan servidor, Chromium, Mailpit y fixtures; E2E-004 además requiere provider/API autorizado para el recorrido completo. No se ejecutó red real ni se capturaron tokens/PII.
+
+## 2026-11-20 — Cierre local de pendientes PROMPT 12
+
+- MSG-002 se completa localmente con vista cliente/empleado, filtrado PUBLIC/INTERNAL desde consulta a plantilla, eventos mínimos y consumidores de mensajería. No se crean rutas paralelas ni se exponen notas internas.
+- REQ-010 consume `RequestCreated`, `RequestStatusChanged` y `QuoteSent` después de commit mediante APIs publicadas. Resuelve owner/locale con SPI, usa enlaces internos sin token y claves deterministas `enqueueOnce` para impedir duplicar el outbox al reentregar un evento. `QUOTE_SENT` deja de encolarse directamente desde `request`, eliminando dependencia inversa y duplicación.
+- REQ-011 amplía la matriz IDOR: detalle, adjuntos, vistas cliente/empleado, roles y mensajes INTERNAL. Cliente ajeno recibe 404/403 y no consulta el archivo; empleado autorizado sí ve la nota. Evidencia final: 53 tests focales Surefire y 4 H2 Failsafe, además de DAG, i18n y templates, sin fallos.
+- Pendientes externos: Playwright/axe con servidor/Chromium/fixture y Mailpit/SMTP real. El gate global LayerRules continúa fallando por tres clases `simbiosphere.infrastructure` de F5 y se registra como bloqueo ajeno a PROMPT 12, sin modificar ese alcance. No se afirma SQL Server ni WCAG real.
+
+## 2026-11-20 — Ejecución de PROMPT 14: contacto, bandeja y notificaciones
+
+- MSG-003..005 implementan contacto server-side, consentimiento configurable bloqueado por defecto hasta aprobación, ALTCHA/honeypot/rate limit, PII cifrada en tablas `messaging`, acuse por outbox, adjuntos limpios mediante `files.api`, descarga autorizada y audio MediaRecorder de hasta 120 s con previsualización y fallback. No se inventaron texto legal, canales oficiales ni proveedor SMTP.
+- MSG-007..012 añaden operaciones de lectura/asignación/etiquetas/archivo/papelera/restauración/purga manual y job diario limitado por lote, siempre desactivado con retención no aprobada. MSG-008 completa localmente respuesta PUBLIC/INTERNAL con adjuntos limpios, plantillas ES/EN, eventos y descarga autorizada. El enlace mágico usa 32 bytes/SHA-256/TTL/un uso/alcance CONTACT y también autoriza adjuntos; polling HTMX usa intervalo/backoff configurables y pausa fuera de vista. MSG-012 mantiene IA desactivada.
+- MSG-013 queda PARCIAL/BLOQUEADO: la conversión de CONTACT anónimo necesita una cuenta cliente owner y campos mínimos de conversión que el contrato no fija. E2E-003 se preparó en `e2e/contact-reply.spec.ts`, sin ejecutarlo: requiere servidor, fixture `INBOX_MANAGE`, consentimiento aprobado, Mailpit y Chromium. El token no se guarda en capturas/traces y el replay debe devolver 404.
+- NTF-004 queda PARCIAL por su dependencia de `simbiosphere`: ya consume `RequestStatusChanged`, `MessagePosted` y el acuse `MessageReceived`, resuelve destinatario/locale por APIs/SPI, conserva enlaces internos sin token y usa ES/EN/texto plano. NTF-005 está implementado localmente con preferencias owner-only, CSRF, tabla `notification` y supresión antes del outbox. Falta Mailpit real y el evento de aprovisionamiento de PROMPT 15.
+- Evidencia focal: selección Prompt 14 Maven pasó sin fallos, incluidos arquitectura, DAG, plantillas, i18n, MVC y servicios; H2 focal de contacto/conversación/outbox pasó. `npm run build` y 3/3 tests del grabador pasaron. Playwright solo se listó. SQL Server, consentimientos, SMTP productivo, widget ALTCHA oficial y navegador real no se declaran validados.
+
+## 2026-11-20 — Corrección focal PROMPT 13
+
+- Se confirmó y cubrió con `RequestServiceTest` que cada solicitud creada abre inmediatamente su conversación REQUEST mediante `ConversationApi`, dentro del límite de `request`; no se modificó ningún interno de `messaging`. Esto permite que el detalle de empleado cargue el panel aun sin mensajes previos del cliente.
+- `E2E-002` corrige el control de acceso sin sesión: con cliente HTTP sin seguimiento de redirecciones exige `302` y cabecera `Location` hacia `/acceso`.
+- Revalidación Maven focal con el repositorio offline proporcionado: selector de Prompt 13 más `RequestServiceTest`, **31/31 pruebas sin fallos ni errores**. El cambio concurrente de `ConversationInboxState` quedó fuera del alcance.
+
+## 2026-11-20 — Ejecución de PROMPT 13: presupuestos y portal de empleados
+
+- Scope exacto: `QUO-001..004`, `EMP-001..007`, `E2E-002`. Owner `request`; consumo solo por APIs publicadas de `customer`, `staff`, `messaging`, `audit` y `notification.api`. No se modificaron internals de `messaging` ni otras tareas/prompts. Antes de editar se fijaron aceptación, permisos, ownership, CSRF, PII, migración y evidencia H2.
+- Producción: agregados `quote`/`quote_version`, restricciones monetarias `DECIMAL(19,4)`, versiones append-only, estados, decisión owner con identificador fiscal presente, outbox de email, eventos mínimos post-commit y job UTC de caducidad. Operaciones de empleado: dashboard, filtros/paginación/CSV neutralizado y redactado, timeline, asignaciones activas 1..N, transición/prioridad/estimación con optimistic locking, mensajes PUBLIC/INTERNAL por contrato y carga con SLA configurable.
+- UI server-side bajo `/gestion/**` y detalle cliente: Thymeleaf/HTMX, fragmentos, CSRF, ES/EN, layout responsive, nombres de controles, foco/teclado semántico y disclaimer de condiciones provisionales. Se añadió navegación backoffice.
+- Migración owner: `V202611201800__request__quotes_and_employee_operations.sql`; añade índices operacionales, unicidad de responsable, quote/versiones, caducidad y campos request. H2 usa entidades creadas por el esquema de test; la migración SQL Server no se ejecutó ni certificó.
+- Tests creados/impactados: `QuoteVersionEntityTest`, `QuoteServiceTest`, `QuoteExpiryJobTest`, `EmployeeRequestServiceTest`, `EmployeeRequestControllerTest`, `QuotePersistenceH2IT`, `QuoteMigrationContractTest` y extensión focal de `ClientRequestControllerTest`; E2E `request-assignment-quote.spec.ts`.
+- Validación ejecutada: el wrapper con settings por defecto no pudo resolver el plugin (PKIX); con Java 21 + Maven 3.6.3 + `-Dmaven.repo.local=... -Plocal-h2` proporcionados, `compile` pasó. La selección focal final pasó 26/26: `QuoteVersionEntityTest`, `QuoteServiceTest`, `QuoteExpiryJobTest`, `EmployeeRequestServiceTest`, `EmployeeRequestControllerTest`, `ClientRequestControllerTest`, `QuotePersistenceH2IT`, `QuoteMigrationContractTest`, `ModularityTests`, `ModuleDagTest`, `I18nKeyParityTest`. `TemplateRulesTest` quedó bloqueado por un color literal preexistente de `notification/email/message_posted.html`; `LayerRulesTest` por `@ResponseStatus` preexistente en `messaging.application.ContactAttachmentNotFoundException`. Una recompilación posterior encontró un cambio concurrente no perteneciente a Prompt 13 en `messaging` (`InboxController`/`InboxFilters` incompatibles); no se modificaron esos internals.
+- Pendientes no inventados: fiscalidad/IVA/moneda/validez comercial requieren aprobación; SLA de 1 día hábil solo se conserva como propuesta configurable y faltan calendario/festivos; aprobaciones externas siguen abiertas; la métrica de mensajes no leídos se marca pendiente porque no hay evidencia de lectura integrada. `E2E-002` queda `POSTPONED` por servidor/fixture Playwright y permanece reproducible con las variables `PORTAL_E2E_*` exigidas por el spec. IDs `QUO-001..004`, `EMP-001..007` y `E2E-002` son PARCIALES/NO CERRADOS hasta gates obligatorios.
+
+## 2026-11-20 — Implementación local DEMO autorizada y SIM-003
+
+- Tras la autorización owner explícita, DEMO-02a..08 se implementaron en `DEMO-orders-thymeleaf`: HMAC/scopes/anti-replay/rate limit, registro y rotación de claves, idempotencia pre-tenant, tres endpoints REST de plataforma, Problem Details, slug/defaults, referencia externa/términos, alta sin contraseña y enlace de activación de un uso/15 min. La selección focal local DEMO pasa **18/18**, incluida arquitectura **8/8**. No se ejecutaron SQL Server, PRE, provider externo ni tráfico real.
+- En Portal, SIM-003 quedó implementado y validado focalmente: cliente Java 21 tipado, HMAC y vector canónico, idempotencia, 3 s/10 s, circuit breaker, mapping RFC 7807 sin body/secretos y endpoint local de contrato. La selección `simbiosphere` pasa **35/35** con H2, migración, capas, DAG, plantillas, i18n y OpenAPI.
+- La suite global `ModularityTests` permanece bloqueada por un ciclo concurrente ajeno al módulo nuevo: `customer→identity→notification→request→customer`, derivado del nuevo contrato de notificación de request. No se confunde ese fallo con SIM-003. Debe resolverse antes de declarar el gate transversal cerrado. SIM-004 sigue parcial: hay fixtures y servidor local de contrato, pero no dependencia ni ejecución WireMock.
+
+## 2026-11-20 — Autorización owner y desbloqueo local SIM-002/DEMO
+
+- El owner común de S-portal y DEMO autorizó expresamente el 2026-11-20 la modificación completa de `DEMO-orders-thymeleaf` y la implementación local del contrato M2M v1. La decisión queda registrada en ADR-002 y ADR-013, y eleva SIM-002/DEMO-01 a **Accepted para desarrollo local**.
+- El alcance autorizado comprende código, configuración y pruebas sintéticas H2/contrato de proveedor y portal. No comprende despliegue, PRE/producción, tráfico externo ni validación con datos/secretos reales. El OpenAPI y el SHA-256 sincronizado permanecen como fuente contractual compartida.
+- Con este registro queda desbloqueado SIM-003 y puede avanzarse SIM-004 y el núcleo local posterior; las validaciones DEMO real, entorno compartido y E2E siguen como gates externos separados.
+
+## 2026-11-20 — PROMPT 15: bloqueo previo por DAG y contrato
+
+- Se leyó y comprobó el alcance exacto de PROMPT 15: `SIM-001`, `SIM-003..SIM-014` y `E2E-004`, con owner principal `simbiosphere`, tablas exclusivas del módulo y consumo de `customer.api`/contratos publicados. Se revisaron arquitectura, seguridad/RGPD, modelo de datos, calidad/testing, operación, ADR-002 y la ficha F5 antes de editar.
+- La precondición no negociable no está satisfecha. `SIM-002` sigue marcado como parcial/bloqueado en el inventario y su OpenAPI `docs/plan/contracts/simbiosphere-platform-v1.yaml` declara que es una propuesta no publicada. Se inspeccionó además, en solo lectura, `C:\Users\x455035\1Git\AprendiendoIA\ExampleProjects\DEMO-orders-thymeleaf`: no hay referencias a DEMO-01/SIM-002, contrato `/api/platform/v1/**` ni endpoint `owner-onboardings`; `docs/integraciones/api-spec.yaml` solo documenta `/platform/tenants`, y el código mantiene `OwnerOnboardingOrchestratorApi` como API Java interna con controlador MVC en `/onboarding`. Por tanto no existe evidencia observable de aprobación/acuerdo por los owners Portal y DEMO. El prompt prohíbe afirmar que DEMO publicó la API cuando solo hay una propuesta.
+- No se creó ni modificó código de producción, configuración, migración, plantilla, dependencia, test o E2E de `simbiosphere`; tampoco se modificó DEMO ni se realizó red externa. Esto evita implementar SIM-003..014 contra un contrato aún no autorizado y evita convertir SIM-001/SIM-004 o las fixtures locales en falsa evidencia de cierre.
+- En una fase documental autorizada posterior se preparó DEMO-01 en el workspace DEMO: ADR-013 en estado `Proposed`, copia byte a byte del OpenAPI v1 en `docs/integraciones/simbiosphere-platform-v1.yaml` y test estructural `SimbioSpherePlatformContractTest`. Ambas copias tienen SHA-256 `405887EBB18B90655B71A4BDE20D88A1C4A44FBEA96975D76DD1D6A9D7410B2F`. La selección DEMO pasó 9/9 (`ModuleArchitectureTest` 8/8 + contrato 1/1); el test focal de Portal pasó 2/2. No se añadió endpoint, filtro HMAC, key registry, idempotencia, tabla, flujo REST ni llamada externa.
+- Se revalidó el DAG y se avanzó PROMPT 15 hasta el límite local habilitado. SIM-001 crea el módulo owner `simbiosphere` y sus tablas exclusivas `provisioning`, `account_link` y `linked_business`: inicio PENDING, idempotencia estable, un vínculo externo único y 1..N negocios por cuenta, sin FK ni entidad importada de `customer`/`identity` y sin vincular por email. Publica DTO/evento mínimo y servicio idempotente por cuenta owner.
+- SIM-011 implementa alternativa temporal segura: feature flag `PORTAL_SIMBIOSPHERE_FALLBACK_ENABLED` desactivado, allowlist local/PRE, HTTPS obligatorio salvo loopback, rechazo de credenciales/query/fragment, CTA ES/EN y GET `/continuar/simbiosphere` que responde 404 cuando está deshabilitado. No copia ni serializa datos del formulario y no simula vínculo o alta.
+- SIM-005 avanza de forma parcial y segura: un `EmailVerified` solo transita una intención PENDING existente a READY, publica `ProvisioningStateChanged` tras commit y es no-op para usuarios sin cuenta/intención; no existe llamada HTTP. No se crea intención automáticamente desde cualquier `ClientRegistered`, porque faltan los campos/consentimiento conjunto de SIM-009 y no debe darse de alta DEMO por coincidencia o registro ordinario. EPR persistente, métricas y UI siguen pendientes.
+- SIM-012 queda diseñado para R2 mediante `AccountLinkPort`: challenge, TTL e intentos máximos para prueba de posesión; no existe adaptador, endpoint ni vínculo automático por email. Se actualizaron arquitectura, modelo ER, saga, ADR-002 y ficha F5.
+- Evidencia focal final: selección Java/H2 de Prompt 15 pasa **30/30**, 0 fallos/errores: dominio/aplicación, H2 con unicidad externa, revisión de migración, DAG/Modulith/capas, plantillas, i18n, fallback/open redirect y OpenAPI. JaCoCo de una ejecución `verify` focal no se usa como gate de cierre porque el check global requiere cobertura de todos los módulos y reportó paquetes no seleccionados; los tests y gates aplicables sí pasan. SQL Server no se ejecutó ni certifica.
+- Estado: SIM-001, SIM-011 y SIM-012 están implementados localmente en su alcance; SIM-002 continúa preparado pero `Proposed`. La única precondición inmediata para reanudar SIM-003 es la aprobación trazable de owners Portal/DEMO. SIM-005+ además requieren dependencias locales/DEMO indicadas en la ficha; SIM-013/E2E-004 siguen externos. No se declaran WireMock servidor, provider test, HMAC, cliente HTTP, llamadas DEMO, E2E o SQL Server como aprobados.
+
+## 2026-11-20 — Ejecución de PROMPT 12: request y recorrido cliente
+
+- Se añadió el módulo owner `request` y se verificaron antes de editar sus dependencias, contratos y límites: `customer.api`, `files.api`, `messaging.api`, `audit.api` y `shared`; no importa repositorios ni entidades externas. La migración ownereada crea categorías, contador anual, solicitud, historial, adjuntos y asignaciones; todas las referencias customer/identity/staff son UUID sin FK cruzadas.
+- REQ-001..004 implementan categorías activas, `SOL-AAAA-NNNNNN`, máquina completa para desarrollo a medida y sugerencia de módulo, historial/auditoría y eventos mínimos. REQ-005..009 añaden formularios server-side, borrador de sesión autenticada, validación, listado con filtros/paginación server-side, detalle/historial PUBLIC, mensajes, adjuntos limpios y cancelación owner. La ruta nunca revela notas INTERNAL: además del filtro de `messaging`, el controlador cliente aplica una defensa de visibilidad antes de renderizar.
+- Se conservaron los bloqueos del DAG: REQ-010 queda parcial porque la emisión de presupuesto/empleado depende de `EMP-005`, `QUO-002` e `IAM-013`; REQ-011 queda parcial por `EMP-006` y no se inventaron rutas de empleado. Los eventos `RequestCreated`/`RequestStatusChanged` se publican tras commit, solo con IDs/estado, sin PII.
+- Seguridad y arquitectura: CLIENT debe resolver a cuenta owner en cada caso de uso, IDOR devuelve 404 sin enumeración, mutaciones conservan CSRF, adjuntos pasan por `FileStorage`, notas INTERNAL no llegan al DTO/vista cliente y cambios de estado exigen rol/permiso. Se añadieron navegación ES/EN, respuestas accesibles/escapadas y advertencia de que presupuesto/fecha son no vinculantes.
+- Evidencia focal final con JDK 21: `mvn compile` pasa y la selección de PROMPT 12 pasa 34/34 tests (`Request*`, MVC, H2, migración estática, Modulith, DAG, capas, plantillas e i18n), 0 fallos/errores. No se ejecutó la suite completa. SQL Server no se ejecutó y no se certifica. La prueba Playwright/axe de `/cuenta/solicitudes/**` queda `POSTPONED`: requiere servidor local en 8090, fixture H2 de dos clientes/empleado y credenciales sintéticas; ejecutable pendiente de validación del navegador. Reproducir arrancando `spring-boot:run` con `local-h2` y el fixture autorizado antes de ejecutar el recorrido axe/Playwright.
+- Continuación no bloqueada por herramientas: se contrastó la máquina implementada con `07-seguridad-rgpd.md` y se corrigieron los códigos estables a `PENDIENTE_INFO_CLIENTE`, `PRESUPUESTO_ENVIADO`, `EN_PAUSA`, `EN_DESARROLLO`, `EN_REVISION_CLIENTE`, `ENTREGADA` y `PUBLICADA`. Se guardan estado previo de pausa, motivo de descarte y referencia duplicada. También se integró atómicamente «aportar información» con el API de `messaging`: guarda mensaje PUBLIC y devuelve `PENDIENTE_INFO_CLIENTE→EN_ANALISIS`, con test positivo. La cancelación de cliente se limita a RECIBIDA/EN_ANALISIS; EN_PAUSA→CANCELADA queda exclusivamente para flujo administrativo futuro.
+- Estados: MSG-001 completada localmente; MSG-002, REQ-001..009 implementados localmente con cierres externos pendientes; REQ-010 y REQ-011 parciales/bloqueados por PROMPT 13. README, INVENTARIO, modelo de datos y ficha F3 se actualizaron con evidencia observable.
+
+## 2026-11-20 — Oleada 5: cierre local de MSG-001
+
+- Se auditó MSG-001 contra su ficha: owner `messaging`, dependencias FND-006/FIL-001 observables, tablas propias, referencias a otros módulos solo por UUID, API `ConversationApi`, invariantes de contexto/autor y orden cronológico UTC. No se añadió código de producción ni ruta nueva.
+- Se añadió `MessagingMigrationContractTest` para cubrir el criterio pendiente de revisión estática: índices por propietario/estado, conversación/mensaje/visibilidad, restricciones de contexto/estado/visibilidad/cuerpo y ausencia de FK a request/customer/identity. La selección focal pasó 25/25 Surefire y 5/5 Failsafe H2, sin fallos ni errores.
+- MSG-001 queda **COMPLETADA en alcance de desarrollo local**. No se ejecutó SQL Server porque no es requisito de este cierre; la compatibilidad productiva permanece sin certificar.
+- MSG-002 no se cierra: su revalidación pasó 36/36 Surefire y 5/5 H2, pero falta la superficie cliente ligada a solicitudes, la aceptación del contrato local, el consumidor de notificaciones y la validación navegador. No se inventó una ruta cliente paralela porque el contrato sitúa ese recorrido bajo `request`. REQ-001..011 se omiten sin cambios porque REQ-001 depende de STF-001, todavía parcial; no existen tareas REQ independientes habilitadas.
+
+## 2026-11-20 — Revalidación focal de PROMPT 11
+
+- Se releyeron las fichas y dependencias de IAM-010, IAM-012, STF-001/002, USR-001..004 y E2E-001. IAM-010 conserva token hashado, un uso, TTL, revocación, consentimiento y publicación posterior al commit; se añadió una prueba unitaria que impide consumir una invitación revocada. IAM-012 amplió la evidencia MVC para rechazar EMPLOYEE/CLIENT en todas las rutas de lectura de PROMPT 11 incluso si presentan authorities de gestión.
+- STF-002 vinculó los errores localizados de puesto, estado y especialidades a sus controles mediante `aria-invalid`/`aria-describedby` y IDs únicos. `StaffManagementControllerTest` pasó 11/11 con una aserción MVC del HTML; no se afirma Axe ni WCAG de navegador. USR-001 añadió `UserDirectoryH2IT`, que persiste cuentas sintéticas y verifica filtros de rol/estado/locale, total y orden estable entre páginas por desempate de ID.
+- La primera selección focal nueva pasó 29 Surefire (`AuthorizationMatrixTest` 7, `TemplateRulesTest` 6, `OneTimeTokenServiceTest` 5 y `StaffManagementControllerTest` 11) y 1 Failsafe `UserDirectoryH2IT`, sin fallos ni errores. La revalidación previa pasó `InvitationServiceTest` 8/8, `StaffProfileServiceTest` 10/10, `InvitationAcceptanceStaffH2IT` 3/3, `StaffInvitationListenerH2IT` 6/6 y `StaffPersistenceH2IT` 2/2. No se ejecutó la suite completa ni JaCoCo.
+- USR-003 sigue cubierto por autorización, CSRF, confirmación, auditoría/notificación y guardarraíles del último ADMIN; no se modificaron las conversiones CLIENT↔staff, deliberadamente rechazadas. USR-004 permanece bloqueado por política de retención y contributors completos de datos personales. USR-002 no avanza paneles request/messaging/SimbioSphere sin aprobación owner.
+- E2E-001 se descubrió con Playwright 1.62.1: 18 pruebas totales, incluida la de invitación/CMS. La ejecución queda `POSTPONED`: no hay servidor en localhost:8090, Mailpit, ejecutable Chromium esperado ni credenciales sintéticas ADMIN/MFA. No existe fixture de navegador ni reloj/semilla segura ya implementados para fabricar y abrir una invitación vencida sin esperar ni exponer un endpoint; el test H2 de expiración no reemplaza esa evidencia. No se instalaron herramientas ni se lanzó un servicio externo.
+
+## 2026-11-20 — Aceptación real de invitación integrada con STF-001
+
+- Se añadió `InvitationAcceptanceStaffH2IT` en el módulo de tests de `identity`. Comprueba que emitir una invitación pendiente no provisiona una cuenta; luego acepta el token mediante `InvitationService.accept`, comprueba la cuenta activa y consulta el perfil a través de `StaffDirectory`, sin acceder a repositorios/entidades de `staff`.
+- La prueba confirma especialidades vacías y que reutilizar el token no crea otra cuenta ni altera el perfil. Un segundo escenario marca expirado el token H2 persistido y confirma que la aceptación falla sin crear cuenta ni registrar consentimiento. Se sustituyó únicamente `ConsentRecorder`: no se fabrican documentos legales aprobados; la integración real de las versiones legales continúa pendiente.
+- Una selección focal combinada pasó 22 Surefire (8 `InvitationServiceTest`, 4 `OneTimeTokenServiceTest`, 10 `StaffProfileServiceTest`) y 13 Failsafe (1 `InvitationAcceptanceStaffH2IT`, 4 `OneTimeTokenH2IT`, 6 `StaffInvitationListenerH2IT`, 2 `StaffPersistenceH2IT`), sin fallos ni errores. Tras añadir el caso de expiración, la última selección pasó 22 Surefire y 2 Failsafe (`InvitationAcceptanceStaffH2IT` 2/2). No se ejecutó la suite completa ni JaCoCo en estas selecciones.
+- Se añadió un tercer escenario: cuando falla la escritura simulada del consentimiento, se revierten cuenta y consumo del token, no aparece perfil huérfano y el mismo token puede aceptarse al reintentar. La última selección pasó `InvitationAcceptanceStaffH2IT` 3/3 y 22 tests Surefire relacionados, sin fallos ni errores.
+- `ModuleDagTest`, `ModularityTests` y `LayerRulesTest` pasaron 4/4; `DocumentationArchitectureTest`, `GovernanceArtifactTest` y `AdrDocumentRulesTest` pasaron 11/11 con la documentación actualizada.
+- STF-001 avanza, pero sigue parcial: la comprobación de expiración está verificada en H2, pero faltan E2E-001 con Playwright/Mailpit y sus credenciales locales, dependencias/validaciones pendientes y la aprobación legal correspondiente. No se validó SQL Server.
+
+## 2026-11-20 — LGL-002: protección de la página informativa de derechos
+
+- Se añadió y reforzó `DataRightsControllerTest`: comprueba 403 para una visita anónima y para usuarios EMPLOYEE/ADMIN autenticados, y que un CLIENT autenticado solo ve la información, sin controles de solicitud, exportación o baja.
+- No se añadió procesamiento de solicitudes, exportación parcial ni anonimización. LGL-002 sigue bloqueada hasta que todos los owners aporten sus contributors y exista un flujo aprobado.
+- La primera selección documental y del test detectó que el acceso anónimo responde 403, no redirección; se alineó la aserción con la denegación real. Tras restringir explícitamente `/cuenta/datos` a `ROLE_CLIENT`, `DataRightsControllerTest` pasó 3/3; `DocumentationArchitectureTest`, `GovernanceArtifactTest` y `AdrDocumentRulesTest` pasaron 11/11 con `temurin-21.0.11`, Maven offline y `local-h2`. No se ejecutó la suite completa.
+- La selección focal de PROMPT 10 con Java 21/Maven offline pasó 42 Surefire y 5 Failsafe H2, sin fallos, errores ni omisiones. Incluyó registro/consentimiento, cuenta, invitaciones, identificador fiscal y la página informativa de derechos; no se ejecutó SQL Server.
+- Se alinearon los estados observados de LGL-001..003 y CUS-001..004 en la ficha F2. LGL-002/003 permanecen parciales/bloqueadas; CUS-002 mantiene pendiente la comprobación de navegador y la compatibilidad SQL Server no se afirma.
+
+## 2026-11-20 — Intento E2E de accesibilidad del registro
+
+- Se lanzó `PortalApplication` con `local-h2` mediante Java Debugger y se ejecutó solo `customer registration form is accessible` con Playwright. La navegación a `http://127.0.0.1:8090/registro` terminó con `ERR_CONNECTION_REFUSED`, por lo que axe no analizó la página.
+- Con autorización posterior para relanzar, el Java Debugger no abrió sesión: su compilación m2e falló por incompatibilidad de `ClassLoader` entre Maven Resources Plugin 3.5.0 y el classloader OSGi de Eclipse (`loader constraint violation` en `BuildContext.newDeleteScanner`). Se comprobó que no quedó sesión activa. No se sustituyó el lanzamiento por terminal ni se descargaron herramientas, conforme a la guía Java.
+- La prueba sigue `POSTPONED`: falta una aplicación local escuchando en una URL reproducible. No se declara PASS ni fallo de accesibilidad; instrucción pendiente: corregir el build integrado de Java o proporcionar un arranque local autorizado con JDK 21/offline, y ejecutar `customer registration form is accessible` con `PORTAL_E2E_BASE_URL`.
+- Se eliminaron la captura, traza y contexto de error generados por el intento inicial.
+
+## 2026-11-20 — Límites de cierre de PROMPT 10
+
+- LGL-002 no puede cerrar dentro del alcance exclusivo de `legal`/`customer`: `PersonalDataContributor` tiene definición compartida pero cero implementaciones registradas. Una exportación útil exigiría contributors en los owners con PII, contratos y pruebas de cobertura; no se creó una exportación parcial.
+- LGL-003 conserva únicamente el estado no destructivo. Aunque se autorizó conceptualmente una purga, no se proporcionaron categorías, plazos, condiciones de legal hold ni tratamiento de fallos; no se inventó una política y no se creó ni ejecutó un job destructivo.
+- CUS-003 permanece dependiente de IAM-010/IAM-012. `InvitationIssuer` no publica expiración/estado por referencia para `customer`, por lo que el metadata customer pendiente no puede limpiarse con fuente autoritativa sin modificar el contrato owner de `identity`; no se modificó ese módulo.
+- CUS-004 queda validado localmente para la única decisión de país vigente: ES. No se añadieron países ni consultas externas.
+
+## 2026-11-20 — MSG-003 parcial: vista previa de contacto sin captura
+
+- Se añadió la vista pública bilingüe de contacto en modo solo lectura. Los controles están desactivados; no hay formulario ni POST y no se captura ni persiste información.
+- El consentimiento (texto y versión) y la política de retención continúan pendientes de aprobación legal; no se añadieron envío ni acuse.
+- Pasaron 28/28 pruebas focales: 2 de contacto, 6 de assets, 3 de i18n, 6 de plantillas, 3 de arquitectura documental, 4 de gobernanza y 4 de ADR. `npm run build` pasó con el aviso existente de `caniuse-lite` desactualizado.
+- No se repitió la suite completa Java/H2 para esta vista. La migración SQL Server, la aprobación legal y las pruebas de navegador autenticado siguen sin validarse.
+
+## 2026-11-20 — Política de ejecución focal de tests
+
+- Se actualizó la documentación operativa y de gobernanza para que cada desarrollo, modificación o fix ejecute solo los tests relacionados con las clases modificadas, añadidas o impactadas, junto con los gates obligatorios de ese alcance.
+- La suite completa queda como último recurso si no existe una selección focal fiable o un criterio de aceptación explícito la exige; el motivo debe quedar registrado. La política no cambia los gates de CI/release ni permite omitir criterios de aceptación.
+- Se alinearon README, norma P11, guía de calidad/testing, instrucciones Copilot y skill modular, guía de ejecución local, gobernanza y prompts de desarrollo; el inventario refleja la política.
+- No se modificó código de aplicación, configuración ni contratos. `GovernanceArtifactTest`, `DocumentationArchitectureTest` y `AdrDocumentRulesTest` pasaron 11/11 con Maven offline, Java 21 y `local-h2`; no se ejecutó la suite completa.
+
+## 2026-11-20 — Idempotencia de eventos STF-001 y verify completo
+
+- Se añadieron dos pruebas a `StaffProfileServiceTest`: una confirma que una invitación repetida no sobrescribe un perfil previamente editado/inactivo; la otra verifica que repetir un evento de cambio de cuenta no vuelva a persistir un estado sin cambios y conserve el puesto.
+- La prueba de integración `StaffInvitationListenerH2IT` detectó que el listener `AFTER_COMMIT` no dejaba persistido el perfil. `createFromInvitation` ahora usa una transacción independiente `REQUIRES_NEW`; la prueba del evento confirmado pasó 1/1.
+- Se ampliaron los tests de `StaffInvitationListenerH2IT` para validar que el evento CLIENT y una transacción de invitación revertida no crean un perfil, que repetir el evento EMPLOYEE conserva el perfil, que una cuenta ADMIN activa crea el perfil inicial y que una cuenta EMPLOYEE inactiva sincroniza el estado sin perder el puesto. La selección focal más reciente pasó `StaffProfileServiceTest` 10/10, `StaffInvitationListenerH2IT` 6/6 y `StaffPersistenceH2IT` 2/2. Los seis escenarios del listener se ejecutaron después del último verify completo.
+- El último `verify -Plocal-h2` completo, anterior a esos dos casos nuevos, terminó `BUILD SUCCESS`: 385 Surefire y 36 Failsafe H2, cero fallos/errores, un test opt-in omitido y todos los umbrales JaCoCo aprobados.
+- Tras actualizar README e INVENTARIO, `DocumentationArchitectureTest`, `GovernanceArtifactTest` y `AdrDocumentRulesTest` pasaron 11/11.
+- Después de documentar los cinco escenarios del listener, la misma selección documental/gobernanza volvió a pasar 11/11.
+- Después de añadir y documentar el caso de rollback, los gates documentales/gobernanza volvieron a pasar 11/11 con Java 21 y Maven offline.
+- STF-001 continúa parcial por sus dependencias IAM-010/IAM-012 y por las comprobaciones de aceptación todavía pendientes. No se ejecutó SQL Server ni E2E-001, ni se instalaron herramientas.
+
+## 2026-11-20 — Gate completo Java/H2 y cobertura
+
+- Con Java 21, Maven offline y `local-h2`, la ejecución completa terminó `BUILD SUCCESS`: 381 tests Surefire y 35 Failsafe H2, sin fallos ni errores; un test opt-in de Mailpit quedó omitido.
+- JaCoCo informó que todos los umbrales se cumplieron. El informe anterior con cobertura insuficiente estaba obsoleto; no fue necesario modificar código ni pruebas de dominio para resolverlo.
+- La salida mostró mensajes de Hibernate al eliminar esquemas/tablas durante el cierre del contexto H2, pero la suite y el gate terminaron correctamente. No se validó SQL Server, Mailpit real ni entorno externo.
+
+## 2026-11-20 — MSG-008 parcial: respuesta textual en hilo interno
+
+- Se añadió `POST /gestion/bandeja/{conversationPublicId}/responder` para personal autenticado. El controlador rechaza CLIENT; la ruta exige uno de los permisos de bandeja/solicitudes y el caso de uso vuelve a comprobar permiso contextual y estado de conversación.
+- El formulario permite respuesta `PUBLIC` o nota `INTERNAL`, aplica CSRF y límites de cuerpo, conserva errores de validación accesibles y usa POST/redirect/GET. Solo el mensaje público publica el evento existente con IDs tras confirmar la transacción.
+- La respuesta es textual. No se añadieron adjuntos, plantillas de email ni envío desde messaging; no existe consumidor de `MessagePosted` para este flujo. MSG-008 permanece PARCIAL.
+## 2026-11-20 — Cobertura MVC de mutaciones administrativas USR-003
+
+- Se parametrizaron las comprobaciones de CSRF y confirmación explícita para las cuatro rutas POST de acciones de usuario: estado, desbloqueo, reset y rol. Se añadió denegación de ADMIN sin `USERS_MANAGE`; no se modificó código productivo.
+- `UserAdminActionsControllerTest` pasó 12/12 con Java 21, Maven offline y `-Plocal-h2`. El verify completo previo a esta adición de tests pasó 371 Surefire + 34 Failsafe H2 (1 omitido por opt-in), sin fallos/errores y JaCoCo aprobado; no se repitió porque el cambio posterior solo añade pruebas.
+- Tras registrar el resultado en README/INVENTARIO/DIARIO, la selección combinada `UserAdminActionsControllerTest`, `DocumentationArchitectureTest`, `GovernanceArtifactTest` y `AdrDocumentRulesTest` pasó 23/23.
+- USR-003 continúa parcial por sus dependencias/validaciones restantes; conversiones de rol CLIENT permanecen bloqueadas por decisión. No se instalaron herramientas ni se iniciaron servicios externos.
+
+## 2026-11-20 — Desbloqueo de gates y cobertura de dominio PROMPT 11
+
+- Se acotó `LayerRulesTest` para que su regla shared/config aplique a los paquetes transversales reales, no a cualquier paquete de módulo cuyo nombre termine en `.config`. Se mantuvo la prueba negativa `shared` usando un selector explícito para su fixture; `LayerRulesTest` pasó 2/2.
+- Se añadieron `ConversationEntityTest` y `MessageEntityTest` con invariantes, validación de nulos y límites, transiciones de estado/lectura y comprobación de que `toString()` no filtra el texto de mensajes. La selección de dominio de mensajería pasó 12/12; no cambió código productivo de `messaging`.
+- La verificación completa con Java 21, Maven offline y `-Plocal-h2` terminó `BUILD SUCCESS`: 371 Surefire, 34 Failsafe (1 test opt-in omitido), 0 fallos/errores y JaCoCo aprobado. `messaging.domain` alcanzó 100% de cobertura de líneas.
+- Tras actualizar README, INVENTARIO y arquitectura con los resultados vigentes, `DocumentationArchitectureTest`, `GovernanceArtifactTest` y `AdrDocumentRulesTest` pasaron 11/11.
+- Se mantienen sin cerrar los IDs de PROMPT 11: paneles USR-002 pendientes de aprobación owner; USR-004 pendiente de contributors y política legal; E2E-001 runtime sin ejecutar. SQL Server no fue probado. No se instalaron herramientas ni se iniciaron servicios externos.
+
+## 2026-11-20 — MSG-012: persistencia H2 focal
+
+- Con Java 21, Maven 3.6.3, dependencias locales y el perfil `local-h2`, `ConversationPersistenceH2IT` terminó `BUILD SUCCESS`: 5 tests, sin fallos, errores ni omisiones. Incluye la persistencia de un `MessageEntity` sintético de autor `AI_AGENT` como `INTERNAL` y su exclusión de la lectura pública.
+- La selección focal de MSG-012 registrada previamente pasó 25/25 Surefire. Esta prueba H2 no persiste el objeto de borrador `AiReplyDraft`; el borrador sigue siendo inmutable y `PENDING_APPROVAL`.
+- MSG-012 permanece PARCIAL: no hay persistencia/flujo de aprobación del borrador, proveedor ni llamada externa; ADR-011 sigue Propuesto/Futuro. La migración no se ejecutó contra SQL Server.
+
+## 2026-11-19 — MSG-006 parcial: canales de contacto
+
+- En `messaging` se añadieron propiedades opcionales para el número WhatsApp E.164, los textos ES/EN y el email de contacto. No se asignaron valores oficiales; sin número/email válidos el fragmento oculta los enlaces.
+- El generador restringe el destino WhatsApp a `https://wa.me/`, codifica el texto UTF-8 y construye `mailto:` con email validado y codificado. Los valores inválidos producen una advertencia sin incluir el dato configurado; no se registran PII ni se reporta el clic como mensaje recibido.
+- Se creó `templates/messaging/channel-links.html` con nombres accesibles ES/EN, foco visible y tamaño táctil. Aún no se incluye en ninguna página pública: MSG-003 no ha creado el formulario/página consumidora y no se añadió una ruta nueva.
+- `ContactChannelLinkFactoryTest` cubre configuración, encoding, canales ausentes/inválidos, prevención de parámetros `mailto` no confiables y renderizado localizado. La tarea queda PARCIAL hasta que exista una página aprobada que integre el fragmento y se ejecute la validación visual/accesible de navegador.
+
+## 2026-11-20 — MSG-007 parcial: bandeja de conversaciones
+
+- Se añadieron `GET /gestion/bandeja` y `POST /gestion/bandeja/buscar` para formulario completo y respuesta HTMX. El POST requiere CSRF y mantiene el término de búsqueda fuera de la URL; la aplicación no lo registra ni persiste.
+- La consulta filtra categoría/contexto, estado, asignación, mensajes entrantes no leídos y texto literal dentro de mensajes `PUBLIC`; no busca notas `INTERNAL`. REQUEST se excluye por defecto y exige `REQUESTS_VIEW_ALL` además de `INBOX_MANAGE`.
+- El orden usa fecha de conversación e ID como desempate estable. La vista no expone cuerpos, emails ni identificadores de asignados; ofrece tarjetas móviles y tabla de escritorio, controles etiquetados, foco visible y paginación accesible.
+- La selección focal pasó 28/28 Surefire (servicio, MVC, permisos, arquitectura, reglas de plantilla e i18n); `ConversationPersistenceH2IT` pasó 4/4, incluyendo filtros, exclusión de notas internas/conversaciones REQUEST no autorizadas y paginación. `npm run build` pasó con el aviso conocido de `caniuse-lite`.
+- MSG-007 queda PARCIAL: axe/Playwright no se ejecutó con una sesión y conversaciones sintéticas en navegador. No se afirma cobertura completa ni compatibilidad SQL Server.
+
+## 2026-11-20 — MSG-012 parcial: scaffold IA sin proveedor
+
+- Se añadió `AI_AGENT` como tipo sin identidad de usuario y se mantiene restringido a mensajes `INTERNAL`; la migración SQL Server actualiza únicamente la restricción de autor. La ejecución de esa migración en SQL Server no se realizó.
+- `AiReplyDraft` es inmutable y solo puede crearse como `PENDING_APPROVAL`; su `toString` excluye el cuerpo. `AiReplyAssistant` queda como puerto sin implementación ni caller.
+- `MessageReceived` ya existía y conserva únicamente UUID públicos de conversación y mensaje; su publicación entrante sigue tras commit. No se añadieron proveedor, llamada externa, persistencia de borradores AI, flujo de aprobación ni envío automático. ADR-011 no se modifica y sigue Propuesto/Futuro.
+- `AiReplyDraftTest` comprueba pendiente/validación/redacción y que mensajes `AI_AGENT` no pueden ser `PUBLIC`; el test H2 de mensajería comprueba persistencia INTERNAL y ausencia en lectura pública. La tarea queda PARCIAL hasta contar con decisión formal y controles de R3 para cualquier aprobación/publicación futura.
+
 ## 2026-11-19 — Base local de mensajería F3 (MSG-001/002 parcial)
 
 - Se completó la separación de tipos de conversación/mensaje en `messaging::api`, se alineó el filtro JPQL de mensajes públicos con ese paquete, y se declaró `context_public_id` no nulo en el mapeo JPA igual que en la migración. El esquema H2 crea `messaging` antes del ciclo de Hibernate.
-- Con Java 21, Maven 3.6.3, dependencias offline y `local-h2`, pasaron 12 tests Surefire focales: `ConversationServiceTest` (7), `DocumentationArchitectureTest` (3), `ModularityTests` (1) y `ModuleDagTest` (1). Pasaron también los 2 tests Failsafe H2 de `ConversationPersistenceH2IT`; `test-compile` compiló todas las fuentes productivas y de test.
+- Con Java 21, Maven 3.6.3, dependencias offline y `local-h2`, pasaron 15 tests Surefire focales: `ConversationServiceTest` (10), `DocumentationArchitectureTest` (3), `ModularityTests` (1) y `ModuleDagTest` (1). Pasaron también los 2 tests Failsafe H2 de `ConversationPersistenceH2IT`; `test-compile` compiló todas las fuentes productivas y de test.
+- Los casos añadidos verifican la reutilización de una conversación REQUEST existente, publicación de `MessagePosted` con IDs tras commit y ausencia de eventos para notas internas.
 - En el primer intento de persistencia falló la carga JPQL por una referencia residual al enum en su antiguo paquete; se corrigió y la repetición pasó 2/2. En la repetición no aparecieron avisos por `DROP` de un esquema inexistente.
-- MSG-001/002 permanecen parciales: no hay endpoints MVC ni vistas Thymeleaf, no se ha ejecutado la migración en SQL Server, ni está conectado un consumidor de notificaciones. El formulario público CONTACT y la bandeja pertenecen a F4 y no se implementaron aquí. REQ-001..011 siguen bloqueados por STF-001 parcial. No se afirma cobertura completa del proyecto ni validación externa.
+- MSG-001/002 permanecen parciales: solo está implementada la vista de personal de lectura; falta una superficie cliente y no está conectado un consumidor de notificaciones. El formulario público CONTACT pertenece a MSG-003/F4 y no se implementó aquí. No se ha ejecutado la migración en SQL Server. REQ-001..011 siguen bloqueados por STF-001 parcial. No se afirma cobertura completa del proyecto ni validación externa.
+- Tras autorización expresa del usuario para adoptar localmente la propuesta de ruta, se añadió GET `/gestion/bandeja/{conversationPublicId}` como vista Thymeleaf de solo lectura. La ruta exige `INBOX_MANAGE` o `REQUESTS_VIEW_ALL`; el controller limita a EMPLOYEE/ADMIN y la API vuelve a comprobar permiso contextual/alcance del hilo. Mensajes se renderizan con `th:text`; bundles ES/EN incluidos. La aprobación owner formal continúa pendiente y la vista cliente no se añadió.
+- `ConversationThreadControllerTest` pasó 6/6, y la selección focal consolidada de mensajería, autorización, arquitectura, plantillas, i18n, assets y convención de migraciones pasó 47/47 Surefire. Se verificaron permisos contextuales, denegación de CLIENT en la ruta de personal, 404 sin enumeración, etiquetas ES/EN, escape HTML, landmarks y mensaje de estado accesible. Los 2 tests H2 de persistencia pasaron en una ejecución focal anterior a la vista web.
+- `npm run build` pasó y regeneró CSS/assets fingerprintados con las clases de la plantilla; solo mostró el aviso conocido de `caniuse-lite` desactualizado. `FrontendAssetPipelineTest`, `I18nKeyParityTest` y `PortalLocaleResolverTest` pasaron 11/11. No se ejecutó Playwright/axe sobre la nueva vista: no se inició el servidor con una sesión y un hilo sintético.
 
 ## 2026-11-19 — Reanudación local de PROMPT 10
 
@@ -28,6 +236,26 @@
 - Se ampliaron las pruebas de `UserManagementControllerTest` para verificar el rechazo si falta cualquiera de los permisos de exportación, el límite de 1000 filas antes de registrar auditoría, la paginación multi-página conservando filtros/orden, la neutralización de fórmulas y la auditoría sin PII.
 - Con Java 21, Maven 3.6.3, el repositorio local indicado y `-o -B -Plocal-h2`, la clase focal pasó 5/5. La selección relacionada de cinco clases pasó 25/25: `UserManagementControllerTest`, `UserManagementServiceTest`, `AuthorizationMatrixTest`, `StaffManagementControllerTest` y `AdminUserActionsTest`. No se instalaron herramientas ni se iniciaron servicios externos.
 - El último `verify` completo (322 Surefire y 30 Failsafe H2, uno omitido, JaCoCo aprobado) fue anterior a estas pruebas nuevas; no se presenta como verificación del árbol actual completo. E2E-001 sigue `POSTPONED`; USR-001 permanece parcial hasta completar las validaciones requeridas.
+
+## 2026-11-19 — Cobertura local adicional USR-003 y gate JaCoCo
+
+- `AdminUserActionsTest` añade cobertura para desbloqueo efectivo (limpia bloqueo/contador, persiste, audita y notifica) y solicitud de restablecimiento (delegación al flujo recovery y auditoría). La clase pasó 8/8 con Java 21 y Maven offline.
+- El `verify -Plocal-h2` completo ejecutó 334 tests Surefire y 32 Failsafe H2 (uno omitido por opt-in): 0 fallos y 0 errores en pruebas. La build terminó FAIL porque JaCoCo detectó 71% de cobertura de líneas en `com.simbio.core.messaging.domain`, por debajo del 80%. No se rebajó el umbral ni se modificó el módulo `messaging`, ajeno a los cambios F2 de este turno.
+- La selección focal combinada de ocho clases pasó 38/38 (27 F2/autorización y 11 documentación/gobernanza) tras incorporar la fila owner `messaging` que exigía `DocumentationArchitectureTest`. El `verify` anterior exitoso es histórico y no cubre el árbol actual.
+- Decisión del usuario: mantener bloqueadas las conversiones de rol que involucren CLIENT hasta disponer de un workflow owner de cuenta cliente. `AdminUserActions` ya las rechaza; se añade prueba para EMPLOYEE→CLIENT que complementa el rechazo CLIENT→EMPLOYEE. No cambia el comportamiento de producción.
+- Tras añadir la prueba inversa, `AdminUserActionsTest` pasó 9/9 en modo offline; no se repitió la selección combinada ni el `verify` completo.
+- Decisión del usuario para USR-002: mantener los paneles request/messaging/SimbioSphere parciales hasta la aprobación de sus owners; no habilitar rutas ni definir datos/permisos por inferencia.
+- Se alineó el límite del formulario de especialidades de trabajador con las reglas del owner `staff`: acepta hasta 20 nombres de 80 caracteres en campos separados por CRLF y devuelve error de formulario para más de 20 o nombres largos, sin llegar a una excepción de servicio. `StaffManagementControllerTest` y `StaffProfileServiceTest` pasaron 18/18 en Maven offline; gates i18n/plantillas y compilación pendientes.
+- No se instalaron aplicaciones ni se iniciaron servicios externos. La implementación/validación E2E-001 permanece `POSTPONED`; USR-002/USR-003 (transiciones CLIENT)/USR-004 siguen limitadas por contratos owner y decisiones legales pendientes.
+
+## 2026-11-19 — Alineación de validación de especialidades STF-002
+
+- Se detectó que el formulario aceptaba 1.600 caracteres aunque el owner `staff` permite 20 especialidades de hasta 80 caracteres; además, las entradas con más de 20 líneas o nombres demasiado largos podían llegar al servicio y provocar una excepción.
+- Se alineó el límite de formulario a 1.638 caracteres para contemplar veinte líneas CRLF, se añadieron validaciones web/localizadas de cantidad y longitud, y se documentó la regla ES/EN.
+- `StaffManagementControllerTest` + `StaffProfileServiceTest`: 18/18; selección de staff/UI/documentación: 34/34; `compile -Plocal-h2`: BUILD SUCCESS. No se instalaron herramientas ni se iniciaron servicios externos.
+- Después de actualizar README/INVENTARIO/DIARIO, `DocumentationArchitectureTest` + `GovernanceArtifactTest` pasaron 7/7.
+- El último `verify -Plocal-h2` ejecutó 350 Surefire y falló con un único error de regla arquitectónica en `LayerRulesTest.applicationClassesRespectAllSixRules` por la dependencia `messaging.config.MessagingConfiguration` → `messaging.config.MessagingChannelProperties`; Failsafe y JaCoCo no se alcanzaron. El verify completo anterior tampoco pasó su gate final: JaCoCo informó 71% en `messaging.domain` frente al 80%, con pruebas sin fallos/errores.
+- PROMPT 11 continúa parcial: E2E-001 no se ejecutó; USR-002 espera aprobación de owners y USR-004 permanece bloqueada por contributors/política legal.
 
 ## 2026-11-19 — Revisión de disponibilidad Maven/npm
 

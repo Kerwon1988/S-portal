@@ -69,11 +69,11 @@ Esta evidencia se incorpora por la ampliación solicitada. El diseño de S-porta
 
 Conclusiones: el contrato nuevo debe adaptarse al servicio interno (H11/H18), no exponer H24, crear idempotencia pre-tenant (H25), definir `modules` omitido/null frente a `[]` (H16/H17) y no heredar patrones inseguros de H20/H29/H33. Las únicas afirmaciones de estado actual de DEMO son las filas con evidencia; el resto de esta sección se marca como propuesta.
 
-## Contrato OpenAPI vigente — propuesta no publicada
+## Contrato OpenAPI vigente — aceptado para desarrollo local
 
-La fuente estructurada del borrador es [simbiosphere-platform-v1.yaml](contracts/simbiosphere-platform-v1.yaml). Define alta del owner, consulta de disponibilidad del slug y creación just-in-time del enlace de activación, con HMAC, scopes, idempotencia, respuestas RFC 7807 y sin contraseña. La prueba `SimbioSphereOpenApiContractTest` valida su estructura y fixtures WireMock locales; no valida un servidor WireMock ni una API DEMO.
+La fuente estructurada aceptada para desarrollo local es [simbiosphere-platform-v1.yaml](contracts/simbiosphere-platform-v1.yaml). Define alta del owner, consulta de disponibilidad del slug y creación just-in-time del enlace de activación, con HMAC, scopes, idempotencia, respuestas RFC 7807 y sin contraseña. La prueba `SimbioSphereOpenApiContractTest` valida su estructura y fixtures WireMock locales; no valida un servidor WireMock ni una API DEMO.
 
-El contrato permanece **propuesto/no publicado**: DEMO-01 y la revisión/acuerdo de los owners Portal y DEMO siguen pendientes. No se han realizado llamadas a DEMO ni cambios en su repositorio. La especificación no autoriza la implementación del cliente ni acredita integración real.
+Reconciliación de estado: el texto descriptivo original dentro del YAML se conserva para mantener la copia byte-identical compartida, pero su mención «no acordada» es histórica. La decisión normativa vigente es la autorización posterior del owner. El contrato queda **aceptado para desarrollo local v1** por autorización explícita del owner común de S-portal y DEMO el 2026-11-20, con permiso para modificar DEMO-orders-thymeleaf y ejecutar la implementación. La preparación técnica local de DEMO-01 se completó el 2026-11-20: DEMO contiene ADR-013 y una copia byte a byte idéntica del OpenAPI (SHA-256 `405887EBB18B90655B71A4BDE20D88A1C4A44FBEA96975D76DD1D6A9D7410B2F`). Los tests estructurales pasan en ambos repositorios y DEMO conserva su gate de arquitectura 8/8. La autorización permite implementar cliente, proveedor, seguridad, idempotencia y tests offline. No autoriza llamadas externas, despliegue, PRE/producción ni acredita una integración operativa real. En Portal, SIM-003 ya añade cliente tipado Java 21, HMAC/canonicalización, idempotencia, timeouts, circuit breaker y Problem Details saneados; su gate focal de `simbiosphere` pasa localmente; no reemplaza una provider test, DEMO desplegado ni E2E-004.
 
 ### Borrador inicial sustituido (histórico, no contractual)
 
@@ -170,6 +170,16 @@ components:
 ```
 
 La muestra es un contrato de trabajo, no una API desplegada. El password se omite deliberadamente; DEMO genera al propietario y solo define contraseña mediante el enlace de activación futuro (ADR-002, opción A). `modules` omitido/null y `[]` tienen semánticas distintas tras DEMO-08.
+
+## Avance local del Portal
+
+PROMPT 15 creó únicamente la base de saga local: `simbiosphere.provisioning` empieza en `PENDING`, mantiene idempotencia estable, intentos/lease/reintento y referencia UUID a `ClientAccount`. `account_link` admite un vínculo externo único por `(external_system, external_account_id)` y `linked_business` admite 1..N negocios por cuenta sin asumir un owner de tenant externo. No hay llamada HTTP ni transición basada en DEMO; esas tareas siguen tras SIM-002 aprobado.
+
+SIM-011 aporta un fallback opcional con `PORTAL_SIMBIOSPHERE_FALLBACK_ENABLED=false` por defecto. La URL debe ser HTTPS, estar en la allowlist de host y no contener credenciales, query ni fragmento; el enlace público no traslada datos del formulario. La URL `/continuar/simbiosphere` solo redirige cuando el flag está habilitado y responde 404 en otro caso.
+
+SIM-005 está parcialmente preparado: `EmailVerified` transita solo una intención PENDING existente a READY y publica IDs tras commit. Es no-op para identidades sin cuenta/intención; no se crea intención automática desde cualquier `ClientRegistered` hasta que SIM-009 aporte el consentimiento y campos del alta conjunta.
+
+SIM-012 queda como diseño R2: `AccountLinkPort` exige un desafío temporal de posesión, máximo de intentos y confirmación por prueba; no existe implementación ni enlace automático por email.
 
 ## Secuencia — alta conjunta y activación
 ```mermaid

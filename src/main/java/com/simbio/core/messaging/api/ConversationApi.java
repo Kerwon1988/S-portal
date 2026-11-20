@@ -9,6 +9,8 @@ public interface ConversationApi {
 
     ConversationView openRequestConversation(AuthenticatedUser actor, UUID requestPublicId);
 
+    Optional<ConversationView> findRequestForActor(AuthenticatedUser actor, UUID requestPublicId);
+
     Optional<ConversationView> findForActor(AuthenticatedUser actor, UUID conversationPublicId);
 
     MessageView postMessage(

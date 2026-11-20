@@ -82,6 +82,27 @@ class OutboxWorkerTest {
     }
 
     @Test
+    void suppressesOptionalDeliveryWhenPreferenceIsDisabled() {
+        EmailCommand command = EmailCommand.toUser(
+                UUID.randomUUID(), EmailTemplate.MESSAGE_POSTED, Locale.ENGLISH,
+                Map.of("url", "/cuenta/solicitudes/synthetic"));
+        Fixture fixture = fixture(3, command);
+        NotificationPreferenceService preferences = mock(NotificationPreferenceService.class);
+        when(preferences.allows(command)).thenReturn(false);
+        OutboxWorker worker = new OutboxWorker(
+                fixture.store, fixture.outboxService, fixture.delivery, fixture.properties,
+                fixture.meterRegistry, fixture.recipients, preferences,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        worker.processNext();
+
+        assertThat(fixture.message.getStatus()).isEqualTo("SENT");
+        verifyNoInteractions(fixture.delivery);
+        assertThat(fixture.meterRegistry.counter(
+                "portal.notification.delivery", "outcome", "suppressed").count()).isEqualTo(1);
+    }
+
+    @Test
     void purgesOnlyAccordingToConfiguredRetentionAndReportsCount() {
         Fixture fixture = fixture(3, COMMAND);
         fixture.properties.setRetention(Duration.ofDays(30));
@@ -124,11 +145,12 @@ class OutboxWorkerTest {
 
         OutboxWorker worker = new OutboxWorker(
                 store, outboxService, delivery, properties, meterRegistry, recipients, clock);
-        return new Fixture(store, delivery, properties, meterRegistry, recipients, message, worker);
+        return new Fixture(store, outboxService, delivery, properties, meterRegistry, recipients, message, worker);
     }
 
     private record Fixture(
             OutboxStore store,
+            OutboxService outboxService,
             EmailDeliveryPort delivery,
             NotificationProperties properties,
             SimpleMeterRegistry meterRegistry,

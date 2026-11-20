@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import com.simbio.core.messaging.api.ConversationContextType;
+import com.simbio.core.messaging.api.ConversationInboxState;
 import com.simbio.core.messaging.api.ConversationStatus;
 
 @Entity
@@ -47,6 +48,16 @@ public class ConversationEntity {
 
     @Column(name = "assigned_to")
     private UUID assignedTo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inbox_state", nullable = false, length = 16)
+    private ConversationInboxState inboxState = ConversationInboxState.ACTIVE;
+
+    @Column(name = "labels", nullable = false, length = 255)
+    private String labels = "";
+
+    @Column(name = "state_changed_at")
+    private Instant stateChangedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -104,6 +115,58 @@ public class ConversationEntity {
 
     public UUID getAssignedTo() {
         return assignedTo;
+    }
+
+    public void assignTo(UUID userId) {
+        this.assignedTo = Objects.requireNonNull(userId, "userId must not be null");
+    }
+
+    public void unassign() {
+        this.assignedTo = null;
+    }
+
+    public ConversationInboxState getInboxState() {
+        return inboxState;
+    }
+
+    public String getLabels() {
+        return labels;
+    }
+
+    public Instant getStateChangedAt() {
+        return stateChangedAt;
+    }
+
+    public void updateLabels(String value) {
+        String normalized = Objects.requireNonNullElse(value, "").trim();
+        if (normalized.length() > 255) {
+            throw new IllegalArgumentException("Labels cannot exceed 255 characters");
+        }
+        labels = normalized;
+    }
+
+    public void archive(Instant timestamp) {
+        changeInboxState(ConversationInboxState.ARCHIVED, timestamp);
+    }
+
+    public void moveToTrash(Instant timestamp) {
+        changeInboxState(ConversationInboxState.TRASH, timestamp);
+    }
+
+    public void restore(Instant timestamp) {
+        changeInboxState(ConversationInboxState.ACTIVE, timestamp);
+    }
+
+    public void reopen() {
+        status = ConversationStatus.OPEN;
+    }
+
+    private void changeInboxState(ConversationInboxState target, Instant timestamp) {
+        if (target == inboxState) {
+            return;
+        }
+        inboxState = Objects.requireNonNull(target, "target must not be null");
+        stateChangedAt = Objects.requireNonNull(timestamp, "timestamp must not be null");
     }
 
     public Instant getCreatedAt() {

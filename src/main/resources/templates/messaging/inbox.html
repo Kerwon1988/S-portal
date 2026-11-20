@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('messaging.inbox.title', ~{::main}, 'backoffice')}">
+<main id="main-content" class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{messaging.inbox.heading}">Inbox</h1>
+
+    <form method="post" th:action="@{/gestion/bandeja/buscar}"
+          hx-post="/gestion/bandeja/buscar" hx-target="#inbox-results" hx-swap="outerHTML"
+          class="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" name="page" value="0">
+        <div>
+            <label for="inbox-context" class="mb-1 block font-medium" th:text="#{messaging.inbox.context}">
+                Category
+            </label>
+            <select id="inbox-context" name="contextType"
+                    class="min-h-11 w-full rounded-lg border border-border bg-surface px-3">
+                <option value="" th:selected="${filters.contextType == null}" th:text="#{messaging.inbox.all}">
+                    All
+                </option>
+                <option th:each="context : ${contextTypes}"
+                        th:if="${context.name() != 'REQUEST' or canViewRequests}"
+                        th:value="${context}" th:selected="${filters.contextType == context}"
+                        th:text="#{|messaging.thread.context.${context}|}">Contact</option>
+            </select>
+        </div>
+        <div>
+            <label for="inbox-status" class="mb-1 block font-medium" th:text="#{messaging.inbox.status}">
+                Status
+            </label>
+            <select id="inbox-status" name="status"
+                    class="min-h-11 w-full rounded-lg border border-border bg-surface px-3">
+                <option value="" th:selected="${filters.status == null}" th:text="#{messaging.inbox.all}">
+                    All
+                </option>
+                <option th:each="state : ${statuses}" th:value="${state}"
+                        th:selected="${filters.status == state}"
+                        th:text="#{|messaging.thread.status.${state}|}">Open</option>
+            </select>
+        </div>
+        <div>
+            <label for="inbox-state" class="mb-1 block font-medium" th:text="#{messaging.inbox.state}">Folder</label>
+            <select id="inbox-state" name="inboxState"
+                    class="min-h-11 w-full rounded-lg border border-border bg-surface px-3">
+                <option th:each="folder : ${inboxStates}" th:value="${folder}"
+                        th:selected="${filters.inboxState == folder}"
+                        th:text="#{|messaging.inbox.state.${folder}|}">Active</option>
+            </select>
+        </div>
+        <div>
+            <label for="inbox-assignment" class="mb-1 block font-medium"
+                   th:text="#{messaging.inbox.assignment}">Assignment</label>
+            <select id="inbox-assignment" name="assignment"
+                    class="min-h-11 w-full rounded-lg border border-border bg-surface px-3">
+                <option th:each="scope : ${assignmentFilters}" th:value="${scope}"
+                        th:selected="${filters.assignment == scope}"
+                        th:text="#{|messaging.inbox.assignment.${scope}|}">All</option>
+            </select>
+        </div>
+        <div class="sm:col-span-2 lg:col-span-3">
+            <label for="inbox-search" class="mb-1 block font-medium" th:text="#{messaging.inbox.search}">
+                Search public messages
+            </label>
+            <input id="inbox-search" name="searchTerm" type="search" maxlength="120" autocomplete="off"
+                   th:value="${filters.searchTerm}"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface px-3">
+        </div>
+        <label class="inline-flex min-h-11 items-center gap-3 sm:col-span-2 lg:col-span-3">
+            <input name="unreadOnly" type="checkbox" value="true"
+                   class="size-5 rounded border-border" th:checked="${filters.unreadOnly}">
+            <span th:text="#{messaging.inbox.unreadOnly}">Only unread</span>
+        </label>
+        <button type="submit"
+                class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-4 font-semibold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2"
+                th:text="#{messaging.inbox.apply}">Apply filters</button>
+    </form>
+
+    <section id="inbox-results" th:fragment="results" aria-live="polite"
+             th:attr="aria-label=#{messaging.inbox.results}">
+        <p th:if="${results.content.empty}" class="rounded-xl border border-border bg-surface p-4 text-text-muted"
+           role="status" th:text="#{messaging.inbox.empty}">No conversations found.</p>
+        <div th:unless="${results.content.empty}">
+            <ul class="space-y-3 sm:hidden">
+                <li th:each="item : ${results.content}" class="space-y-2 rounded-xl border border-border bg-surface p-4">
+                    <a th:href="@{/gestion/bandeja/{id}(id=${item.publicId})}"
+                       class="font-semibold text-accent-text underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                       th:text="#{messaging.inbox.open}">Open conversation</a>
+                    <dl class="grid grid-cols-2 gap-2 text-sm">
+                        <dt class="text-text-muted" th:text="#{messaging.inbox.context}">Category</dt>
+                        <dd th:text="#{|messaging.thread.context.${item.contextType}|}">Contact</dd>
+                        <dt class="text-text-muted" th:text="#{messaging.inbox.status}">Status</dt>
+                        <dd th:text="#{|messaging.thread.status.${item.status}|}">Open</dd>
+                        <dt class="text-text-muted" th:text="#{messaging.inbox.assignment}">Assignment</dt>
+                        <dd th:text="${item.assignedTo == null ? #messages.msg('messaging.inbox.assignment.UNASSIGNED') : #messages.msg('messaging.inbox.assignment.ASSIGNED')}">
+                            Unassigned
+                        </dd>
+                        <dt class="text-text-muted" th:text="#{messaging.inbox.created}">Created</dt>
+                        <dd><time th:datetime="${item.createdAt}" th:text="${item.createdAt}">Timestamp</time></dd>
+                    </dl>
+                </li>
+            </ul>
+            <div class="hidden overflow-x-auto sm:block">
+                <table class="w-full border-collapse text-left">
+                    <caption class="sr-only" th:text="#{messaging.inbox.results}">Inbox results</caption>
+                    <thead>
+                    <tr class="border-b border-border">
+                        <th scope="col" class="p-3" th:text="#{messaging.inbox.context}">Category</th>
+                        <th scope="col" class="p-3" th:text="#{messaging.inbox.status}">Status</th>
+                        <th scope="col" class="p-3" th:text="#{messaging.inbox.assignment}">Assignment</th>
+                        <th scope="col" class="p-3" th:text="#{messaging.inbox.created}">Created</th>
+                        <th scope="col" class="p-3"><span class="sr-only" th:text="#{messaging.inbox.open}">Open</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${results.content}" class="border-b border-border">
+                        <td class="p-3" th:text="#{|messaging.thread.context.${item.contextType}|}">Contact</td>
+                        <td class="p-3" th:text="#{|messaging.thread.status.${item.status}|}">Open</td>
+                        <td class="p-3"
+                            th:text="${item.assignedTo == null ? #messages.msg('messaging.inbox.assignment.UNASSIGNED') : #messages.msg('messaging.inbox.assignment.ASSIGNED')}">
+                            Unassigned
+                        </td>
+                        <td class="p-3"><time th:datetime="${item.createdAt}" th:text="${item.createdAt}">Timestamp</time></td>
+                        <td class="p-3">
+                            <a th:href="@{/gestion/bandeja/{id}(id=${item.publicId})}"
+                               class="text-accent-text underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                               th:text="#{messaging.inbox.open}">Open conversation</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <nav th:if="${results.totalElements > results.size}" class="mt-4 flex flex-wrap items-center justify-between gap-3"
+             th:attr="aria-label=#{messaging.inbox.pagination}">
+            <form method="post" th:action="@{/gestion/bandeja/buscar}"
+                  hx-post="/gestion/bandeja/buscar" hx-target="#inbox-results" hx-swap="outerHTML">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" name="contextType" th:value="${filters.contextType}">
+                <input type="hidden" name="status" th:value="${filters.status}">
+                <input type="hidden" name="assignment" th:value="${filters.assignment}">
+                <input type="hidden" name="searchTerm" th:value="${filters.searchTerm}">
+                <input type="hidden" name="unreadOnly" th:value="${filters.unreadOnly}">
+                <button type="submit" name="page" th:value="${results.page - 1}" th:disabled="${!hasPreviousPage}"
+                        class="min-h-11 rounded-lg border border-border px-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                        th:text="#{messaging.inbox.previous}">Previous</button>
+            </form>
+            <span th:text="#{messaging.inbox.page(${results.page + 1})}">Page 1</span>
+            <form method="post" th:action="@{/gestion/bandeja/buscar}"
+                  hx-post="/gestion/bandeja/buscar" hx-target="#inbox-results" hx-swap="outerHTML">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" name="contextType" th:value="${filters.contextType}">
+                <input type="hidden" name="status" th:value="${filters.status}">
+                <input type="hidden" name="assignment" th:value="${filters.assignment}">
+                <input type="hidden" name="searchTerm" th:value="${filters.searchTerm}">
+                <input type="hidden" name="unreadOnly" th:value="${filters.unreadOnly}">
+                <button type="submit" name="page" th:value="${results.page + 1}" th:disabled="${!hasNextPage}"
+                        class="min-h-11 rounded-lg border border-border px-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+                        th:text="#{messaging.inbox.next}">Next</button>
+            </form>
+        </nav>
+    </section>
+</main>
+</html>

@@ -11,6 +11,8 @@ import com.simbio.core.messaging.domain.MessageEntity;
 
 interface MessageJpaRepository extends JpaRepository<MessageEntity, Long> {
 
+    java.util.Optional<MessageEntity> findByPublicId(java.util.UUID publicId);
+
     @Query("""
             select message from MessageEntity message
             where message.conversation.id = :conversationId
@@ -20,4 +22,6 @@ interface MessageJpaRepository extends JpaRepository<MessageEntity, Long> {
     List<MessageEntity> findForConversation(
             @Param("conversationId") Long conversationId,
             @Param("includeInternal") boolean includeInternal);
+
+    void deleteByConversationId(Long conversationId);
 }

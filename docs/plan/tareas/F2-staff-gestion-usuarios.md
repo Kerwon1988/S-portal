@@ -32,7 +32,8 @@
 - Criterios de aceptación (Given/When/Then):
   - Given ADMIN autorizado When modifica especialidades/estado Then se guarda y audita antes/después.
   - Given EMPLOYEE sin permiso When envía POST de activación When la acción no está autorizada Then recibe 403 y no cambia datos.
-- Tests: TC-STF-002: WT (edición/403/CSRF), SEC (escalado), A11Y (formulario).
+  - Given ADMIN autorizado When envía hasta 20 especialidades de hasta 80 caracteres Then el formulario acepta el límite completo y rechaza valores fuera de esos límites sin invocar la actualización.
+- Tests: TC-STF-002: WT (edición/límites/403/CSRF), SEC (escalado), A11Y (formulario).
 - Documentación a actualizar: DIARIO + INVENTARIO; README «Trabajadores»
 - Estimación: M (≤ 1 d)
 - Riesgos: desactivar responsable asignado requiere política de reasignación; registrar caso en request.
@@ -79,14 +80,14 @@
 - Ficheros/paquetes a crear o modificar (aproximado): `identity.application.AdminUserActions`, controllers/fragments, `AuditRecorder` y tests.
 - Impacto modular: orquesta `identity.api`, `staff.api`, `customer.api`; evento/auditoría con IDs, sin PII. Sin ciclos Java inversos.
 - UI: acciones con confirmación, resultado accesible y registro de antes/después en ficha.
-- Seguridad: `USERS_MANAGE`; impedir quitar último ADMIN o auto-degradación; contraseñas nunca se envían, links sí.
+- Seguridad: `USERS_MANAGE`; impedir quitar último ADMIN o auto-degradación; contraseñas nunca se envían, links sí. Mantener bloqueados en ambos sentidos los cambios de rol que involucren CLIENT hasta que exista un workflow owner de cuenta cliente que preserve su propiedad y datos.
 - Criterios de aceptación (Given/When/Then):
   - Given ADMIN cambia estado permitido When confirma Then la acción queda auditada y notifica al usuario afectado.
   - Given intento de degradar último ADMIN o a sí mismo When confirma Then se rechaza transaccionalmente sin efecto.
 - Tests: TC-USR-003: UT (reglas), WT (confirmación/CSRF), SEC (último ADMIN/escalado), MT (auditoría).
 - Documentación a actualizar: DIARIO + INVENTARIO; matriz 07
 - Estimación: M (≤ 1 d)
-- Riesgos: panel SimbioSphere no está disponible hasta F5; no simular reintento temprano.
+- Riesgos: panel SimbioSphere no está disponible hasta F5; no simular reintento temprano. Las conversiones CLIENT↔staff permanecen bloqueadas hasta aprobación del owner.
 
 ### USR-004 — Baja RGPD por anonimización (autoservicio y backoffice)
 - Fase / épica / módulo owner: F2 / USR / legal

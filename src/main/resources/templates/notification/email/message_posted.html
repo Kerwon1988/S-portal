@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es" th:lang="${#locale.language}">
+<body style="margin:0;background:Canvas;color:CanvasText;font-family:Arial,sans-serif">
+<main style="max-width:600px;margin:0 auto;padding:24px">
+    <article style="border:1px solid GrayText;border-radius:12px;background:Canvas;padding:24px">
+        <p style="font-size:14px" th:text="${brand}">Simbio</p>
+        <h1 style="font-size:24px" th:text="${subject}">New message</h1>
+        <p th:text="${body}">There is a new public conversation message.</p>
+        <p><a th:href="${actionUrl}" style="display:inline-block;padding:12px 18px;border:1px solid ButtonText;border-radius:6px;background:ButtonFace;color:ButtonText;text-decoration:none" th:text="${actionLabel}">View conversation</a></p>
+        <p style="overflow-wrap:anywhere"><span th:text="${fallback}">Open this link:</span><br><a th:href="${actionUrl}" th:text="${actionUrl}">link</a></p>
+    </article>
+</main>
+</body>
+</html>

@@ -8,6 +8,7 @@ import java.util.Arrays;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -106,6 +107,7 @@ public class StaffManagementController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         var profile = directory.findByUserId(userPublicId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        validateSpecialties(form, bindingResult);
         if (bindingResult.hasErrors()) {
             model.addAttribute("identity", identity);
             model.addAttribute("profile", profile);
@@ -121,6 +123,19 @@ public class StaffManagementController {
         return "staff/detail";
     }
 
+    private static void validateSpecialties(StaffForm form, BindingResult bindingResult) {
+        String specialties = form.specialties();
+        if (specialties == null || specialties.isBlank()) {
+            return;
+        }
+        String[] entries = specialties.split("\\R", -1);
+        boolean invalid = entries.length > 20
+                || Arrays.stream(entries).anyMatch(entry -> entry.isBlank() || entry.trim().length() > 80);
+        if (invalid) {
+            bindingResult.rejectValue("specialties", "staff.detail.specialties.invalid");
+        }
+    }
+
     private static void requireStaffManagement(AuthenticatedUser actor) {
         if (actor == null || actor.role() != Role.ADMIN || !actor.hasPermission(Permission.STAFF_MANAGE)) {
             throw new AccessDeniedException("Worker management permission required");
@@ -133,7 +148,7 @@ public class StaffManagementController {
     public record StaffForm(
             @Size(max = 120) String jobTitle,
             @NotBlank @Pattern(regexp = "ACTIVE|INACTIVE") String status,
-            @Size(max = 1600) String specialties) {
+            @NotNull @Size(max = 1638) String specialties) {
 
         static StaffForm from(com.simbio.core.staff.api.StaffSummary profile) {
             return new StaffForm(profile.jobTitle(), profile.status(), String.join("\n", profile.specialties()));

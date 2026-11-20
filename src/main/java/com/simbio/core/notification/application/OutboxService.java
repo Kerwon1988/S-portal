@@ -1,6 +1,7 @@
 package com.simbio.core.notification.application;
 
 import java.time.Clock;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -45,7 +46,23 @@ public class OutboxService implements EmailSender {
     @Override
     @Transactional
     public UUID enqueue(EmailCommand command) {
-        UUID id = UUID.randomUUID();
+        return enqueueWithId(UUID.randomUUID(), command);
+    }
+
+    @Override
+    @Transactional
+    public UUID enqueueOnce(String idempotencyKey, EmailCommand command) {
+        if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 512) {
+            throw new IllegalArgumentException("Outbox idempotency key is required");
+        }
+        UUID id = UUID.nameUUIDFromBytes(idempotencyKey.getBytes(StandardCharsets.UTF_8));
+        if (store.findById(id).isPresent()) {
+            return id;
+        }
+        return enqueueWithId(id, command);
+    }
+
+    private UUID enqueueWithId(UUID id, EmailCommand command) {
         try {
             String payload = objectMapper.writeValueAsString(command);
             if (payload.length() > 16_000) {

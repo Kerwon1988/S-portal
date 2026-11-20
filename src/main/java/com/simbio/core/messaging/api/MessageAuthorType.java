@@ -5,5 +5,6 @@ public enum MessageAuthorType {
     CLIENT,
     EMPLOYEE,
     ADMIN,
+    AI_AGENT,
     SYSTEM
 }

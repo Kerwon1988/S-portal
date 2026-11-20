@@ -1,0 +1,21 @@
+package com.simbio.core.request.api;
+
+public enum RequestStatus {
+    RECIBIDA,
+    EN_ANALISIS,
+    EN_ESTUDIO,
+    PENDIENTE_INFO_CLIENTE,
+    PRESUPUESTO_ENVIADO,
+    ACEPTADA,
+    RECHAZADA,
+    PLANIFICADA,
+    DESCARTADA,
+    DUPLICADA,
+    EN_PAUSA,
+    EN_DESARROLLO,
+    EN_REVISION_CLIENTE,
+    ENTREGADA,
+    PUBLICADA,
+    CANCELADA,
+    CERRADA
+}

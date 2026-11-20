@@ -1,15 +1,37 @@
 package com.simbio.core.config.security;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.http.HttpMethod;
 
 public final class AuthorizationRules {
 
     private static final List<RoutePermission> ROUTES = List.of(
+            new RoutePermission(HttpMethod.GET, "/gestion", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/inicio", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/carga", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes/export.csv", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes/resultados", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes/*", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes/*/conversacion", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes/*/adjuntos/*", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/solicitudes/*/presupuesto", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.POST, "/gestion/solicitudes/*/asignacion", "REQUESTS_ASSIGN"),
+            new RoutePermission(HttpMethod.POST, "/gestion/solicitudes/*/operacion", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.POST, "/gestion/solicitudes/*/mensajes", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.POST, "/gestion/solicitudes/*/presupuesto", "QUOTES_MANAGE"),
+            new RoutePermission(HttpMethod.POST, "/gestion/solicitudes/*/presupuesto/*/enviar", "QUOTES_MANAGE"),
             new RoutePermission(HttpMethod.GET, "/gestion/auditoria", "AUDIT_VIEW"),
             new RoutePermission(HttpMethod.GET, "/gestion/auditoria/usuarios/*/panel", "AUDIT_VIEW"),
             new RoutePermission(HttpMethod.GET, "/gestion/auditoria/**", "AUDIT_VIEW"),
+            new RoutePermission(HttpMethod.GET, "/gestion/bandeja", "INBOX_MANAGE"),
+            new RoutePermission(HttpMethod.POST, "/gestion/bandeja/buscar", "INBOX_MANAGE"),
+            RoutePermission.anyOf(HttpMethod.GET, "/gestion/bandeja/*", "INBOX_MANAGE", "REQUESTS_VIEW_ALL"),
+            new RoutePermission(HttpMethod.GET, "/gestion/bandeja/*/adjuntos/*", "INBOX_MANAGE"),
+            RoutePermission.anyOf(
+                    HttpMethod.POST, "/gestion/bandeja/*/responder", "INBOX_MANAGE", "REQUESTS_VIEW_ALL"),
             new RoutePermission(HttpMethod.GET, "/gestion/contenido", "CONTENT_EDIT"),
             new RoutePermission(HttpMethod.GET, "/gestion/contenido/**", "CONTENT_EDIT"),
             new RoutePermission(HttpMethod.POST, "/gestion/contenido/**", "CONTENT_EDIT"),
@@ -44,9 +66,32 @@ public final class AuthorizationRules {
         return ROUTES;
     }
 
-    public record RoutePermission(HttpMethod method, String path, String permission, String role) {
+    public record RoutePermission(
+            HttpMethod method,
+            String path,
+            String permission,
+            String role,
+            String alternativePermission) {
         public RoutePermission(HttpMethod method, String path, String permission) {
-            this(method, path, permission, null);
+            this(method, path, permission, null, null);
+        }
+
+        public RoutePermission(HttpMethod method, String path, String permission, String role) {
+            this(method, path, permission, role, null);
+        }
+
+        public static RoutePermission anyOf(
+                HttpMethod method,
+                String path,
+                String permission,
+                String alternativePermission) {
+            return new RoutePermission(method, path, permission, null, alternativePermission);
+        }
+
+        public Set<String> permissions() {
+            return alternativePermission == null
+                    ? Set.of(permission)
+                    : Set.of(permission, alternativePermission);
         }
     }
 }

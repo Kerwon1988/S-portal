@@ -22,6 +22,7 @@ import com.simbio.core.messaging.api.ConversationContextType;
 import com.simbio.core.messaging.api.ConversationStatus;
 import com.simbio.core.messaging.api.ConversationView;
 import com.simbio.core.messaging.api.MessageAuthorType;
+import com.simbio.core.messaging.api.MessageAttachmentView;
 import com.simbio.core.messaging.api.MessagePosted;
 import com.simbio.core.messaging.api.MessageReceived;
 import com.simbio.core.messaging.api.MessageView;
@@ -83,6 +84,25 @@ public class ConversationService implements ConversationApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<ConversationView> findRequestForActor(AuthenticatedUser actor, UUID requestPublicId) {
+        if (actor == null || requestPublicId == null) {
+            throw new IllegalArgumentException("Actor and request reference are required");
+        }
+        return store.findByContext(ConversationContextType.REQUEST, requestPublicId)
+                .filter(conversation -> canRead(actor, conversation))
+                .map(conversation -> {
+                    List<MessageView> messages = store.findMessages(
+                                    conversation.getId(), actor.role() != Role.CLIENT).stream()
+                            .map(this::messageView)
+                            .toList();
+                    auditRecorder.record(new AuditRecord(actor.userId(), "CONVERSATION_READ",
+                            "CONVERSATION", conversation.getPublicId(), null));
+                    return view(conversation, messages);
+                });
+    }
+
+    @Override
     @Transactional
     public Optional<ConversationView> findForActor(AuthenticatedUser actor, UUID conversationPublicId) {
         if (actor == null || conversationPublicId == null) {
@@ -95,7 +115,7 @@ public class ConversationService implements ConversationApi {
         ConversationEntity conversation = found.get();
         List<MessageView> messages = store.findMessages(
                         conversation.getId(), actor.role() != Role.CLIENT).stream()
-                .map(ConversationService::messageView)
+                .map(this::messageView)
                 .toList();
         auditRecorder.record(new AuditRecord(actor.userId(), "CONVERSATION_READ",
                 "CONVERSATION", conversation.getPublicId(), null));
@@ -172,9 +192,14 @@ public class ConversationService implements ConversationApi {
                 conversation.getStatus(), conversation.getCreatedAt(), messages);
     }
 
-    private static MessageView messageView(MessageEntity message) {
+    private MessageView messageView(MessageEntity message) {
+        List<MessageAttachmentView> attachments = store.findMessageAttachments(message.getConversation().getId())
+                .stream().filter(value -> value.getMessageId().equals(message.getId()))
+                .map(value -> new MessageAttachmentView(
+                        value.getFilePublicId(), value.getDetectedMime(), value.getSizeBytes()))
+                .toList();
         return new MessageView(message.getPublicId(), message.getAuthorType(), message.getVisibility(),
-                message.getBody(), message.getCreatedAt());
+                message.getBody(), message.getCreatedAt(), attachments);
     }
 
     private void publishAfterCommit(Object event) {

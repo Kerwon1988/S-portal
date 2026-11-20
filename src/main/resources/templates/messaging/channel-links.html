@@ -1,0 +1,16 @@
+<nav xmlns:th="http://www.thymeleaf.org"
+     th:fragment="links"
+     th:if="${channelLinks != null and (channelLinks.whatsappHref != null or channelLinks.mailtoHref != null)}"
+     class="flex flex-wrap gap-3"
+     th:attr="aria-label=#{messaging.channels.heading}">
+    <a th:if="${channelLinks.whatsappHref != null}"
+       th:href="${channelLinks.whatsappHref}"
+       class="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-surface px-4 text-accent-text underline focus-visible:outline-2 focus-visible:outline-offset-2"
+       th:attr="aria-label=#{messaging.channels.whatsapp.aria}"
+       th:text="#{messaging.channels.whatsapp.label}">WhatsApp</a>
+    <a th:if="${channelLinks.mailtoHref != null}"
+       th:href="${channelLinks.mailtoHref}"
+       class="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-surface px-4 text-accent-text underline focus-visible:outline-2 focus-visible:outline-offset-2"
+       th:attr="aria-label=#{messaging.channels.email.aria}"
+       th:text="#{messaging.channels.email.label}">Email</a>
+</nav>

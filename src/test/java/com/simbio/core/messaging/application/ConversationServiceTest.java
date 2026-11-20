@@ -30,6 +30,7 @@ import com.simbio.core.audit.api.AuditRecorder;
 import com.simbio.core.messaging.api.ConversationContextType;
 import com.simbio.core.messaging.api.ConversationStatus;
 import com.simbio.core.messaging.api.MessageAuthorType;
+import com.simbio.core.messaging.api.MessagePosted;
 import com.simbio.core.messaging.api.MessageReceived;
 import com.simbio.core.messaging.api.MessageVisibility;
 import com.simbio.core.messaging.domain.ConversationEntity;
@@ -152,6 +153,21 @@ class ConversationServiceTest {
     }
 
     @Test
+    @DisplayName("TC-MSG-001: opening an existing request reuses its conversation")
+    void reusesExistingRequestConversation() {
+        AuthenticatedUser client = user(Role.CLIENT, Set.of());
+        UUID requestId = UUID.randomUUID();
+        ConversationEntity existing = requestConversation(client.userId(), requestId);
+        when(customerOwnership.hasActiveClientAccount(client.userId())).thenReturn(true);
+        when(store.findByContext(ConversationContextType.REQUEST, requestId)).thenReturn(Optional.of(existing));
+
+        var result = service.openRequestConversation(client, requestId);
+
+        assertThat(result.publicId()).isEqualTo(existing.getPublicId());
+        verify(store, never()).saveConversation(any(ConversationEntity.class));
+    }
+
+    @Test
     @DisplayName("TC-MSG-002: public client message publishes only identifiers after commit")
     void publishesReceivedEventAfterCommitWithoutMessageContent() {
         AuthenticatedUser client = user(Role.CLIENT, Set.of());
@@ -168,6 +184,40 @@ class ConversationServiceTest {
         assertThat(synchronizations).hasSize(1);
         synchronizations.forEach(synchronization -> synchronization.afterCommit());
         verify(events).publishEvent(new MessageReceived(conversation.getPublicId(), message.publicId()));
+    }
+
+    @Test
+    @DisplayName("TC-MSG-002: public employee message publishes only identifiers after commit")
+    void publishesPostedEventAfterCommit() {
+        AuthenticatedUser employee = user(Role.EMPLOYEE, Set.of(Permission.INBOX_MANAGE));
+        ConversationEntity conversation = new ConversationEntity(
+                UUID.randomUUID(), ConversationContextType.CONTACT, UUID.randomUUID(), null, NOW);
+        when(store.findConversation(conversation.getPublicId())).thenReturn(Optional.of(conversation));
+        when(store.saveMessage(any(MessageEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var message = service.postMessage(employee, conversation.getPublicId(),
+                MessageVisibility.PUBLIC, "Synthetic employee response");
+
+        var synchronizations = TransactionSynchronizationManager.getSynchronizations();
+        assertThat(synchronizations).hasSize(1);
+        synchronizations.forEach(synchronization -> synchronization.afterCommit());
+        verify(events).publishEvent(new MessagePosted(conversation.getPublicId(), message.publicId()));
+    }
+
+    @Test
+    @DisplayName("TC-MSG-002: internal employee notes do not publish notification events")
+    void internalEmployeeMessageDoesNotPublishEvent() {
+        AuthenticatedUser employee = user(Role.EMPLOYEE, Set.of(Permission.INBOX_MANAGE));
+        ConversationEntity conversation = new ConversationEntity(
+                UUID.randomUUID(), ConversationContextType.CONTACT, UUID.randomUUID(), null, NOW);
+        when(store.findConversation(conversation.getPublicId())).thenReturn(Optional.of(conversation));
+        when(store.saveMessage(any(MessageEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.postMessage(employee, conversation.getPublicId(),
+                MessageVisibility.INTERNAL, "Synthetic internal note");
+
+        assertThat(TransactionSynchronizationManager.getSynchronizations()).isEmpty();
+        verify(events, never()).publishEvent(any(Object.class));
     }
 
     private static AuthenticatedUser user(Role role, Set<Permission> permissions) {

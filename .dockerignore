@@ -1,0 +1,15 @@
+.github
+.mvn
+.vscode
+node_modules
+target/*
+!target/portal-*.jar
+test-results
+visual
+docs
+scripts
+e2e
+*.7z
+.env
+*.log
+logs-error

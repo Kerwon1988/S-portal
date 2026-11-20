@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('messaging.continuation.title', ~{::main}, 'public')}">
+<main id="main-content" class="mx-auto w-full max-w-3xl space-y-6 px-4 py-10" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{messaging.continuation.heading}">Continue conversation</h1>
+    <p class="text-text-muted" th:text="#{messaging.continuation.expiry}">This link can be used once to reply.</p>
+    <ol class="space-y-4" th:if="${!conversation.messages.empty}">
+        <li th:each="message : ${conversation.messages}" class="rounded-xl border border-border bg-surface p-4">
+            <p class="break-words whitespace-pre-wrap" th:text="${message.body}">Message</p>
+            <ul th:if="${!message.attachments.empty}" class="mt-2 flex flex-wrap gap-2">
+                <li th:each="attachment : ${message.attachments}">
+                    <a th:href="@{/continuar/{token}/adjuntos/{fileId}(token=${continuationToken},fileId=${attachment.publicId})}"
+                       class="text-accent-text underline" rel="nofollow"
+                       th:text="#{messaging.thread.attachment(${attachment.detectedMime},${attachment.sizeBytes})}">Attachment</a>
+                </li>
+            </ul>
+            <time class="mt-2 block text-sm text-text-muted" th:datetime="${message.createdAt}"
+                  th:text="${message.createdAt}">Timestamp</time>
+        </li>
+    </ol>
+    <form th:object="${continuationForm}" th:action="@{/continuar/{token}(token=${continuationToken})}"
+          method="post" class="space-y-4 rounded-xl border border-border bg-surface p-5">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" name="visibility" value="PUBLIC">
+        <label for="continuation-body" class="block font-medium" th:text="#{messaging.thread.body}">Message</label>
+        <textarea id="continuation-body" th:field="*{body}" rows="6" maxlength="10000" required
+                  th:attr="aria-invalid=${#fields.hasErrors('body')}"
+                  aria-describedby="continuation-body-error"
+                  class="min-h-36 w-full rounded-lg border border-border bg-surface p-3"></textarea>
+        <p id="continuation-body-error" class="text-sm text-danger" role="alert"
+           th:if="${#fields.hasErrors('body')}" th:errors="*{body}">Invalid message.</p>
+        <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-4 font-semibold text-on-accent"
+                th:text="#{messaging.continuation.send}">Send reply</button>
+    </form>
+</main>
+</html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/base :: layout('employee.dashboard.title', ~{::main}, 'backoffice')}">
+<main id="main-content" class="mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6" tabindex="-1">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div><h1 class="font-heading text-3xl" th:text="#{employee.dashboard.heading}">Request operations</h1>
+            <p class="text-text-muted" th:text="#{employee.dashboard.description}">Manage authorized requests.</p></div>
+        <a class="min-h-11 rounded bg-accent px-4 py-3 font-semibold text-on-accent" href="/gestion/solicitudes" th:text="#{employee.dashboard.all-requests}">All requests</a>
+    </header>
+    <section id="dashboard-cards" th:fragment="cards" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-live="polite">
+        <a class="rounded-xl border border-border bg-surface p-5" href="/gestion/solicitudes"><span th:text="#{employee.dashboard.unassigned}">Unassigned</span><strong class="mt-3 block text-3xl" th:text="${dashboard.unassigned}">0</strong></a>
+        <a class="rounded-xl border border-border bg-surface p-5" href="/gestion/solicitudes"><span th:text="#{employee.dashboard.mine}">Assigned to me</span><strong class="mt-3 block text-3xl" th:text="${dashboard.mine}">0</strong></a>
+        <a class="rounded-xl border border-border bg-surface p-5" href="/gestion/solicitudes"><span th:text="#{employee.dashboard.overdue}">SLA overdue</span><strong class="mt-3 block text-3xl" th:text="${dashboard.overdue}">0</strong></a>
+        <a class="rounded-xl border border-border bg-surface p-5" href="/gestion/solicitudes?status=EN_ESTUDIO"><span th:text="#{employee.dashboard.awaiting-quote}">Under review</span><strong class="mt-3 block text-3xl" th:text="${dashboard.awaitingQuote}">0</strong></a>
+    </section>
+    <p class="rounded border border-border bg-surface p-4 text-sm text-text-muted" th:text="#{employee.dashboard.unread-pending}">Unread tracking is pending.</p>
+    <p class="text-sm text-text-muted" th:text="#{employee.sla.pending}">The one-business-day SLA is provisional and configurable pending operations approval.</p>
+</main>
+</html>

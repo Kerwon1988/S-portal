@@ -172,3 +172,4 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; 05-integracion y ADR-002
 - Estimación: M (≤ 1 d)
 - Riesgos: el desacuerdo del contrato bloquea la integración/rutas que dependan de su aprobación; prepara fixtures y tests de proveedor conforme al contrato aprobado. Si el ejecutor del proveedor no está disponible localmente, pospón solo esa ejecución con instrucciones para otra máquina habilitada; no detengas código ni pruebas locales independientes.
+- Estado local (2026-11-20): **COMPLETADA para desarrollo local**. Autorización owner explícita registrada en ADR-002/DIARIO; OpenAPI compartido byte-identical con hash `405887EBB18B90655B71A4BDE20D88A1C4A44FBEA96975D76DD1D6A9D7410B2F`, test estructural y cliente/proveedor local. La aceptación no publica la API ni autoriza PRE, tráfico externo o DEMO real; provider/E2E externos quedan `POSTPONED`.

@@ -35,9 +35,16 @@ class SecurityHeadersTest {
 
         String firstCsp = first.getResponse().getHeader("Content-Security-Policy");
         String secondCsp = second.getResponse().getHeader("Content-Security-Policy");
-        assertThat(firstCsp).contains("nonce-").doesNotContain("unsafe-inline", "unsafe-eval");
+        assertThat(firstCsp)
+                .contains("nonce-", "default-src 'self'", "object-src 'none'", "frame-ancestors 'none'")
+                .doesNotContain("unsafe-inline", "unsafe-eval");
         assertThat(secondCsp).isNotEqualTo(firstCsp);
+        assertThat(first.getResponse().getHeader("Content-Security-Policy-Report-Only")).isNull();
         assertThat(first.getResponse().getHeader("Strict-Transport-Security")).contains("max-age=");
+        assertThat(first.getResponse().getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
+        assertThat(first.getResponse().getHeader("X-Frame-Options")).isEqualTo("DENY");
+        assertThat(first.getResponse().getHeader("Permissions-Policy"))
+                .contains("camera=()", "microphone=(self)");
         assertThat(mockMvc.perform(get("/gestion/secret"))
                 .andExpect(status().isForbidden())
                 .andReturn()

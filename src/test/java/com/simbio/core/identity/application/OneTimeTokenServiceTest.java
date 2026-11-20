@@ -119,6 +119,30 @@ class OneTimeTokenServiceTest {
     }
 
     @Test
+    void rejectsRevokedInvitationWithoutConsumingIt() throws Exception {
+        OneTimeTokenStore store = mock(OneTimeTokenStore.class);
+        OneTimeTokenService service = service(store, mock(SensitiveDataProtector.class));
+        String rawToken = "synthetic-revoked-invitation-value-123456";
+        OneTimeToken invitation = new OneTimeToken(
+                UUID.randomUUID(),
+                sha256(rawToken),
+                TokenPurpose.INVITATION.name(),
+                null,
+                "encrypted-email",
+                "email-key",
+                "EMPLOYEE",
+                NOW.plusSeconds(300),
+                NOW.minusSeconds(30));
+        invitation.revoke(NOW);
+        when(store.find(invitation.getTokenHash(), TokenPurpose.INVITATION.name()))
+                .thenReturn(Optional.of(invitation));
+
+        assertThat(service.consume(rawToken, TokenPurpose.INVITATION)).isEmpty();
+
+        verify(store, never()).consume(eq(invitation.getId()), eq(NOW));
+    }
+
+    @Test
     void rejectsInvalidTokenLifetimeBeforePersistence() {
         OneTimeTokenStore store = mock(OneTimeTokenStore.class);
         OneTimeTokenService service = service(store, mock(SensitiveDataProtector.class));

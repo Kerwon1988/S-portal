@@ -132,6 +132,16 @@
                         th:text="#{customer.registration.submit}">Create account</button>
             </form>
         </div>
+        <aside th:if="${simbioSphereFallbackAvailable}" class="mt-6 rounded-xl border border-border p-4"
+               aria-labelledby="simbiosphere-fallback-title">
+            <h2 id="simbiosphere-fallback-title" class="font-heading text-xl"
+                th:text="#{customer.registration.simbiosphere-fallback.title}">Continue in SimbioSphere</h2>
+            <p class="mt-2 text-sm text-muted"
+               th:text="#{customer.registration.simbiosphere-fallback.notice}">No form data is sent.</p>
+            <a class="mt-4 inline-flex min-h-11 items-center rounded border border-primary px-4 text-primary"
+               th:href="@{/continuar/simbiosphere}" rel="noopener noreferrer"
+               th:text="#{customer.registration.simbiosphere-fallback.action}">Continue in SimbioSphere</a>
+        </aside>
     </section>
 </main>
 </html>

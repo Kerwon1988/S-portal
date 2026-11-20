@@ -19,6 +19,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; tabla de consentimientos
 - Estimación: M (≤ 1 d)
 - Riesgos: cambiar texto invalida evidencia previa; versionar, no sobrescribir.
+- Estado local (2026-11-20): PARCIAL — el registro de consentimientos y su persistencia tienen pruebas focales Java/H2 aprobadas. Los textos legales siguen siendo borradores y requieren aprobación antes del uso productivo.
 
 ### LGL-002 — Derechos RGPD: exportación y anonimización orquestadas
 - Fase / épica / módulo owner: F2 / LGL / legal
@@ -36,6 +37,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; 07 privacidad
 - Estimación: M (≤ 1 d)
 - Riesgos: contributor omitido deja PII; test exige cobertura de todos los owners.
+- Estado local (2026-11-20): PARCIAL/BLOQUEADO — `/cuenta/datos` permanece informativa, exclusiva para CLIENT; `DataRightsControllerTest` pasó 3/3 y niega acceso anónimo, EMPLOYEE y ADMIN. No existe flujo de solicitud/exportación ni contributors de todos los owners. Por decisión vigente no se ofrece exportación parcial; la anonimización irreversible espera aprobación legal.
 
 ### LGL-003 — Registro de retención y job de purga genérico
 - Fase / épica / módulo owner: F2 / LGL / legal
@@ -53,6 +55,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; tabla retención en 07
 - Estimación: M (≤ 1 d)
 - Riesgos: plazos son propuestas del brief; validar con responsable legal antes de producción.
+- Estado local (2026-11-20): BLOQUEADO — no hay política activa ni job de purga. Solo se permite dry-run; faltan aprobación de categorías/plazos y sus controles de legal hold. No se ejecutan purgas.
 
 ### CUS-001 — customer: ClientAccount y miembro OWNER con migraciones
 - Fase / épica / módulo owner: F2 / CUS / customer
@@ -70,6 +73,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; modelo ER
 - Estimación: M (≤ 1 d)
 - Riesgos: duplicar identidad entre módulos; customer referencia IDs y deja autenticación a identity.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL — cuenta y miembro OWNER con persistencia H2 cubiertos por pruebas focales aprobadas. Las migraciones no se han aplicado en SQL Server.
 
 ### CUS-002 — Registro de cliente (formulario, consentimientos, anti-bot)
 - Fase / épica / módulo owner: F2 / CUS / customer
@@ -87,6 +91,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; README «Registro»
 - Estimación: M (≤ 1 d)
 - Riesgos: datos de negocio difieren por país; NIF permanece opcional hasta validar país.
+- Estado local (2026-11-20): PARCIAL — formulario, consentimiento y controles de anti-abuso cuentan con pruebas focales Java/H2 aprobadas. La comprobación axe queda `POSTPONED`: el intento de navegador terminó con `ERR_CONNECTION_REFUSED` antes de analizar la página.
 
 ### CUS-003 — Alta de cliente por ADMIN mediante invitación
 - Fase / épica / módulo owner: F2 / CUS / customer
@@ -104,6 +109,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; README «Gestión de clientes»
 - Estimación: M (≤ 1 d)
 - Riesgos: permisos deben coincidir con matriz de IAM-012; no inferirlos del menú.
+- Estado local (2026-11-20): PARCIAL — invitación y asociación tras aceptación están implementadas y tienen pruebas locales focales. El cierre depende de IAM-010/IAM-012 y la metadata customer pendiente aún no tiene expiración/limpieza propia.
 
 ### CUS-004 — Validación de NIF/CIF/NIE y país
 - Fase / épica / módulo owner: F2 / CUS / customer
@@ -121,4 +127,4 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; pregunta de países en 13
 - Estimación: S (≤ 0,5 d)
 - Riesgos: formato no equivale a existencia legal; no integrar validación externa sin decisión.
-
+- Estado local (2026-11-20): PARCIAL — cifrado, máscara y validación sintáctica para España están cubiertos por pruebas focales. La pregunta 23 de [preguntas abiertas](../13-preguntas-abiertas.md) mantiene pendientes los países; no se consulta ninguna autoridad fiscal.

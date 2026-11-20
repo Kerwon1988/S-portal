@@ -41,7 +41,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         boolean challengeRequest = HttpMethod.GET.matches(request.getMethod())
                 && "/anti-bot/challenge".equals(path);
         boolean protectedMutation = HttpMethod.POST.matches(request.getMethod())
-                && properties.protectedPaths().contains(path);
+                && (properties.protectedPaths().contains(path) || path.startsWith("/continuar/"));
         return !challengeRequest && !protectedMutation;
     }
 

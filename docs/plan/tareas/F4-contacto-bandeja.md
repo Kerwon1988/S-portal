@@ -19,6 +19,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; política de contacto
 - Estimación: M (≤ 1 d)
 - Riesgos: retención de contacto propuesta 12 meses; confirmar en 13/07.
+- Estado local (2026-11-20): PARCIAL — existen GET/POST, consentimiento configurable, CSRF, anti-bot/rate limit, cifrado PII, conversación CONTACT, acuse por outbox y errores accesibles. Queda pendiente aprobación legal/configuración del consentimiento, aceptación Mailpit real y E2E/axe de navegador; sin esos gate no se declara completa.
 
 ### MSG-004 — Adjuntos del contacto con límites
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -36,6 +37,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; retención de adjuntos
 - Estimación: S (≤ 0,5 d)
 - Riesgos: adjuntos de contacto son PII; aplicar propuesta de retención 12 meses.
+- Estado local (2026-11-20): PARCIAL — límites, Tika/extensión, ClamAV CLEAN, vínculo owner `messaging`, descarga `nosniff` autorizada y tests/H2 están implementados. Retención legal y antivirus/descarga en navegador siguen sin validación externa.
 
 ### MSG-005 — Nota de audio (MediaRecorder, previsualización, fallback, Permissions-Policy)
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -53,6 +55,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; README «Audio»
 - Estimación: M (≤ 1 d)
 - Riesgos: Safari/codec varía; detección de soporte sin asumir formato.
+- Estado local (2026-11-20): PARCIAL — MediaRecorder, previsualización/descarte, fallback accesible, codecs explícitos, Permissions-Policy y límite 120 s están implementados; 3/3 tests JS pasan. Falta validar micrófono/codec/axe en navegador real.
 
 ### MSG-006 — Botones de canal WhatsApp y mailto configurables
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -70,6 +73,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; 13 número WhatsApp
 - Estimación: S (≤ 0,5 d)
 - Riesgos: número y proveedor mail pendientes; mantener valores fuera de plantillas.
+- Estado local (2026-11-19): PARCIAL — fragmento bilingüe, configuración opcional y generación segura implementados; número/email oficiales permanecen sin configurar y aún no hay página de contacto que consuma el fragmento.
 
 ### MSG-007 — Bandeja: listado, filtros y búsqueda
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -87,6 +91,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; permisos y rutas
 - Estimación: M (≤ 1 d)
 - Riesgos: búsqueda por texto puede filtrar contenido; acotar campos/retención e índices.
+- Estado local (2026-11-20): PARCIAL — listado, carpetas, filtros y búsqueda POST/HTMX sobre mensajes PUBLIC usan permisos por contexto, paginación estable y pruebas MVC/H2. Papelera se excluye por defecto. Pendiente axe/Playwright de navegador sobre una sesión sintética.
 
 ### MSG-008 — Bandeja: hilo, respuesta con adjuntos y plantillas bilingües
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -104,6 +109,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; plantillas
 - Estimación: M (≤ 1 d)
 - Riesgos: retry de email duplica aviso; outbox idempotente y message ID estable.
+- Estado local (2026-11-20): PARCIAL — el hilo admite respuesta PUBLIC/INTERNAL, adjuntos limpios vinculados al mensaje, plantillas ES/EN seleccionables, descarga autorizada (incluido enlace mágico), CSRF, validación, evento post-commit y acuse/aviso por outbox. Falta la política/entrega final del correo de continuidad para CONTACT anónimo y recorrido navegador/Mailpit.
 
 ### MSG-009 — Bandeja: leído/no leído, asignar, etiquetar, archivar, papelera y purga
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -121,6 +127,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; retención/roles en 07
 - Estimación: M (≤ 1 d)
 - Riesgos: papelera no equivale a supresión inmediata; purga sujeta a plazo legal pendiente.
+- Estado local (2026-11-20): PARCIAL — lectura, no leído, asignación, etiquetas, archivo, papelera/restauración, purga ADMIN manual y job diario limitado por lote están implementados y auditados. `0s` y `purge-job-enabled=false` bloquean la purga irreversible hasta aprobar retención; falta esa aprobación/validación operativa.
 
 ### MSG-010 — Enlace mágico para continuar la conversación sin cuenta
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -138,6 +145,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; 07 enlace mágico
 - Estimación: M (≤ 1 d)
 - Riesgos: reenvío de email puede consumir enlace; decidir comportamiento de un uso antes de producción.
+- Estado local (2026-11-20): PARCIAL — token aleatorio de 256 bits, SHA-256, TTL 24 h, un uso, revocación/alcance CONTACT, CSRF/rate limit, lectura PUBLIC y denial 404 están implementados. La UI staff crea el enlace, pero su entrega por correo y política final de reenvío siguen pendientes; no se expone el token en logs/events.
 
 ### MSG-011 — Actualización casi en tiempo real por polling HTMX
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -155,6 +163,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; configuración de polling
 - Estimación: S (≤ 0,5 d)
 - Riesgos: polling agresivo crece con usuarios; intervalo configurable y backoff.
+- Estado local (2026-11-20): PARCIAL — endpoint/fragmento revalidan permiso en cada poll; intervalo y backoff están acotados/configurados, HTMX pausa al ocultar y aumenta el intervalo tras error. Falta evidencia PERF/A11Y de navegador.
 
 ### MSG-012 — Modelo preparado para IA (authorType, borradores, MessageReceived, puerto)
 - Fase / épica / módulo owner: F4 / MSG / messaging
@@ -172,6 +181,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; ADR-011 futuro
 - Estimación: S (≤ 0,5 d)
 - Riesgos: IA supone transferencias/risgos RGPD y prompt injection; integración R3+ con ADR aprobado.
+- Estado local (2026-11-20): PARCIAL — `AI_AGENT`, borrador inmutable `PENDING_APPROVAL` y puerto sin implementación añadidos; `MessageReceived` existente conserva solo IDs. Selección focal: 25/25 Surefire y 5/5 persistencia H2; el test H2 persiste un `MessageEntity` sintético AI_AGENT como INTERNAL, no el objeto `AiReplyDraft`. Los mensajes `AI_AGENT` solo pueden ser INTERNAL; no hay proveedor, llamada externa, publicación automática ni aprobación de borrador implementada. La migración SQL Server no se ejecutó contra ese motor. ADR-011 sigue Propuesto/Futuro.
 
 ### MSG-013 — Convertir un contacto en solicitud
 - Fase / épica / módulo owner: F4 / MSG / request
@@ -189,6 +199,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; flujo en 03/05
 - Estimación: M (≤ 1 d)
 - Riesgos: datos de contacto no bastan para solicitud completa; completar campos mínimos antes de convertir.
+- Estado local (2026-11-20): BLOQUEADO/PARCIAL — no se implementó una conversión inventando cuenta owner/categoría/objetivo. Se requiere contrato owner para completar los campos mínimos y resolver un contacto anónimo sin duplicación.
 
 ### NTF-004 — Plantillas bilingües de solicitudes y mensajería y alertas a ADMIN
 - Fase / épica / módulo owner: F4 / NTF / notification
@@ -206,6 +217,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; README «Notificaciones»
 - Estimación: M (≤ 1 d)
 - Riesgos: cobertura de templates crece por evento; catálogo de claves y test de paridad.
+- Estado local (2026-11-20): PARCIAL — `RequestStatusChanged`, `MessagePosted` y el acuse `MessageReceived` se consumen vía casos/APIs owner, respetan locale/preferencias y encolan enlaces internos token-free; hay ES/EN y texto plano. Las alertas de aprovisionamiento permanecen bloqueadas hasta que exista PROMPT 15/`simbiosphere`, y Mailpit real está `POSTPONED`.
 
 ### NTF-005 — Preferencias de notificación por usuario
 - Fase / épica / módulo owner: F4 / NTF / notification
@@ -223,6 +235,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; categorías en 13
 - Estimación: M (≤ 1 d)
 - Riesgos: distinguir obligación transaccional/comercial requiere revisión legal.
+- Estado local (2026-11-20): COMPLETADA en desarrollo local — tabla owner `notification`, API de preferencias, panel owner-only, CSRF, categorías opcionales y supresión antes del envío; avisos esenciales no se desactivan. La clasificación final operativa/comercial continúa sujeta a revisión legal.
 
 ### E2E-003 — E2E: contacto → respuesta
 - Fase / épica / módulo owner: F4 / E2E / test
@@ -240,3 +253,4 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; README «E2E»
 - Estimación: M (≤ 1 d)
 - Riesgos: polling/correo asíncrono causa flakiness; esperar condiciones por evento y usar reloj fijo.
+- Estado local (2026-11-20): PREPARADO_NO_EJECUTADO — `e2e/contact-reply.spec.ts` existe y se descubre con Playwright. Requiere servidor H2/fixture, empleado sintético `INBOX_MANAGE`, consentimiento aprobado, Mailpit y Chromium; no se ejecutó ni se afirma A11Y/E2E real.

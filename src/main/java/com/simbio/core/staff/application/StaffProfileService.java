@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.simbio.core.audit.api.AuditRecord;
@@ -51,7 +52,7 @@ public class StaffProfileService implements StaffDirectory {
         this.clock = clock;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createFromInvitation(InvitationAccepted event) {
         if (event == null || !"EMPLOYEE".equals(event.roleCode())) {
             return;

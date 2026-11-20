@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('messaging.contact.title', ~{::main}, 'public')}">
+<main id="main-content" class="mx-auto w-full max-w-3xl space-y-6 px-4 py-10" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{messaging.contact.heading}">Contact</h1>
+    <p th:if="${sent}" class="rounded-xl border border-success bg-surface p-4" role="status"
+       th:text="#{messaging.contact.sent}">Your message was received.</p>
+    <p th:unless="${contactAvailable}" class="rounded-xl border border-border bg-surface p-4" role="status"
+       th:text="#{messaging.contact.preview}">
+        Contact is unavailable until the legal consent wording is approved.
+    </p>
+    <form th:if="${contactAvailable}" method="post" enctype="multipart/form-data"
+          th:action="@{/{lang}/contacto(lang=${formLocale})}" th:object="${contactForm}"
+          class="grid gap-5 rounded-xl border border-border bg-surface p-5 sm:grid-cols-2"
+          data-anti-bot th:attr="data-challenge-url=@{/anti-bot/challenge}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <p th:if="${#fields.hasGlobalErrors()}" class="rounded border border-danger p-3 text-danger sm:col-span-2"
+           role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}">The message could not be sent.</p>
+        <input type="hidden" th:field="*{consentVersion}">
+        <div>
+            <label for="contact-name" class="mb-1 block font-medium" th:text="#{messaging.contact.name}">Name</label>
+            <input id="contact-name" th:field="*{personName}" type="text" autocomplete="name" required maxlength="120"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"
+                   aria-describedby="contact-name-error">
+            <p id="contact-name-error" class="text-sm text-danger" role="alert" th:errors="*{personName}"></p>
+        </div>
+        <div>
+            <label for="contact-email" class="mb-1 block font-medium" th:text="#{messaging.contact.email}">Email</label>
+            <input id="contact-email" th:field="*{email}" type="email" autocomplete="email" required maxlength="320"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"
+                   aria-describedby="contact-email-error">
+            <p id="contact-email-error" class="text-sm text-danger" role="alert" th:errors="*{email}"></p>
+        </div>
+        <div>
+            <label for="contact-phone" class="mb-1 block font-medium" th:text="#{messaging.contact.phone}">Phone</label>
+            <input id="contact-phone" th:field="*{phone}" type="tel" autocomplete="tel" maxlength="24"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"
+                   aria-describedby="contact-phone-error">
+            <p id="contact-phone-error" class="text-sm text-danger" role="alert" th:errors="*{phone}"></p>
+        </div>
+        <div>
+            <label for="contact-reason" class="mb-1 block font-medium" th:text="#{messaging.contact.reason}">Reason</label>
+            <input id="contact-reason" th:field="*{reason}" type="text" required maxlength="160"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"
+                   aria-describedby="contact-reason-error">
+            <p id="contact-reason-error" class="text-sm text-danger" role="alert" th:errors="*{reason}"></p>
+        </div>
+        <div class="sm:col-span-2">
+            <label for="contact-message" class="mb-1 block font-medium" th:text="#{messaging.contact.message}">Message</label>
+            <textarea id="contact-message" th:field="*{message}" rows="6" required maxlength="10000"
+                      class="min-h-32 w-full rounded-lg border border-border bg-surface p-3"
+                      aria-describedby="contact-message-error"></textarea>
+            <p id="contact-message-error" class="text-sm text-danger" role="alert" th:errors="*{message}"></p>
+        </div>
+        <div class="space-y-2 sm:col-span-2" data-contact-uploads
+             th:attr="data-remove-label=#{messaging.contact.attachments.remove}">
+            <label for="contact-attachments" class="block font-medium" th:text="#{messaging.contact.attachments}">Attachments</label>
+            <input id="contact-attachments" name="attachments" type="file" multiple
+                   accept=".pdf,.png,.jpg,.jpeg,.webp" aria-describedby="contact-attachments-help"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface p-2">
+            <p id="contact-attachments-help" class="text-sm text-text-muted" th:text="#{messaging.contact.attachments.help}">
+                Up to three clean PDF or image files.
+            </p>
+            <ul data-upload-list class="space-y-2" aria-live="polite"></ul>
+        </div>
+        <section class="space-y-3 rounded-lg border border-border p-4 sm:col-span-2" data-contact-recorder
+                 th:attr="data-recorder-idle=#{messaging.contact.audio.idle},data-recorder-unavailable=#{messaging.contact.audio.unavailable},data-recorder-unsupported=#{messaging.contact.audio.unsupported},data-recorder-recording=#{messaging.contact.audio.recording},data-recorder-ready=#{messaging.contact.audio.ready},data-recorder-permission=#{messaging.contact.audio.permission},data-recorder-fallback=#{messaging.contact.audio.fallback},data-recorder-too-long=#{messaging.contact.audio.tooLong},data-recorder-invalid=#{messaging.contact.audio.invalid}">
+            <h2 class="font-semibold" th:text="#{messaging.contact.audio.heading}">Audio note</h2>
+            <p class="text-sm text-text-muted" th:text="#{messaging.contact.audio.help}">Maximum 120 seconds.</p>
+            <input type="hidden" name="audioDurationSeconds">
+            <div class="flex flex-wrap gap-3">
+                <button type="button" data-recorder-start class="min-h-11 rounded-lg border border-border px-4 font-semibold"
+                        th:text="#{messaging.contact.audio.record}">Record</button>
+                <button type="button" data-recorder-stop disabled class="min-h-11 rounded-lg border border-border px-4 font-semibold"
+                        th:text="#{messaging.contact.audio.stop}">Stop</button>
+                <button type="button" data-recorder-discard hidden class="min-h-11 rounded-lg border border-border px-4 font-semibold"
+                        th:text="#{messaging.contact.audio.discard}">Discard</button>
+            </div>
+            <p data-recorder-status role="status" aria-live="polite" class="text-sm" th:text="#{messaging.contact.audio.idle}"></p>
+            <audio data-recorder-preview controls hidden class="w-full"></audio>
+            <label for="contact-audio" class="block font-medium" th:text="#{messaging.contact.audio.upload}">Or upload audio</label>
+            <input id="contact-audio" name="audio" type="file" accept="audio/webm,audio/ogg,audio/mp4,.webm,.ogg,.m4a,.mp4"
+                   class="min-h-11 w-full rounded-lg border border-border bg-surface p-2">
+            <script type="module" th:src="${assets['contact-recorder.js']}" th:nonce="${cspNonce}"></script>
+        </section>
+        <label class="flex min-h-11 items-start gap-3 sm:col-span-2">
+            <input type="checkbox" th:field="*{consentAccepted}" required class="mt-1 size-5 rounded border-border">
+            <span th:text="${contactConsentText}">Configured contact consent wording.</span>
+        </label>
+        <div class="sm:col-span-2" th:replace="~{fragments/anti-bot :: challenge(${challenge})}"></div>
+        <button type="submit"
+                class="inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-4 font-semibold text-on-accent sm:col-span-2"
+                th:text="#{messaging.contact.submit}">Send message</button>
+    </form>
+    <fieldset th:unless="${contactAvailable}" disabled class="grid gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-2">
+        <legend class="px-2 font-semibold" th:text="#{messaging.contact.details}">Contact details</legend>
+        <label><span th:text="#{messaging.contact.name}">Name</span><input id="contact-name" type="text" class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"></label>
+        <label><span th:text="#{messaging.contact.email}">Email</span><input id="contact-email" type="email" class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"></label>
+        <label><span th:text="#{messaging.contact.phone}">Phone</span><input id="contact-phone" type="tel" class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"></label>
+        <label><span th:text="#{messaging.contact.reason}">Reason</span><input id="contact-reason" type="text" class="min-h-11 w-full rounded-lg border border-border bg-surface px-3"></label>
+        <label class="sm:col-span-2"><span th:text="#{messaging.contact.message}">Message</span><textarea id="contact-message" rows="5" class="min-h-32 w-full rounded-lg border border-border bg-surface p-3"></textarea></label>
+        <label class="sm:col-span-2"><input type="checkbox"> <span th:text="#{messaging.contact.consentPending}">Consent pending.</span></label>
+        <button type="button" disabled class="min-h-11 rounded-lg bg-accent px-4 font-semibold text-on-accent sm:col-span-2" th:text="#{messaging.contact.submit}">Send</button>
+    </fieldset>
+    <section class="space-y-3" aria-labelledby="contact-channel-heading"
+             th:if="${contactChannels != null and (contactChannels.whatsappHref != null or contactChannels.mailtoHref != null)}">
+        <h2 id="contact-channel-heading" class="font-heading text-xl" th:text="#{messaging.channels.heading}">Contact channels</h2>
+        <div th:with="channelLinks=${contactChannels}" th:replace="~{messaging/channel-links :: links}"></div>
+    </section>
+</main>
+</html>

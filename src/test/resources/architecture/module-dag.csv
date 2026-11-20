@@ -8,5 +8,7 @@ identity,audit;notification;shared
 legal,audit;content;shared
 messaging,audit;files;shared
 notification,messaging;shared
+request,audit;customer;files;messaging;notification;shared;staff
 staff,audit;identity;shared
 shared,
+simbiosphere,audit;customer;identity;shared

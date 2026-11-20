@@ -15,13 +15,15 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.simbio.core.identity.api.IdentityUserDirectory;
@@ -49,28 +51,24 @@ class UserAdminActionsControllerTest {
     @MockitoBean
     private IdentityUserDirectory users;
 
-    @Test
-    void administrativeMutationRequiresCsrf() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"estado", "desbloquear", "restablecer", "rol"})
+    void everyAdministrativeMutationRequiresCsrf(String action) throws Exception {
         TestUser admin = admin(Permission.USERS_MANAGE);
         UUID targetId = UUID.randomUUID();
 
-        mockMvc.perform(post("/gestion/usuarios/{targetId}/estado", targetId)
-                        .with(user(admin.principal()))
-                        .param("active", "false")
-                        .param("confirmed", "true"))
+        mockMvc.perform(mutationRequest(admin, targetId, action, false, true))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(actions, users);
     }
 
-    @Test
-    void administrativeMutationRequiresExplicitConfirmation() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"estado", "desbloquear", "restablecer", "rol"})
+    void everyAdministrativeMutationRequiresExplicitConfirmation(String action) throws Exception {
         TestUser admin = admin(Permission.USERS_MANAGE);
 
-        mockMvc.perform(post("/gestion/usuarios/{targetId}/desbloquear", UUID.randomUUID())
-                        .with(user(admin.principal()))
-                        .with(csrf())
-                        .param("confirmed", "false"))
+        mockMvc.perform(mutationRequest(admin, UUID.randomUUID(), action, true, false))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(actions, users);
@@ -122,6 +120,34 @@ class UserAdminActionsControllerTest {
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(actions, users);
+    }
+
+    @Test
+    void administratorWithoutUserManagementPermissionCannotInvokeActions() throws Exception {
+        TestUser admin = admin(Permission.STAFF_MANAGE);
+
+        mockMvc.perform(mutationRequest(admin, UUID.randomUUID(), "restablecer", true, true))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(actions, users);
+    }
+
+    private static MockHttpServletRequestBuilder mutationRequest(
+            TestUser admin, UUID targetId, String action, boolean includeCsrf, boolean confirmed) {
+        MockHttpServletRequestBuilder request = post("/gestion/usuarios/{targetId}/{action}", targetId, action)
+                .with(user(admin.principal()))
+                .param("confirmed", Boolean.toString(confirmed));
+        switch (action) {
+            case "estado" -> request.param("active", "false");
+            case "rol" -> request.param("role", "EMPLOYEE");
+            case "desbloquear", "restablecer" -> {
+            }
+            default -> throw new IllegalArgumentException("Unsupported user action test route");
+        }
+        if (includeCsrf) {
+            request.with(csrf());
+        }
+        return request;
     }
 
     private static TestUser admin(Permission... permissions) {

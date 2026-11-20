@@ -28,6 +28,32 @@ public record EmailCommand(
                 || value.length() > 4096)) {
             throw new IllegalArgumentException("Email variables exceed the allowed bounds");
         }
+        if (templateRequiresAuthorizedUser(template) && recipientUserId == null) {
+            throw new IllegalArgumentException("Operational email requires an authorized user recipient");
+        }
+        if (templateRequiresInternalLink(template)) {
+            String url = variables.getOrDefault("url", variables.getOrDefault("actionUrl", ""));
+            boolean relativeInternal = url.startsWith("/") && !url.startsWith("//");
+            boolean configuredAbsolute = template == EmailTemplate.QUOTE_SENT
+                    && (url.startsWith("http://") || url.startsWith("https://"));
+            if (url.isBlank() || (!relativeInternal && !configuredAbsolute)
+                    || url.contains("?") || url.contains("#")) {
+                throw new IllegalArgumentException("Operational email requires a token-free internal path");
+            }
+        }
+    }
+
+    private static boolean templateRequiresAuthorizedUser(EmailTemplate template) {
+        return templateRequiresInternalLink(template);
+    }
+
+    private static boolean templateRequiresInternalLink(EmailTemplate template) {
+        return template == EmailTemplate.REQUEST_CREATED
+                || template == EmailTemplate.REQUEST_STATUS_CHANGED
+                || template == EmailTemplate.QUOTE_SENT
+                || template == EmailTemplate.MESSAGE_POSTED
+                || template == EmailTemplate.PROVISIONING_ACTION_REQUIRED
+                || template == EmailTemplate.PROVISIONING_FAILED;
     }
 
     public static EmailCommand toUser(
@@ -38,6 +64,18 @@ public record EmailCommand(
     public static EmailCommand toAddress(
             EmailAddress address, EmailTemplate template, Locale locale, Map<String, String> variables) {
         return new EmailCommand(Objects.requireNonNull(address), null, template, locale, variables);
+    }
+
+    public NotificationCategory category() {
+        return switch (template) {
+            case REQUEST_CREATED, REQUEST_STATUS_CHANGED, QUOTE_SENT -> NotificationCategory.REQUEST_UPDATES;
+            case MESSAGE_POSTED -> NotificationCategory.MESSAGE_UPDATES;
+            default -> NotificationCategory.ESSENTIAL;
+        };
+    }
+
+    public boolean isOperational() {
+        return templateRequiresInternalLink(template);
     }
 
     @Override

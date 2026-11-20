@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('simbiosphere.account.title', ~{::main}, 'account')}">
+<main id="main-content" class="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{simbiosphere.account.heading}">My SimbioSphere</h1>
+    <section th:if="${provisioning == null}" class="rounded-xl border border-border bg-surface p-5">
+        <h2 class="font-heading text-xl" th:text="#{simbiosphere.onboarding.heading}">Request joint registration</h2>
+        <p class="mt-2 text-sm text-text-muted" th:text="#{simbiosphere.onboarding.notice}">Only business data is stored. Personal identity is resolved later through internal APIs.</p>
+        <form method="post" th:action="@{/cuenta/simbiosphere}" th:object="${onboardingForm}" class="mt-5 space-y-4">
+            <p th:if="${#fields.hasGlobalErrors()}" class="text-danger" role="alert"
+               th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            <div><label for="sim-business-name" th:text="#{simbiosphere.onboarding.business-name}">Business name</label>
+                <input id="sim-business-name" th:field="*{businessName}" required maxlength="200"
+                       class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+            <div><label for="sim-business-slug" th:text="#{simbiosphere.onboarding.business-slug}">Business slug</label>
+                <input id="sim-business-slug" th:field="*{businessSlug}" required pattern="[a-z0-9-]{3,50}"
+                       class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+            <div><label for="sim-business-type" th:text="#{simbiosphere.onboarding.business-type}">Business type</label>
+                <select id="sim-business-type" th:field="*{businessType}" required
+                        class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                    <option value="RESTAURANT">Restaurant</option><option value="RETAIL">Retail</option>
+                    <option value="SERVICES">Services</option><option value="REPAIR_SHOP">Repair shop</option>
+                </select></div>
+            <div><label for="sim-location-name" th:text="#{simbiosphere.onboarding.location-name}">Location name</label>
+                <input id="sim-location-name" th:field="*{locationName}" required maxlength="200"
+                       class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+            <div><label for="sim-location-slug" th:text="#{simbiosphere.onboarding.location-slug}">Location slug</label>
+                <input id="sim-location-slug" th:field="*{locationSlug}" required pattern="[a-z0-9-]{2,50}"
+                       class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+            <label class="flex min-h-11 items-start gap-2">
+                <input type="checkbox" required th:field="*{termsAccepted}">
+                <span th:text="#{simbiosphere.onboarding.terms}">I accept the separate SimbioSphere terms.</span>
+            </label>
+            <button type="submit" class="inline-flex min-h-11 items-center rounded bg-primary px-4 text-on-primary"
+                    th:text="#{simbiosphere.onboarding.submit}">Request registration</button>
+        </form>
+    </section>
+    <section th:if="${provisioning != null}" class="space-y-4 rounded-xl border border-border bg-surface p-5">
+        <dl class="grid gap-3 sm:grid-cols-2">
+            <div><dt class="text-text-muted" th:text="#{simbiosphere.account.status}">Status</dt>
+                <dd class="font-semibold" th:text="#{|simbiosphere.account.status.${provisioning.status}|}">Pending</dd></div>
+            <div><dt class="text-text-muted" th:text="#{simbiosphere.account.updated}">Updated</dt>
+                <dd><time th:datetime="${provisioning.updatedAt}" th:text="${provisioning.updatedAt}">Timestamp</time></dd></div>
+        </dl>
+        <p th:if="${provisioning.status.name() == 'ACTION_REQUIRED'}" role="alert" class="text-warning"
+           th:text="#{simbiosphere.account.action-required}">Additional action is required.</p>
+        <p th:if="${provisioning.status.name() != 'PROVISIONED'}" class="text-sm text-text-muted"
+           th:text="#{simbiosphere.account.pending-external}">Activation is unavailable until DEMO completes provisioning.</p>
+        <p th:if="${provisioning.status.name() == 'PROVISIONED'}" class="text-sm"
+           th:text="#{simbiosphere.account.provisioned}">Provisioning is complete. A fresh activation link is requested only through an authorized action.</p>
+    </section>
+</main>
+</html>

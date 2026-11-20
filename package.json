@@ -8,6 +8,7 @@
     "e2e": "playwright test",
     "e2e:install": "playwright install chromium",
     "test:anti-bot": "node --test scripts/test-anti-bot.test.mjs",
+    "test:contact": "node --test scripts/test-contact-recorder.test.mjs",
     "test:privacy": "node --test scripts/test-error-reporter.test.mjs"
   },
   "dependencies": {

@@ -169,6 +169,24 @@ class AdminUserActionsTest {
     }
 
     @Test
+    void refusesPromotingAnEmployeeToClientWithoutCustomerAccountWorkflow() {
+        UUID actorId = UUID.randomUUID();
+        UUID employeeId = UUID.randomUUID();
+        UserAccountEntity employee = account(employeeId, "EMPLOYEE");
+        when(accounts.findByPublicId(employeeId)).thenReturn(java.util.Optional.of(employee));
+
+        assertThatThrownBy(() -> actions.changeRole(
+                admin(actorId, Permission.USERS_MANAGE, Permission.STAFF_MANAGE), employeeId, "CLIENT"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("customer-account workflow");
+
+        verify(accounts, never()).save(employee);
+        verify(events, never()).publishEvent(org.mockito.ArgumentMatchers.any());
+        verify(auditRecorder, never()).record(org.mockito.ArgumentMatchers.any());
+        verify(emailSender, never()).enqueue(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void requiresUserManagementPermissionBeforeLookingUpAnAccount() {
         UUID targetId = UUID.randomUUID();
         AuthenticatedUser staffAdmin = admin(UUID.randomUUID(), Permission.STAFF_MANAGE);

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/account :: layout(~{::main})}">
+<main id="main-content" class="mx-auto w-full max-w-6xl px-4 py-8" tabindex="-1">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h1 class="font-heading text-3xl" th:text="#{request.list.heading}">My requests</h1>
+        <div class="flex gap-2"><a class="rounded bg-primary px-4 py-2 text-white" th:href="@{/cuenta/solicitudes/nueva}" th:text="#{request.new.custom}">Custom request</a><a class="rounded border border-border px-4 py-2" th:href="@{/cuenta/solicitudes/sugerencia}" th:text="#{request.new.suggestion}">Module suggestion</a></div>
+    </div>
+    <form method="get" class="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <label><span th:text="#{request.type}">Type</span><select name="type" class="min-h-11 w-full rounded border border-border bg-surface px-3"><option value="" th:text="#{request.all}">All</option><option th:each="value : ${types}" th:value="${value}" th:text="${value}" th:selected="${value == type}"></option></select></label>
+        <label><span th:text="#{request.status}">Status</span><select name="status" class="min-h-11 w-full rounded border border-border bg-surface px-3"><option value="" th:text="#{request.all}">All</option><option th:each="value : ${statuses}" th:value="${value}" th:text="${value}" th:selected="${value == status}"></option></select></label>
+        <label><span th:text="#{request.reference}">Reference</span><input name="reference" th:value="${reference}" class="min-h-11 w-full rounded border border-border bg-surface px-3"></label>
+        <label><span th:text="#{request.from}">From</span><input type="date" name="createdFrom" th:value="${createdFrom}" class="min-h-11 w-full rounded border border-border bg-surface px-3"></label>
+        <label><span th:text="#{request.to}">To</span><input type="date" name="createdTo" th:value="${createdTo}" class="min-h-11 w-full rounded border border-border bg-surface px-3"></label>
+        <button class="self-end min-h-11 rounded bg-primary px-4 text-white" th:text="#{request.filter}">Filter</button>
+    </form>
+    <div class="mt-6 overflow-x-auto"><table class="w-full border-collapse text-left"><thead><tr><th th:text="#{request.reference}">Reference</th><th th:text="#{request.form.title}">Title</th><th th:text="#{request.status}">Status</th><th th:text="#{request.created}">Created</th></tr></thead>
+        <tbody><tr th:if="${requests.content.isEmpty()}"><td colspan="4" class="py-6 text-muted" th:text="#{request.empty}">No requests</td></tr><tr th:each="item : ${requests.content}" class="border-t border-border"><td><a th:href="@{/cuenta/solicitudes/{id}(id=${item.publicId})}" th:text="${item.reference}" class="font-medium underline"></a></td><td th:text="${item.title}"></td><td th:text="#{|request.status.${item.status}|}"></td><td th:text="${#temporals.format(item.createdAt, 'yyyy-MM-dd HH:mm')}" ></td></tr></tbody>
+    </table></div>
+    <nav class="mt-6 flex items-center justify-between gap-4" th:attr="aria-label=#{nav.pagination}">
+        <a class="min-h-11 rounded border border-border px-4 py-2" th:if="${requests.page > 0}"
+           th:href="@{/cuenta/solicitudes(page=${requests.page - 1},type=${type},status=${status},reference=${reference},createdFrom=${createdFrom},createdTo=${createdTo})}"
+           th:text="#{pagination.previous}">Previous</a>
+        <span th:unless="${requests.page > 0}"></span>
+        <a class="min-h-11 rounded border border-border px-4 py-2" th:if="${(requests.page + 1) * requests.size < requests.totalElements}"
+           th:href="@{/cuenta/solicitudes(page=${requests.page + 1},type=${type},status=${status},reference=${reference},createdFrom=${createdFrom},createdTo=${createdTo})}"
+           th:text="#{pagination.next}">Next</a>
+    </nav>
+</main>
+</html>

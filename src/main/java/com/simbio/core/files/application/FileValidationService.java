@@ -16,11 +16,17 @@ public class FileValidationService {
 
     private static final long MAX_IMAGE_BYTES = 12L * 1024 * 1024;
     private static final long MAX_ATTACHMENT_BYTES = 25L * 1024 * 1024;
-    private static final Map<String, Set<String>> EXTENSIONS = Map.of(
-            "image/png", Set.of("png"),
-            "image/jpeg", Set.of("jpg", "jpeg"),
-            "image/webp", Set.of("webp"),
-            "application/pdf", Set.of("pdf"));
+    private static final Map<String, Set<String>> EXTENSIONS = Map.ofEntries(
+            Map.entry("image/png", Set.of("png")),
+            Map.entry("image/jpeg", Set.of("jpg", "jpeg")),
+            Map.entry("image/webp", Set.of("webp")),
+            Map.entry("application/pdf", Set.of("pdf")),
+            Map.entry("audio/webm", Set.of("webm")),
+            Map.entry("video/webm", Set.of("webm")),
+            Map.entry("audio/ogg", Set.of("ogg", "oga")),
+            Map.entry("audio/mp4", Set.of("m4a", "mp4")),
+            Map.entry("video/mp4", Set.of("mp4")));
+    private static final Set<String> IMAGE_MIMES = Set.of("image/png", "image/jpeg", "image/webp");
 
     private final Tika tika = new Tika();
 
@@ -41,7 +47,7 @@ public class FileValidationService {
         }
         Set<String> allowedExtensions = EXTENSIONS.get(mime);
         boolean allowedMime = allowedExtensions != null
-                && (purpose != FilePurpose.IMAGE || !mime.equals("application/pdf"));
+                && (purpose != FilePurpose.IMAGE || IMAGE_MIMES.contains(mime));
         if (!allowedMime || !allowedExtensions.contains(extension)) {
             throw new InvalidFileException();
         }

@@ -138,6 +138,8 @@ stateDiagram-v2
 - **Subida:** magic bytes/Tika, allowlist, tamaño/píxeles acotados, sin SVG activo; nombre aleatorio fuera webroot, ClamAV + cuarentena, descarga autorizada `attachment` y `nosniff`.
 - **Error intake:** validar estructura/tamaño antes de parsear; permitir solo clases de campos conocidas; descartar query string, body, cookies, tokens, SQL raw y stack frontend sin scrub; rate limit por IP con IP no persistida en el record. Clasificar también errores esperados/4xx útiles en vez de descartarlos sin rastro. El inventario no vive en SQL Server y el fallo del writer no lanza un segundo error que oculte el primero.
 - **Abuso:** Bucket4j por IP/email en login/registro/reset/contacto; ALTCHA+honey pot por defecto; proxy trusted list explícita. Logs con correlation ID sin PII.
+- **Bandeja MSG-007:** el filtro de texto viaja en el cuerpo de POST/HTMX protegido con CSRF, se limita a mensajes `PUBLIC` y a conversaciones accesibles por permiso contextual, y no se persiste ni registra. Las notas `INTERNAL` no participan en búsqueda.
+- **IA en mensajería MSG-012:** el puerto `AiReplyAssistant` no tiene implementación ni invocación; no hay proveedor, transferencia externa ni respuesta automática. Un borrador nace inmutable como `PENDING_APPROVAL`, su texto no aparece en `toString`, y un mensaje `AI_AGENT` solo puede persistirse como `INTERNAL`. ADR-011 permanece Propuesto/Futuro; no habilitar envío ni aprobación hasta la decisión formal y los controles R3.
 - **Integración M2M:** HMAC/timestamp/query/body hash/idempotency, scope mínimo, rotación, replay guard, timeouts, errores RFC 7807 y no enumeración. H24 no se expone.
 
 ## Mapa OWASP Top 10

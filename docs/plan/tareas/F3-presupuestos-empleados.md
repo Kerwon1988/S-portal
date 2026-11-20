@@ -206,3 +206,8 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; README «E2E»
 - Estimación: M (≤ 1 d)
 - Riesgos: test dependiente de horarios; controlar clock y expirar por fixture.
+
+## Estado local PROMPT 13 (2026-11-20)
+
+- `QUO-001..004`, `EMP-001..007` y `E2E-002`: **IMPLEMENTADOS LOCALMENTE / PARCIALES, NO CERRADOS**. Existe código, migración SQL Server owner, UI HTMX ES/EN, tests Java/H2 y spec Playwright. La compilación y selección focal de 26 tests pasaron; los gates globales de plantilla/capas tienen fallos previos ajenos al alcance y la recompilación posterior quedó bloqueada por un cambio concurrente de `messaging` (`InboxController`/`InboxFilters`). No se modificaron internals de messaging desde PROMPT 13.
+- Pendientes explícitos: fiscalidad/IVA y condiciones comerciales/validez, SLA de un día hábil con calendario/festivos, aprobaciones externas, indicador persistido de no leídos, navegador/axe E2E y compatibilidad SQL Server. `E2E-002` es `POSTPONED` hasta disponer de servidor y fixture/cuentas sintéticas definidos por el spec. No se declara cierre ni aprobación comercial/legal.

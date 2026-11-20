@@ -1,0 +1,58 @@
+services:
+  portal:
+    image: ${PORTAL_IMAGE:?Set PORTAL_IMAGE to an immutable release image}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PORTAL_BASE_URL: ${PORTAL_BASE_URL:?Set public HTTPS base URL}
+      PORTAL_FILE_STORAGE_ROOT: /var/lib/portal/files
+      PORTAL_ERROR_TRACKING_PATH: /var/lib/portal/errors/error-inventory.json
+    env_file:
+      - ./deploy/portal.env
+    volumes:
+      - portal-files:/var/lib/portal/files
+      - portal-errors:/var/lib/portal/errors
+    expose:
+      - "8090"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - frontend
+
+  proxy:
+    image: nginx:1.27.4-alpine
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    depends_on:
+      portal:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/tls:/etc/nginx/tls:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    networks:
+      - frontend
+
+networks:
+  frontend:
+
+volumes:
+  portal-files:
+  portal-errors:

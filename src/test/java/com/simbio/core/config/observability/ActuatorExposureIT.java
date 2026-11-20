@@ -39,8 +39,8 @@ class ActuatorExposureIT {
         assertThat(readiness.body()).contains("\"status\":\"UP\"").doesNotContain("components");
         assertThat(environment.statusCode())
                 .isIn(HttpStatus.NOT_FOUND.value(), HttpStatus.FORBIDDEN.value());
-        assertThat(prometheus.statusCode())
-                .isIn(HttpStatus.FORBIDDEN.value(), HttpStatus.NOT_FOUND.value());
+        assertThat(prometheus.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(prometheus.body()).doesNotContain("email", "tenantSlug", "publicId");
         assertThat(applicationHealth.statusCode())
                 .isIn(HttpStatus.NOT_FOUND.value(), HttpStatus.FORBIDDEN.value());
     }

@@ -58,6 +58,16 @@ erDiagram
 | `files.file_variant` | `file_id`, `variant_code`, `storage_key`, `width`, `height`, `mime` | Único `(file_id, variant_code)`; límite de píxeles/tamaño |
 | `audit.audit_entry` | `id`, `actor_id`, `action_code`, `entity_type`, `entity_public_id`, `occurred_at`, `correlation_id`, `before_hash`, `after_hash` | Índices por entidad/fecha y actor/fecha; sin contenido PII/secretos |
 
+## SimbioSphere y aprovisionamiento
+
+| Esquema.tabla (owner) | Columnas principales | Restricciones/índices |
+|---|---|---|
+| `simbiosphere.provisioning` | `id`, `public_id`, `client_account_public_id`, estado, `external_system`, `external_account_id`, `idempotency_key`, error, intentos, lease/backoff y timestamps | Un provisioning por ClientAccount; `idempotency_key` y `public_id` únicos; estado limitado; lease y optimistic locking para worker futuro |
+| `simbiosphere.account_link` | `id`, `public_id`, referencia `client_account_public_id`, sistema externo, `external_account_id`, `created_at` | Unicidad `(external_system, external_account_id)`; nunca resolver por email |
+| `simbiosphere.linked_business` | `id`, `public_id`, FK al vínculo del mismo esquema, `external_business_id`, nombre/tipo/slug externo, `created_at` | FK solo dentro de `simbiosphere`; una cuenta puede tener 1..N negocios; no se asume un ownerUserId dentro del tenant externo |
+
+Las referencias a `customer` son UUIDs resueltos por API y no crean FK cross-module. La migración SQL Server no se ejecuta ni certifica mediante H2.
+
 ## Solicitudes y mensajería
 ```mermaid
 erDiagram
@@ -71,11 +81,12 @@ erDiagram
 
 | Esquema.tabla (owner) | Columnas principales | Restricciones/índices |
 |---|---|---|
-| `request.request` | `id`, `public_id`, `reference_code`, `client_account_id`, `request_type`, `category_code`, `state_code`, `priority`, `created_at`, `updated_at` | `reference_code` único `SOL-AAAA-NNNNNN`; índices `(owner,state)` y fecha; sin descarga server-side de URLs |
-| `request.assignment` | `request_id`, `staff_user_id`, `assignment_role`, `assigned_at`, `ended_at` | Una asignación responsable activa por solicitud; referencias a staff por API/ID |
-| `request.status_history` | `request_id`, `from_state`, `to_state`, `actor_id`, `occurred_at`, `public_visibility`, `reason_code` | Append-only; índices por request/fecha |
-| `request.quote` / `quote_version` | `request_id`, `state`, `version_no`, `amount DECIMAL(19,4)`, `currency CHAR(3)`, `vat_rate`, `valid_until`, `tax_id_snapshot_ciphertext` | Versionado append-only; estados DRAFT/SENT/ACCEPTED/REJECTED/EXPIRED; no pagos MVP |
-| `request.request_attachment` | `request_id`, `file_public_id`, `added_by`, `added_at` | Owner de relación request; bytes/metadatos owner files |
+| `request.request` | Implementado: `id`, `public_id`, `reference_code`, `owner_account_id`, `owner_user_id`, `request_type`, `category_code`, campos de negocio, `status_code`, `priority_code`, `estimate_hours`, `first_response_at`, `created_at`, `version` | `reference_code` único `SOL-AAAA-NNNNNN`; prioridad allowlisted; estimate no negativo; índices owner/fecha, tipo/categoría y estado/fecha |
+| `request.request_assignment` | Implementado: `request_id`, `staff_user_id`, `responsible`, `assigned_by`, `created_at` | Un staff por solicitud, un único responsable por índice filtrado, colaboradores 0..N; staff se valida por `staff.api` y se referencia solo por UUID |
+| `request.request_status_history` | Implementado: `request_id`, `from_status`, `to_status`, `actor_id`, `reason`, `created_at` | Append-only; índice por request/fecha; solo estados públicos existen en el DTO cliente |
+| `request.reference_counter` / `request_category` | Implementados: año/último número/versionado; categoría activa | Contador bloqueado por transacción para referencias UTC; categorías configurables por tabla owner |
+| `request.quote` / `quote_version` | Implementado por PROMPT 13, pendiente de gates: quote público/request, versión, `DECIMAL(19,4)`, currency/tax/gross, validez, estado, actor/fechas y optimistic locking | Versionado único por quote; append-only tras envío/decisión; estados DRAFT/SENT/ACCEPTED/REJECTED/EXPIRED; no pagos. Fiscalidad y validez comercial siguen pendientes de aprobación |
+| `request.request_attachment` | Implementado: `request_id`, `file_public_id`, `added_by`, `created_at` | Owner de relación request; bytes/metadatos owner files y descarga con ownership |
 | `messaging.conversation` | `id`, `public_id`, `context_type`, `context_public_id`, `owner_user_id`, `status`, `assigned_to`, `created_at` | Contexto CONTACT/REQUEST; índices por owner/estado y asignación |
 | `messaging.message` | `conversation_id`, `author_id`, `author_type`, `visibility`, `body`, `created_at`, `read_at` | `visibility` PUBLIC/INTERNAL; índices cronológicos; consultas CLIENT filtran INTERNAL en SQL/application |
 | `messaging.message_attachment` | `message_id`, `file_public_id`, `created_at` | Relación local; descarga pasa autorización por conversación y FileStorage |

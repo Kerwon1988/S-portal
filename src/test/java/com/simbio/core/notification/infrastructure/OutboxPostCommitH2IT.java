@@ -17,6 +17,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.simbio.core.notification.api.EmailCommand;
 import com.simbio.core.notification.api.EmailSender;
@@ -24,10 +25,14 @@ import com.simbio.core.notification.api.EmailTemplate;
 import com.simbio.core.notification.application.OutboxStore;
 import com.simbio.core.notification.domain.OutboxMessage;
 import com.simbio.core.shared.value.EmailAddress;
+import com.simbio.core.simbiosphere.application.DemoProvisioningClient;
 
 @SpringBootTest(properties = "portal.notification.worker.enabled=false")
 @ActiveProfiles("test")
 class OutboxPostCommitH2IT {
+
+    @MockitoBean
+    private DemoProvisioningClient demoProvisioningClient;
 
     @Autowired
     private EmailSender emailSender;
@@ -69,6 +74,22 @@ class OutboxPostCommitH2IT {
                 outboxStore.save(message);
             });
         }
+    }
+
+    @Test
+    void repeatedDomainEventUsesOneDeterministicOutboxId() {
+        String key = "REQUEST_CREATED:" + UUID.randomUUID();
+        long baseline = outboxStore.countByStatus("PENDING");
+        EmailCommand command = EmailCommand.toAddress(
+                EmailAddress.of("synthetic@example.test"), EmailTemplate.EMAIL_VERIFICATION,
+                Locale.ENGLISH, Map.of("url", "https://portal.example.test/verify?token=synthetic"));
+
+        UUID first = emailSender.enqueueOnce(key, command);
+        UUID second = emailSender.enqueueOnce(key, command);
+
+        assertThat(first).isEqualTo(second);
+        assertThat(outboxStore.findById(first)).isPresent();
+        assertThat(outboxStore.countByStatus("PENDING")).isEqualTo(baseline + 1);
     }
 
     @Test

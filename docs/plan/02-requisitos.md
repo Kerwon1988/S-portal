@@ -646,7 +646,7 @@ Catálogo de requisitos trazado a [idea](../idea.md), tareas y pruebas `TC-<ID>`
 - Prioridad: Must
 - Fase: MVP / F0
 - Tareas: FND-004
-- Criterios: Given dependencias fuera del DAG o acceso directo prohibido When corre `mvn test` Then Modulith y ArchUnit fallan con el módulo y regla infractora.
+- Criterios: Given dependencias fuera del DAG o acceso directo prohibido When corren los tests focales de Modulith y ArchUnit Then fallan con el módulo y regla infractora.
 
 ### RNF-TST-02 — Contrato con DEMO
 - Prioridad: Must

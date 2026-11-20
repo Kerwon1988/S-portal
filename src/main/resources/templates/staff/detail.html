@@ -12,27 +12,32 @@
             <div>
                 <label for="job-title" th:text="#{staff.detail.job-title}">Job title</label>
                 <input id="job-title" name="jobTitle" type="text" maxlength="120" th:value="${form.jobTitle}"
+                       th:attr="aria-invalid=${#fields.hasErrors('jobTitle')} ? 'true' : null,aria-describedby=${#fields.hasErrors('jobTitle')} ? 'job-title-error' : null"
                        class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
-                <p th:if="${#fields.hasErrors('jobTitle')}" th:errors="*{jobTitle}" role="alert"
-                   class="mt-1 text-danger">Invalid job title</p>
+                <p id="job-title-error" th:if="${#fields.hasErrors('jobTitle')}"
+                   th:errors="*{jobTitle}" role="alert" class="mt-1 text-danger">Invalid job title</p>
             </div>
             <div>
                 <label for="worker-status" th:text="#{staff.detail.status}">Status</label>
                 <select id="worker-status" name="status" required
+                        th:attr="aria-invalid=${#fields.hasErrors('status')} ? 'true' : null,aria-describedby=${#fields.hasErrors('status')} ? 'worker-status-error' : null"
                         class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
                     <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}" th:text="#{staff.detail.active}">Active</option>
                     <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}" th:text="#{staff.detail.inactive}">Inactive</option>
                 </select>
-                <p th:if="${#fields.hasErrors('status')}" th:errors="*{status}" role="alert"
-                   class="mt-1 text-danger">Invalid status</p>
+                <p id="worker-status-error" th:if="${#fields.hasErrors('status')}"
+                   th:errors="*{status}" role="alert" class="mt-1 text-danger">Invalid status</p>
             </div>
             <div>
                 <label for="specialties" th:text="#{staff.detail.specialties}">Specialties</label>
-                <textarea id="specialties" name="specialties" rows="5" th:field="*{specialties}"
+                <textarea id="specialties" name="specialties" rows="5" maxlength="1638" th:field="*{specialties}"
+                          th:attr="aria-invalid=${#fields.hasErrors('specialties')} ? 'true' : null,aria-describedby=${#fields.hasErrors('specialties')} ? 'specialties-help specialties-error' : 'specialties-help'"
                           class="mt-1 w-full rounded border border-border bg-surface px-3 py-2"></textarea>
-                <p class="mt-1 text-text-muted" th:text="#{staff.detail.specialties-help}">
-                    Enter one specialty per line.
+                <p id="specialties-help" class="mt-1 text-text-muted" th:text="#{staff.detail.specialties-help}">
+                    Enter up to 20 specialties, one per line; each can contain up to 80 characters.
                 </p>
+                <p id="specialties-error" th:if="${#fields.hasErrors('specialties')}"
+                   th:errors="*{specialties}" role="alert" class="mt-1 text-danger">Invalid specialties</p>
             </div>
             <button type="submit" class="min-h-11 rounded bg-primary px-4 text-on-primary"
                     th:text="#{staff.detail.save}">Save worker</button>

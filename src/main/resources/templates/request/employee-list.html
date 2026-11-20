@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/base :: layout('employee.requests.title', ~{::main}, 'backoffice')}">
+<main id="main-content" class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6" tabindex="-1">
+    <header class="flex flex-wrap justify-between gap-4"><div><a href="/gestion" class="underline" th:text="#{employee.back}">Back</a><h1 class="mt-3 font-heading text-3xl" th:text="#{employee.requests.heading}">Requests</h1></div>
+        <a class="min-h-11 rounded border border-border px-4 py-3" href="/gestion/solicitudes/export.csv" th:text="#{employee.export}">Export CSV</a></header>
+    <form method="get" action="/gestion/solicitudes/resultados" hx-get="/gestion/solicitudes/resultados" hx-target="#request-results" hx-swap="outerHTML" class="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div><label for="search" th:text="#{employee.search}">Search</label><input id="search" name="search" type="search" th:value="${search}" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+        <div><label for="type" th:text="#{request.type}">Type</label><select id="type" name="type" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"><option value="" th:text="#{request.all}">All</option><option th:each="value : ${types}" th:value="${value}" th:selected="${value == type}" th:text="${value}"></option></select></div>
+        <div><label for="status" th:text="#{request.status}">Status</label><select id="status" name="status" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"><option value="" th:text="#{request.all}">All</option><option th:each="value : ${statuses}" th:value="${value}" th:selected="${value == status}" th:text="#{|request.status.${value}|}"></option></select></div>
+        <div><label for="assignedTo" th:text="#{employee.assignments}">Assignments</label><select id="assignedTo" name="assignedTo" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"><option value="" th:text="#{request.all}">All</option><option th:each="person : ${staff}" th:value="${person.userPublicId}" th:selected="${person.userPublicId == assignedTo}" th:text="${person.jobTitle == null ? person.userPublicId : person.jobTitle}"></option></select></div>
+        <div><label for="category" th:text="#{request.category}">Category</label><input id="category" name="category" th:value="${category}" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+        <div><label for="from" th:text="#{request.from}">From</label><input id="from" name="from" type="date" th:value="${from}" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+        <div><label for="to" th:text="#{request.to}">To</label><input id="to" name="to" type="date" th:value="${to}" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+        <div><label for="amountFrom" th:text="#{employee.amount-from}">Minimum</label><input id="amountFrom" name="amountFrom" type="number" min="0" step="0.0001" th:value="${amountFrom}" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+        <div><label for="amountTo" th:text="#{employee.amount-to}">Maximum</label><input id="amountTo" name="amountTo" type="number" min="0" step="0.0001" th:value="${amountTo}" class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+        <button class="min-h-11 rounded bg-accent px-4 font-semibold text-on-accent" th:text="#{request.filter}">Filter</button>
+    </form>
+    <section id="request-results" th:fragment="results" aria-live="polite">
+        <p th:if="${requests.content.empty}" class="rounded border border-border bg-surface p-4" th:text="#{employee.requests.empty}">No requests.</p>
+        <div th:unless="${requests.content.empty}" class="space-y-3">
+            <article th:each="item : ${requests.content}" class="grid gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-[1fr_auto]">
+                <div><a th:href="@{/gestion/solicitudes/{id}(id=${item.publicId})}" class="font-semibold text-accent-text underline" th:text="${item.reference} + ' · ' + ${item.title}">Request</a><p class="mt-2 text-sm text-text-muted"><span th:text="#{|request.status.${item.status}|}"></span> · <span th:text="${item.priority}"></span> · <time th:text="${#temporals.format(item.createdAt, 'yyyy-MM-dd')}"></time></p><p th:if="${item.overdue}" class="mt-2 font-medium text-danger" th:text="#{employee.overdue}">Overdue</p></div>
+                <a th:href="@{/gestion/solicitudes/{id}(id=${item.publicId})}" class="min-h-11 self-center underline" th:text="#{employee.open}">Open</a>
+            </article>
+        </div>
+        <nav class="mt-4 flex gap-3" th:if="${requests.totalElements > 20}"><a th:if="${requests.page > 0}" th:href="@{/gestion/solicitudes(page=${requests.page - 1})}" class="min-h-11 underline" th:text="#{request.previous}">Previous</a><a th:if="${(requests.page + 1) * 20 < requests.totalElements}" th:href="@{/gestion/solicitudes(page=${requests.page + 1})}" class="min-h-11 underline" th:text="#{request.next}">Next</a></nav>
+    </section>
+</main>
+</html>

@@ -14,6 +14,8 @@ const inputs = [
   ["htmx-config.js", join(root, "src", "main", "frontend", "js", "htmx-config.js")],
   ["error-reporter.js", join(root, "src", "main", "frontend", "js", "error-reporter.js")],
   ["anti-bot.js", join(root, "src", "main", "frontend", "js", "anti-bot.js")],
+  ["contact-recorder.js", join(root, "src", "main", "frontend", "js", "contact-recorder.js")],
+  ["inbox-poll.js", join(root, "src", "main", "frontend", "js", "inbox-poll.js")],
   ["simbio-logo.png", join(root, "src", "main", "frontend", "images", "simbio-logo.png")]
 ];
 const manifest = {};

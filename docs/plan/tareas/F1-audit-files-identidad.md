@@ -5,9 +5,9 @@
 
 ### Verificación y cierre de Prompt 05
 
-Para cerrar las tareas incluidas en Prompt 05 deben cumplirse sus criterios funcionales y de seguridad, y pasar la compilación Java 21 y todos los tests requeridos. Las pruebas automatizadas de persistencia usan H2; SQL Server y Testcontainers no son gates de aceptación.
+Para cerrar las tareas incluidas en Prompt 05 deben cumplirse sus criterios funcionales y de seguridad, y pasar la compilación Java 21 y todos los tests requeridos para las clases/criterios afectados. Ejecuta la selección focal correspondiente; no lances la suite completa salvo que no exista una selección fiable más acotada o un criterio de aceptación lo exija explícitamente, y registra el motivo. Las pruebas automatizadas de persistencia usan H2; SQL Server y Testcontainers no son gates de aceptación.
 
-El ciclo completo del build y Enforcer se registran como evidencia independiente y no son gates adicionales para Prompt 05. Si un problema local de resolución Maven impide ejecutar el ciclo estándar, se acepta una invocación offline reproducible que compile y ejecute todos los tests requeridos; deben registrarse el comando y resultados, sin afirmar que el ciclo completo o Enforcer pasó cuando no ocurrió. No se permite omitir tests ni modificar los marcadores de caché. Si la resolución Maven impide compilar o ejecutar los tests, o alguno falla, las tareas afectadas siguen abiertas.
+El ciclo completo del build y Enforcer se registran como evidencia independiente y no son gates adicionales para Prompt 05. Si un problema local de resolución Maven impide ejecutar el ciclo estándar, se acepta una invocación offline reproducible que compile y ejecute todos los tests requeridos por las clases/criterios afectados; deben registrarse selección, comando y resultados, sin afirmar que el ciclo completo o Enforcer pasó cuando no ocurrió. No se permite omitir tests requeridos ni modificar los marcadores de caché. Si la resolución Maven impide compilar o ejecutar los tests, o alguno falla, las tareas afectadas siguen abiertas.
 
 ### AUD-001 — Módulo audit: modelo, API AuditRecorder y retención
 - Fase / épica / módulo owner: F1 / AUD / audit

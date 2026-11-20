@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -117,6 +118,49 @@ class AuthorizationMatrixTest {
                 .filteredOn(rule -> rule.path().startsWith("/gestion/contenido"))
                 .extracting(AuthorizationRules.RoutePermission::method)
                 .contains(HttpMethod.GET, HttpMethod.POST);
+    }
+
+    @Test
+    void inboxListAndSearchRoutesRequireInboxManagementPermission() {
+        assertThat(AuthorizationRules.routes())
+                .filteredOn(rule -> rule.path().equals("/gestion/bandeja")
+                        || rule.path().equals("/gestion/bandeja/buscar"))
+                .hasSize(2)
+                .allSatisfy(rule -> {
+                    assertThat(rule.permission()).isEqualTo("INBOX_MANAGE");
+                    assertThat(rule.role()).isNull();
+                })
+                .extracting(AuthorizationRules.RoutePermission::method)
+                .contains(HttpMethod.GET, HttpMethod.POST);
+    }
+
+    @Test
+    void promptElevenReadRoutesRejectEmployeeAndClientEvenWhenAuthoritiesArePresent() throws Exception {
+        var allManagementPermissions = new org.springframework.security.core.GrantedAuthority[] {
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"),
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("USERS_MANAGE"),
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("STAFF_MANAGE"),
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("CLIENTS_EXPORT")
+        };
+        String publicId = UUID.randomUUID().toString();
+        for (String path : List.of(
+                "/gestion/clientes",
+                "/gestion/clientes/export.csv",
+                "/gestion/trabajadores",
+                "/gestion/trabajadores/" + publicId,
+                "/gestion/usuarios/" + publicId,
+                "/gestion/identidad/invitaciones",
+                "/gestion/identidad/invitaciones/pendientes/clientes",
+                "/gestion/identidad/invitaciones/pendientes/trabajadores")) {
+            mockMvc.perform(get(path).with(user("employee").authorities(allManagementPermissions)))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get(path).with(user("client").authorities(
+                            new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CLIENT"),
+                            new org.springframework.security.core.authority.SimpleGrantedAuthority("USERS_MANAGE"),
+                            new org.springframework.security.core.authority.SimpleGrantedAuthority("STAFF_MANAGE"),
+                            new org.springframework.security.core.authority.SimpleGrantedAuthority("CLIENTS_EXPORT"))))
+                    .andExpect(status().isForbidden());
+        }
     }
 
     @Test

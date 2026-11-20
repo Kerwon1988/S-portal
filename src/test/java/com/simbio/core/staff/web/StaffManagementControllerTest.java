@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,6 +146,106 @@ class StaffManagementControllerTest {
 
         verify(profiles).update(admin.actor(), workerId, "Analyst", "ACTIVE",
                 List.of("Analysis", "Delivery"));
+    }
+
+    @Test
+    void acceptsMaximumSpecialtyPayloadSupportedByStaffOwner() throws Exception {
+        TestUser admin = admin(Permission.STAFF_MANAGE);
+        UUID workerId = UUID.randomUUID();
+        List<String> specialties = IntStream.range(0, 20)
+                .mapToObj(index -> String.format("%02d", index) + "x".repeat(78))
+                .toList();
+        String submittedSpecialties = String.join("\r\n", specialties);
+        when(identityUsers.find(admin.actor(), workerId))
+                .thenReturn(Optional.of(identity(workerId, "EMPLOYEE")));
+        when(profiles.findByUserId(workerId)).thenReturn(Optional.of(staff(workerId, "ACTIVE", List.of())));
+        when(profiles.update(admin.actor(), workerId, "Analyst", "ACTIVE", specialties))
+                .thenReturn(staff(workerId, "ACTIVE", specialties));
+
+        mockMvc.perform(post("/gestion/trabajadores/{workerId}", workerId)
+                        .with(user(admin.principal()))
+                        .with(csrf())
+                        .param("jobTitle", "Analyst")
+                        .param("status", "ACTIVE")
+                        .param("specialties", submittedSpecialties))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("saved", true));
+
+        verify(profiles).update(admin.actor(), workerId, "Analyst", "ACTIVE", specialties);
+    }
+
+    @Test
+    void rejectsSpecialtyPayloadOutsideOwnerLimitsWithoutCallingUpdate() throws Exception {
+        TestUser admin = admin(Permission.STAFF_MANAGE);
+        UUID workerId = UUID.randomUUID();
+        String tooManySpecialties = IntStream.range(0, 21)
+                .mapToObj(index -> "Synthetic " + index)
+                .collect(java.util.stream.Collectors.joining("\n"));
+        when(identityUsers.find(admin.actor(), workerId))
+                .thenReturn(Optional.of(identity(workerId, "EMPLOYEE")));
+        when(profiles.findByUserId(workerId)).thenReturn(Optional.of(staff(workerId, "ACTIVE", List.of())));
+
+        mockMvc.perform(post("/gestion/trabajadores/{workerId}", workerId)
+                        .with(user(admin.principal()))
+                        .with(csrf())
+                        .param("jobTitle", "Analyst")
+                        .param("status", "ACTIVE")
+                        .param("specialties", tooManySpecialties))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("form", "specialties"));
+
+        verify(profiles, never()).update(eq(admin.actor()), eq(workerId),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyList());
+    }
+
+    @Test
+    void rejectsSpecialtyLongerThanOwnerLimitWithoutCallingUpdate() throws Exception {
+        TestUser admin = admin(Permission.STAFF_MANAGE);
+        UUID workerId = UUID.randomUUID();
+        when(identityUsers.find(admin.actor(), workerId))
+                .thenReturn(Optional.of(identity(workerId, "EMPLOYEE")));
+        when(profiles.findByUserId(workerId)).thenReturn(Optional.of(staff(workerId, "ACTIVE", List.of())));
+
+        mockMvc.perform(post("/gestion/trabajadores/{workerId}", workerId)
+                        .with(user(admin.principal()))
+                        .with(csrf())
+                        .param("jobTitle", "Analyst")
+                        .param("status", "ACTIVE")
+                        .param("specialties", "x".repeat(81)))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("form", "specialties"));
+
+        verify(profiles, never()).update(eq(admin.actor()), eq(workerId),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyList());
+    }
+
+    @Test
+    void invalidProfileFormExposesAccessibleAssociatedErrors() throws Exception {
+        TestUser admin = admin(Permission.STAFF_MANAGE);
+        UUID workerId = UUID.randomUUID();
+        when(identityUsers.find(admin.actor(), workerId))
+                .thenReturn(Optional.of(identity(workerId, "EMPLOYEE")));
+        when(profiles.findByUserId(workerId)).thenReturn(Optional.of(staff(workerId, "ACTIVE", List.of())));
+
+        var result = mockMvc.perform(post("/gestion/trabajadores/{workerId}", workerId)
+                        .with(user(admin.principal()))
+                        .with(csrf())
+                        .header("Accept-Language", "en")
+                        .param("jobTitle", "x".repeat(121))
+                        .param("status", "ACTIVE")
+                        .param("specialties", "x".repeat(81)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
+                .contains("aria-invalid=\"true\"", "aria-describedby=\"job-title-error\"",
+                        "id=\"job-title-error\"", "aria-describedby=\"specialties-help specialties-error\"",
+                        "id=\"specialties-error\"", "role=\"alert\"");
+        verify(profiles, never()).update(eq(admin.actor()), eq(workerId),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyList());
     }
 
     @Test

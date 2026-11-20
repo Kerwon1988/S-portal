@@ -28,6 +28,7 @@ public class OutboxWorker {
     private final MeterRegistry meterRegistry;
     private final RecipientDirectory recipients;
     private final DeliveryPolicy deliveryPolicy;
+    private final NotificationPreferenceService preferences;
     private final Clock clock;
 
     @Autowired
@@ -37,8 +38,10 @@ public class OutboxWorker {
             EmailDeliveryPort emailSender,
             NotificationProperties properties,
             MeterRegistry meterRegistry,
-            RecipientDirectory recipients) {
-        this(store, outboxService, emailSender, properties, meterRegistry, recipients, Clock.systemUTC());
+            RecipientDirectory recipients,
+            NotificationPreferenceService preferences) {
+        this(store, outboxService, emailSender, properties, meterRegistry, recipients,
+                preferences, Clock.systemUTC());
     }
 
     OutboxWorker(
@@ -49,12 +52,25 @@ public class OutboxWorker {
             MeterRegistry meterRegistry,
             RecipientDirectory recipients,
             Clock clock) {
+        this(store, outboxService, emailSender, properties, meterRegistry, recipients, null, clock);
+    }
+
+    OutboxWorker(
+            OutboxStore store,
+            OutboxService outboxService,
+            EmailDeliveryPort emailSender,
+            NotificationProperties properties,
+            MeterRegistry meterRegistry,
+            RecipientDirectory recipients,
+            NotificationPreferenceService preferences,
+            Clock clock) {
         this.store = store;
         this.outboxService = outboxService;
         this.emailSender = emailSender;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
         this.recipients = recipients;
+        this.preferences = preferences;
         deliveryPolicy = new DeliveryPolicy(properties.getMaximumAttempts(),
                 properties.getInitialBackoff(), properties.getMaximumBackoff());
         this.clock = clock;
@@ -84,6 +100,12 @@ public class OutboxWorker {
     private void deliver(OutboxMessage message) {
         try {
             var command = outboxService.decrypt(message);
+            if (preferences != null && !preferences.allows(command)) {
+                message.markSent(Instant.now(clock));
+                store.save(message);
+                meterRegistry.counter("portal.notification.delivery", "outcome", "suppressed").increment();
+                return;
+            }
             String recipient = command.recipientUserId() == null
                     ? command.recipient().value()
                     : recipients.emailAddressOf(command.recipientUserId())

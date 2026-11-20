@@ -19,7 +19,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; modelo ER de messaging
 - Estimación: M (≤ 1 d)
 - Riesgos: conversación no debe convertirse en solicitud automáticamente; conservar distinción D07.
-- Estado local 2026-11-19: PARCIAL. Modelo, API Java, migración y persistencia H2 implementados; 2 tests H2 y compilación de todas las fuentes pasan. La migración no se ha ejecutado en SQL Server. La entrada pública de contacto se mantiene en MSG-003/F4.
+- Estado local 2026-11-20: COMPLETADA en alcance de desarrollo local. Modelo, API Java, migración, invariantes, índices y persistencia H2 están implementados y verificados: 25 Surefire focales (incluidas 2 pruebas estáticas específicas de la migración) y 5 Failsafe H2 pasan sin fallos. La migración usa únicamente IDs para referencias a otros owners y conserva `CONTACT`/`REQUEST` como contextos distintos. La migración no se ha ejecutado en SQL Server, algo no requerido para este cierre local. La entrada pública de contacto permanece correctamente en MSG-003/F4.
 
 ### MSG-002 — Visibilidad PUBLIC/INTERNAL, API de conversación y eventos
 - Fase / épica / módulo owner: F3 / MSG / messaging
@@ -37,7 +37,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; matriz 07
 - Estimación: M (≤ 1 d)
 - Riesgos: filtro aplicado solo en UI permite fuga por endpoint; query debe exigir visibilidad.
-- Estado local 2026-11-19: PARCIAL. Servicio, filtro de persistencia, permisos, auditoría y eventos solo con IDs implementados; 7 tests de servicio y 5 tests de arquitectura/modularidad pasan. Faltan rutas/vistas HTTP, prueba de vista por rol y consumidor de notificaciones; por ello no se cierra MSG-002.
+- Estado local 2026-11-20: COMPLETADA en desarrollo local. La vista cliente está integrada bajo `request`, las notas INTERNAL se filtran en persistencia/API/web, el personal autorizado conserva ambas audiencias y `MessagePosted`/`MessageReceived` tienen consumidor por `notification.api`. Pruebas focales MVC/servicio/H2/DAG pasan. Quedan `POSTPONED` los gates Playwright/axe y la aprobación formal owner del contrato; no se afirma validación navegador.
 
 ### REQ-001 — request: modelo de solicitudes, categorías y asignaciones con migraciones
 - Fase / épica / módulo owner: F3 / REQ / request
@@ -208,6 +208,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; eventos en 03
 - Estimación: M (≤ 1 d)
 - Riesgos: evento publicado antes de commit duplica correo; usar EPR/outbox y tests post-commit.
+- Estado local 2026-11-20: COMPLETADA en desarrollo local. `RequestCreated`, `RequestStatusChanged` y `QuoteSent` se consumen después de commit y usan outbox idempotente, destinatario owner, locale y enlaces internos sin token. Tests unitarios/H2 cubren duplicado, post-commit y PII; Mailpit real queda `POSTPONED`.
 
 ### REQ-011 — Tests IDOR y de notas internas de solicitudes
 - Fase / épica / módulo owner: F3 / REQ / request
@@ -225,3 +226,14 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; resultados en 08
 - Estimación: M (≤ 1 d)
 - Riesgos: probar solo controlador deja fugas en servicio/query; cubrir todas las capas públicas.
+- Estado local 2026-11-20: COMPLETADA en desarrollo local. Tests MVC/servicio/H2 cubren cliente A contra recurso/adjunto de B, CSRF, rol, query owner, visibilidad INTERNAL y acceso empleado autorizado. Playwright/axe continúa `POSTPONED` por servidor/fixture/Chromium ausentes.
+
+## Estado local PROMPT 12 (2026-11-20)
+
+- **MSG-001 y MSG-002 COMPLETADAS en desarrollo local**. MSG-002 filtra `INTERNAL` en persistencia/API/web, cubre vistas cliente y empleado, publica eventos mínimos y ya dispone de consumidor de notificación para `MessagePosted`. Permanecen no ejecutados únicamente los gates de navegador/axe y la aprobación formal owner del contrato.
+- **REQ-001..REQ-009 IMPLEMENTACIÓN LOCAL, pendientes de cierre**: módulo `request`, migración owner, categorías, referencias, máquinas de estado y servicio de transición; formularios cliente, borrador de sesión autenticada, adjuntos, listado paginado/filtrado, detalle, historial, mensajes y cancelación están implementados con pruebas focales Java/H2. No se ha ejecutado SQL Server porque no es requisito del cierre local.
+- **REQ-001, REQ-005, REQ-006 y REQ-009** conservan decisiones/validaciones condicionadas: STF/CMS/contrato local y aprobaciones comerciales no permiten declarar el alcance funcional completo fuera del desarrollo local. El borrador se conserva dentro de la sesión autenticada; no se habilitó un formulario anónimo paralelo al contrato actual. El recorrido de visitante→login pendiente en REQ-005 no es una ausencia de herramienta: requiere decidir/aprobar una superficie pública o de conservación segura fuera de `/cuenta/**` y no se inventa ese cambio de autorización.
+- Las máquinas de estado se revalidaron contra `07-seguridad-rgpd.md`: se añadieron los códigos canónicos completos, reanudación desde `EN_PAUSA`, motivo/referencia para descarte/duplicado y transición atómica `PENDIENTE_INFO_CLIENTE→EN_ANALISIS` al aportar información por cliente. La cancelación cliente queda limitada a RECIBIDA/EN_ANALISIS.
+- **REQ-010 COMPLETADA en desarrollo local**. `RequestCreated`, `RequestStatusChanged` y `QuoteSent` se consumen después de commit mediante APIs publicadas, resuelven owner/locale por SPI, generan enlaces internos sin token y usan claves deterministas en outbox para evitar duplicados. La selección focal y H2 comprueba alta, estado, presupuesto, preferencia, destinatario y replay; Mailpit/SMTP real sigue `POSTPONED`.
+- **REQ-011 COMPLETADA en desarrollo local**. La matriz añade IDOR de detalle/adjuntos, aislamiento entre owners y separación PUBLIC/INTERNAL en vistas cliente, empleado, fragmentos y servicios; cliente recibe 404/403 sin contenido ajeno y empleado autorizado recibe notas. La pasada Playwright/axe del recorrido navegador queda `POSTPONED` por entorno/fixture, no como fallo funcional local.
+- Evidencia de cierre local: la selección focal final de MSG-002/REQ-010/REQ-011 pasó 53 pruebas Surefire y 4 H2 Failsafe, además de Modulith/DAG, i18n y plantillas. No se ejecutó la suite completa. El gate global ArchUnit permanece bloqueado por tres adaptadores `simbiosphere.infrastructure` de F5 (`CircuitBreaker`, `DemoHmacSigner`, `SimbioSphereClientProperties`), fuera del alcance de Prompt 12; no se atribuye ese fallo a MSG/REQ. Playwright/axe queda `POSTPONED`: requiere servidor en `localhost:8090`, Chromium y fixture/credenciales sintéticas. No se afirma accesibilidad WCAG ni compatibilidad SQL Server.

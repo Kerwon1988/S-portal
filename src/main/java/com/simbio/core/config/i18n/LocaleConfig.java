@@ -26,7 +26,10 @@ public class LocaleConfig {
                 "i18n.notification.messages",
                 "i18n.customer.messages",
                 "i18n.staff.messages",
-                "i18n.legal.messages");
+                "i18n.legal.messages",
+                "i18n.messaging.messages",
+                "i18n.request.messages",
+                "i18n.simbiosphere.messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setDefaultLocale(Locale.forLanguageTag("es"));
         messageSource.setFallbackToSystemLocale(false);

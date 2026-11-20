@@ -75,6 +75,27 @@ class StaffProfileServiceTest {
     }
 
     @Test
+    void repeatedEmployeeInvitationDoesNotResetAnExistingProfile() {
+        UUID userId = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2026-11-18T12:00:00Z");
+        StaffProfileEntity existing = new StaffProfileEntity(
+                userId, LocalDate.of(2026, 11, 18), createdAt);
+        existing.update("Senior engineer", "INACTIVE");
+        when(store.find(userId)).thenReturn(Optional.of(existing));
+        StaffProfileService service = new StaffProfileService(store, auditRecorder,
+                Mockito.mock(StaffAccountAccessManager.class));
+        InvitationAccepted invitation = new InvitationAccepted(userId, "EMPLOYEE");
+
+        service.createFromInvitation(invitation);
+        service.createFromInvitation(invitation);
+
+        assertThat(existing.getStatus()).isEqualTo("INACTIVE");
+        assertThat(existing.getJobTitle()).isEqualTo("Senior engineer");
+        assertThat(existing.getEmploymentStartDate()).isEqualTo(LocalDate.of(2026, 11, 18));
+        verify(store, never()).save(any(StaffProfileEntity.class));
+    }
+
+    @Test
     void synchronizesAdminBootstrapIntoAnActiveStaffProfile() {
         UUID userId = UUID.randomUUID();
         Instant now = Instant.parse("2026-11-18T12:00:00Z");
@@ -89,6 +110,26 @@ class StaffProfileServiceTest {
         verify(store).save(profile.capture());
         assertThat(profile.getValue().getStatus()).isEqualTo("ACTIVE");
         assertThat(profile.getValue().getEmploymentStartDate()).isEqualTo(LocalDate.of(2026, 11, 18));
+    }
+
+    @Test
+    void repeatedIdentityStatusChangePersistsOnceAndPreservesWorkerDetails() {
+        UUID userId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-11-18T12:00:00Z");
+        StaffProfileEntity profile = new StaffProfileEntity(
+                userId, LocalDate.of(2026, 11, 18), now);
+        profile.update("Senior engineer", "ACTIVE");
+        when(store.find(userId)).thenReturn(Optional.of(profile));
+        StaffProfileService service = new StaffProfileService(store, auditRecorder,
+                Mockito.mock(StaffAccountAccessManager.class), Clock.fixed(now, ZoneOffset.UTC));
+        IdentityAccountChanged change = new IdentityAccountChanged(userId, "EMPLOYEE", "INACTIVE");
+
+        service.synchronizeIdentityAccount(change);
+        service.synchronizeIdentityAccount(change);
+
+        assertThat(profile.getStatus()).isEqualTo("INACTIVE");
+        assertThat(profile.getJobTitle()).isEqualTo("Senior engineer");
+        verify(store).save(profile);
     }
 
     @Test
