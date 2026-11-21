@@ -1,5 +1,13 @@
 # Diario de desarrollo
 
+## 2026-11-20 — Ejecución PROMPT 16 (F6 endurecimiento preparado)
+
+- HRD-001..014: se identificaron owners transversal/config/infra/docs, sin cambios de contratos, tablas, ownership ni PII. CSP queda en enforce con nonce por request y sin `unsafe-*`; se amplió la validación de HSTS, frame, nosniff y Permissions-Policy. Actuator continúa separado y el smoke verifica que salud pública no quede expuesta.
+- Se prepararon Dockerfile multi-stage no-root, compose de producción y reverse proxy TLS (sin publicar app/DB/management), healthcheck, configuración externa sin secretos, dashboard/reglas Prometheus, smoke de release, carga p95/p99, workflows manual de hardening y E2E nocturno.
+- Se documentaron ASVS L2/ZAP, WCAG 2.2 AA, presupuestos de rendimiento, backup/restore, TLS, monitorización, release/rollback, RAT/encargados/retención, DNS de email, secretos/rotación, licencias/SBOM y matriz UAT. No se inventaron dominio, proveedor, RPO/RTO, edición SQL Server ni aprobación legal.
+- Validación focal local ejecutada: `npm run test:release-smoke` 1/1, `npm run test:hardening` 2/2, `npm run sbom` (114 componentes, evidencia `target/s-portal-manifest.cdx.json`) y `npm run build` pasan; VS Code no reporta errores en los ficheros modificados. La selección Java `SecurityHeadersTest,ProdProfileTest,TemplateRulesTest` no llegó a ejecutarse porque el repositorio Maven offline no contiene `org.wiremock:wiremock:3.13.1`; no se modifica ese resultado ni se declara PASS.
+- Estado obligatorio: **NO-GO**. ZAP, navegador/lector/contraste, carga/Lighthouse, Docker/scan/HTTPS, restore real, DNS/SMTP, provider de secretos, alertas y firmas UAT requieren recursos/autorización externos y quedan `PREPARADO_NO_EJECUTADO`; Playwright completo sigue `POSTPONED`. HRD-014 no autoriza despliegue.
+
 ## 2026-11-20 — Resolución del ciclo Modulith antes de Oleada 7
 
 - Se eliminó la dependencia inversa `notification → request`. `request.application.RequestNotificationListener` consume sus eventos propios después del commit y publica el contrato owner `notification.api.RequestNotificationRequested`, que contiene solo UUID técnico, ruta interna sin token, plantilla, locale fallback y clave idempotente.
@@ -43,6 +51,21 @@
 - Tests creados/impactados: `QuoteVersionEntityTest`, `QuoteServiceTest`, `QuoteExpiryJobTest`, `EmployeeRequestServiceTest`, `EmployeeRequestControllerTest`, `QuotePersistenceH2IT`, `QuoteMigrationContractTest` y extensión focal de `ClientRequestControllerTest`; E2E `request-assignment-quote.spec.ts`.
 - Validación ejecutada: el wrapper con settings por defecto no pudo resolver el plugin (PKIX); con Java 21 + Maven 3.6.3 + `-Dmaven.repo.local=... -Plocal-h2` proporcionados, `compile` pasó. La selección focal final pasó 26/26: `QuoteVersionEntityTest`, `QuoteServiceTest`, `QuoteExpiryJobTest`, `EmployeeRequestServiceTest`, `EmployeeRequestControllerTest`, `ClientRequestControllerTest`, `QuotePersistenceH2IT`, `QuoteMigrationContractTest`, `ModularityTests`, `ModuleDagTest`, `I18nKeyParityTest`. `TemplateRulesTest` quedó bloqueado por un color literal preexistente de `notification/email/message_posted.html`; `LayerRulesTest` por `@ResponseStatus` preexistente en `messaging.application.ContactAttachmentNotFoundException`. Una recompilación posterior encontró un cambio concurrente no perteneciente a Prompt 13 en `messaging` (`InboxController`/`InboxFilters` incompatibles); no se modificaron esos internals.
 - Pendientes no inventados: fiscalidad/IVA/moneda/validez comercial requieren aprobación; SLA de 1 día hábil solo se conserva como propuesta configurable y faltan calendario/festivos; aprobaciones externas siguen abiertas; la métrica de mensajes no leídos se marca pendiente porque no hay evidencia de lectura integrada. `E2E-002` queda `POSTPONED` por servidor/fixture Playwright y permanece reproducible con las variables `PORTAL_E2E_*` exigidas por el spec. IDs `QUO-001..004`, `EMP-001..007` y `E2E-002` son PARCIALES/NO CERRADOS hasta gates obligatorios.
+
+## 2026-11-21 — Verificación local Portal↔DEMO contra localhost:8081
+
+- DEMO estaba activo en `http://localhost:8081` con `/actuator/health` `UP`. Se autorizó una prueba M2M completa con datos sintéticos y partner local efímero; no se usaron los usuarios reales de `docs/usersDemo` ni se registraron sus credenciales.
+- Resultado real local: `GET /tenant-slugs/.../availability` 200; alta `POST /owner-onboardings` 201 con estado `PENDING_ACTIVATION`; replay de la misma `Idempotency-Key` + payload devolvió 201 y el mismo tenant; `POST /activation-links` devolvió 201 con URL presente. La URL/token de activación no se imprimió ni persistió en evidencia.
+- DEMO aplicó sus valores por defecto para `modules=null`, devolvió IDs técnicos y no se registró email, nombre, body, contraseña ni firma en la evidencia. El partner bootstrap dev quedó controlado por variables de entorno, deshabilitado por defecto y sin secreto literal.
+- Esto aporta evidencia local para SIM-008/SIM-013 y el recorrido de proveedor; no sustituye DEMO PRE, secreto efímero externo, provider CI ni E2E navegador. SQL Server sigue sin ejecutar.
+
+## 2026-11-20 — Cierre local de SIM-005/006/007/008/009/014 y ciclo modular
+
+- Se aprobó y registró la frontera PII del alta conjunta: términos SimbioSphere separados `SIM-TERMS-1`; persistencia limitada a IDs Portal, negocio/sede/módulos y evidencia de términos; email/nombre personal/password/token nunca se copian a la intención. El worker obtiene el perfil mediante `identity.api` y no se ejecuta dentro de una transacción remota.
+- SIM-005 crea intención READY para CLIENT owner ya verificado y conserva transición PENDING→READY de `EmailVerified`; no hay intención automática para un registro ordinario. SIM-009 añade formulario/CSRF, tipos/sedes, consulta HTMX de slug y semántica `modules=null` para defaults frente a `[]`.
+- SIM-006 añade claim con lock/lease, procesamiento HTTP fuera de transacción, backoff 30 s/2 m/10 m/30 m/2 h/6 h con jitter, FAILED/ACTION_REQUIRED, idempotencia y creación de vínculo/negocio solo tras éxito. SIM-007 rota idempotency key al corregir `SLUG_TAKEN`; SIM-008 solicita un enlace nuevo de activación, valida host y nunca lo persiste; SIM-014 lista/valida negocios propios en sugerencias y rechaza IDs manipulados.
+- El ciclo global `customer→identity→notification→request→customer` quedó eliminado con la frontera evento `RequestNotificationRequested`; la selección final incluye `ModularityTests` y `ModuleDagTest` en verde. Resultado final focal: **51/51**, 0 fallos/errores, con H2, worker, IDOR, CSRF, migración, capas, i18n, plantillas y HTTP contractual.
+- SIM-004 permanece únicamente `POSTPONED` en su variante WireMock: los artefactos raíz existen, pero la cadena transitiva Jetty/XMLUnit de la caché offline está incompleta. No se descargó nada. Los contratos loopback/OpenAPI pasan. SIGUEN pendientes solo SIM-010 por owner/contrato, SIM-013 por entorno DEMO compartido/secreto y E2E-004 por runtime; SQL Server/PRE no ejecutados.
 
 ## 2026-11-20 — Implementación local DEMO autorizada y SIM-003
 

@@ -38,6 +38,7 @@ import com.simbio.core.request.domain.RequestAttachmentEntity;
 import com.simbio.core.request.domain.RequestEntity;
 import com.simbio.core.request.domain.RequestNotFoundException;
 import com.simbio.core.request.domain.RequestStatusHistoryEntity;
+import com.simbio.core.simbiosphere.api.LinkedBusinessQuery;
 import com.simbio.core.shared.security.AuthenticatedUser;
 import com.simbio.core.shared.security.Role;
 import com.simbio.core.shared.paging.PageQuery;
@@ -53,6 +54,7 @@ public class RequestService implements RequestApi {
     private final CustomerDirectory customers;
     private final FileStorage files;
     private final ConversationApi conversations;
+    private final LinkedBusinessQuery linkedBusinesses;
     private final AuditRecorder audit;
     private final ApplicationEventPublisher events;
     private final Clock clock;
@@ -60,18 +62,19 @@ public class RequestService implements RequestApi {
     @Autowired
     public RequestService(RequestStore store, PublicReferenceGenerator references,
             CustomerDirectory customers, FileStorage files, ConversationApi conversations,
-            AuditRecorder audit, ApplicationEventPublisher events) {
-        this(store, references, customers, files, conversations, audit, events, Clock.systemUTC());
+            LinkedBusinessQuery linkedBusinesses, AuditRecorder audit, ApplicationEventPublisher events) {
+        this(store, references, customers, files, conversations, linkedBusinesses, audit, events, Clock.systemUTC());
     }
 
     RequestService(RequestStore store, PublicReferenceGenerator references,
             CustomerDirectory customers, FileStorage files, ConversationApi conversations,
-            AuditRecorder audit, ApplicationEventPublisher events, Clock clock) {
+            LinkedBusinessQuery linkedBusinesses, AuditRecorder audit, ApplicationEventPublisher events, Clock clock) {
         this.store = Objects.requireNonNull(store);
         this.references = Objects.requireNonNull(references);
         this.customers = Objects.requireNonNull(customers);
         this.files = Objects.requireNonNull(files);
         this.conversations = Objects.requireNonNull(conversations);
+        this.linkedBusinesses = Objects.requireNonNull(linkedBusinesses);
         this.audit = Objects.requireNonNull(audit);
         this.events = Objects.requireNonNull(events);
         this.clock = Objects.requireNonNull(clock);
@@ -81,10 +84,17 @@ public class RequestService implements RequestApi {
     public RequestSummary create(AuthenticatedUser actor, CreateRequestCommand command) {
         CustomerAccountSummary owner = requireOwner(actor);
         validate(command);
+        if (command.type() == RequestType.SIMBIOSPHERE_MODULE) {
+            if (command.linkedBusinessPublicId() == null) {
+                throw new IllegalArgumentException("A linked business is required");
+            }
+            linkedBusinesses.requireOwnedBy(actor.userId(), command.linkedBusinessPublicId());
+        }
         RequestEntity request = store.save(new RequestEntity(
                 UUID.randomUUID(), references.next(), command.type(), command.category(),
                 command.title(), command.description(), command.objective(), command.impact(),
-                command.relatedModule(), command.estimatedBudget(), command.targetDate(),
+                command.relatedModule(), command.linkedBusinessPublicId(),
+                command.estimatedBudget(), command.targetDate(),
                 owner.publicId(), actor.userId(), Instant.now(clock)));
         store.saveHistory(new RequestStatusHistoryEntity(request.getId(), null,
                 RequestStatus.RECIBIDA, actor.userId(), null, Instant.now(clock)));

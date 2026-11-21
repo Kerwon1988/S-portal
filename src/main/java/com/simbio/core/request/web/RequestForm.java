@@ -2,6 +2,7 @@ package com.simbio.core.request.web;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +16,7 @@ public record RequestForm(
         @Size(max = 2000) String objective,
         @Size(max = 4000) String impact,
         @Pattern(regexp = "[A-Za-z0-9_-]{0,80}") String relatedModule,
+        UUID linkedBusinessPublicId,
         @DecimalMin("0") BigDecimal estimatedBudget,
         LocalDate targetDate) {
 }

@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.simbio.core.simbiosphere.api.ProvisioningStateChanged;
 import com.simbio.core.simbiosphere.domain.AccountLinkEntity;
@@ -41,15 +43,14 @@ public class ProvisioningOutcomeService {
     public void complete(UUID provisioningId, DemoProvisioningClient.OwnerOnboardingResult result) {
         ProvisioningEntity value = require(provisioningId);
         Instant now = Instant.now(clock);
-        value.complete(result.externalAccountId(), now);
+        value.complete(result.externalAccountId(), result.customerAccountId(), now);
         store.save(value);
         AccountLinkEntity link = store.save(new AccountLinkEntity(UUID.randomUUID(),
                 value.getClientAccountPublicId(), value.getExternalSystem(), result.externalAccountId(), now));
         store.save(new LinkedBusinessEntity(UUID.randomUUID(), link,
                 Long.toString(result.tenantId()), value.getBusinessName(), value.getBusinessType(),
                 result.tenantSlug(), now));
-        events.publishEvent(new ProvisioningStateChanged(value.getPublicId(),
-                value.getClientAccountPublicId(), value.getStatus(), now));
+        publishAfterCommit(value, now);
     }
 
     @Transactional
@@ -58,8 +59,7 @@ public class ProvisioningOutcomeService {
         Instant now = Instant.now(clock);
         value.actionRequired(errorCode, now);
         store.save(value);
-        events.publishEvent(new ProvisioningStateChanged(value.getPublicId(),
-                value.getClientAccountPublicId(), value.getStatus(), now));
+        publishAfterCommit(value, now);
     }
 
     @Transactional
@@ -69,11 +69,24 @@ public class ProvisioningOutcomeService {
         if (value.getAttemptCount() >= BACKOFF.size()) {
             value.fail(errorCode, now);
         } else {
-            value.retry(errorCode, now.plus(BACKOFF.get(value.getAttemptCount() - 1)), now);
+            value.retry(errorCode, now.plus(retryDelay(value.getAttemptCount() - 1)), now);
         }
         store.save(value);
-        events.publishEvent(new ProvisioningStateChanged(value.getPublicId(),
-                value.getClientAccountPublicId(), value.getStatus(), now));
+        publishAfterCommit(value, now);
+    }
+
+    private void publishAfterCommit(ProvisioningEntity value, Instant now) {
+        ProvisioningStateChanged event = new ProvisioningStateChanged(value.getPublicId(),
+                value.getClientAccountPublicId(), value.getStatus(), now);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() { events.publishEvent(event); }
+        });
+    }
+
+    static Duration retryDelay(int index) {
+        long baseMillis = BACKOFF.get(index).toMillis();
+        long jittered = Math.round(baseMillis * java.util.concurrent.ThreadLocalRandom.current().nextDouble(0.9, 1.1));
+        return Duration.ofMillis(jittered);
     }
 
     private ProvisioningEntity require(UUID publicId) {

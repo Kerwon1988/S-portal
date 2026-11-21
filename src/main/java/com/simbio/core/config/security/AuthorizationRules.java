@@ -37,6 +37,8 @@ public final class AuthorizationRules {
             new RoutePermission(HttpMethod.POST, "/gestion/contenido/**", "CONTENT_EDIT"),
             new RoutePermission(HttpMethod.GET, "/gestion/errores", "ERROR_INVENTORY_MANAGE", "ADMIN"),
             new RoutePermission(HttpMethod.POST, "/gestion/errores/**", "ERROR_INVENTORY_MANAGE", "ADMIN"),
+            new RoutePermission(HttpMethod.GET, "/gestion/provisioning", "PROVISIONING_MANAGE", "ADMIN"),
+            new RoutePermission(HttpMethod.POST, "/gestion/provisioning/*/retry", "PROVISIONING_MANAGE", "ADMIN"),
             new RoutePermission(HttpMethod.GET, "/gestion/clientes", "USERS_MANAGE", "ADMIN"),
             new RoutePermission(HttpMethod.GET, "/gestion/clientes/nuevo", "USERS_MANAGE", "ADMIN"),
             new RoutePermission(HttpMethod.POST, "/gestion/clientes/nuevo", "USERS_MANAGE", "ADMIN"),

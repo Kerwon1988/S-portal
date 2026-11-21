@@ -1,0 +1,12 @@
+{
+  "title": "S-portal overview",
+  "timezone": "UTC",
+  "panels": [
+    {"type":"stat","title":"Ready","targets":[{"expr":"up{job=\"s-portal\"}"}]},
+    {"type":"timeseries","title":"HTTP 5xx rate","targets":[{"expr":"rate(http_server_requests_seconds_count{job=\"s-portal\",outcome=\"SERVER_ERROR\"}[5m])"}]},
+    {"type":"timeseries","title":"Notification outcomes","targets":[{"expr":"sum by (outcome) (rate(portal_notification_delivery_total[5m]))"}]},
+    {"type":"timeseries","title":"Anti-bot outcomes","targets":[{"expr":"sum by (outcome) (rate(portal_security_antibot_challenge_total[5m]))"}]}
+  ],
+  "schemaVersion": 40,
+  "version": 1
+}

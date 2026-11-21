@@ -12,7 +12,7 @@ import com.simbio.core.simbiosphere.domain.LinkedBusinessEntity;
 import com.simbio.core.simbiosphere.domain.ProvisioningEntity;
 
 @Repository
-class JpaProvisioningStore implements ProvisioningStore {
+class JpaProvisioningStore implements ProvisioningStore, com.simbio.core.simbiosphere.application.LinkedBusinessStore {
     private final ProvisioningJpaRepository provisioning;
     private final AccountLinkJpaRepository accountLinks;
     private final LinkedBusinessJpaRepository linkedBusinesses;
@@ -39,6 +39,16 @@ class JpaProvisioningStore implements ProvisioningStore {
                     return provisioning.save(value);
                 });
     }
+    @Override public java.util.List<ProvisioningEntity> search(
+            com.simbio.core.simbiosphere.api.ProvisioningStatus status, int limit) {
+        java.util.List<ProvisioningEntity> values = status == null
+                ? provisioning.findTop100ByOrderByUpdatedAtDesc()
+                : provisioning.findTop100ByStatusOrderByUpdatedAtDesc(status);
+        return values.subList(0, Math.min(Math.max(limit, 1), values.size()));
+    }
     @Override public AccountLinkEntity save(AccountLinkEntity value) { return accountLinks.save(value); }
     @Override public LinkedBusinessEntity save(LinkedBusinessEntity value) { return linkedBusinesses.save(value); }
+    @Override public java.util.List<LinkedBusinessEntity> findByClientAccount(UUID clientAccountPublicId) {
+        return linkedBusinesses.findAllByAccountLink_ClientAccountPublicId(clientAccountPublicId);
+    }
 }

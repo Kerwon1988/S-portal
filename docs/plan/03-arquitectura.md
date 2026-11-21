@@ -90,7 +90,7 @@ Las flechas en la columna «Depende de» indican dependencias Java permitidas ha
 
 `site` se integra en `content`; presupuestos son parte del agregado `request`; `staff` y `customer` conservan owners distintos. No se crean módulos vacíos.
 
-Estado local PROMPT 15: el módulo `simbiosphere` ya existe como owner de `provisioning`, `account_link` y `linked_business`. Consume `customer.api` por UUID, expone contratos/eventos en `simbiosphere.api` y no contiene todavía transporte HTTP aprobado ni dependencias Java hacia DEMO. `request→simbiosphere` continúa sin añadirse hasta SIM-014.
+Estado local PROMPT 15: el módulo `simbiosphere` ya existe como owner de `provisioning`, `account_link` y `linked_business`. Consume `customer.api` por UUID, expone contratos/eventos en `simbiosphere.api` y no contiene todavía transporte HTTP aprobado ni dependencias Java hacia DEMO. SIM-014 habilita `request→simbiosphere :: api` exclusivamente para `LinkedBusinessQuery`; `request` persiste solo el UUID de negocio y no importa entidades/repositorios/templates de `simbiosphere`.
 
 Para evitar el ciclo `customer → identity → notification → messaging → customer`, `messaging` valida si un CLIENT conserva una cuenta OWNER activa mediante el SPI `shared.spi.ClientAccountOwnership`; su adapter consulta exclusivamente el almacenamiento propio de `customer`. Los eventos permanecen en `messaging::api`, y `notification` podrá consumirlos en su propio sentido de dependencia. El DAG no incluye una llamada de `messaging` a `customer`.
 

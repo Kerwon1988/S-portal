@@ -33,6 +33,7 @@ import com.simbio.core.messaging.api.MessageVisibility;
 import com.simbio.core.request.api.RequestType;
 import com.simbio.core.request.domain.RequestEntity;
 import com.simbio.core.request.domain.RequestNotFoundException;
+import com.simbio.core.simbiosphere.api.LinkedBusinessQuery;
 import com.simbio.core.shared.security.AuthenticatedUser;
 import com.simbio.core.shared.security.Role;
 
@@ -43,10 +44,11 @@ class RequestServiceTest {
     private final CustomerDirectory customers = org.mockito.Mockito.mock(CustomerDirectory.class);
     private final FileStorage files = org.mockito.Mockito.mock(FileStorage.class);
     private final ConversationApi conversations = org.mockito.Mockito.mock(ConversationApi.class);
+    private final LinkedBusinessQuery linkedBusinesses = org.mockito.Mockito.mock(LinkedBusinessQuery.class);
     private final AuditRecorder audit = org.mockito.Mockito.mock(AuditRecorder.class);
     private final ApplicationEventPublisher events = org.mockito.Mockito.mock(ApplicationEventPublisher.class);
-    private final RequestService service = new RequestService(store, references,     customers, files, conversations, audit, events,
-            Clock.fixed(NOW, ZoneOffset.UTC));
+    private final RequestService service = new RequestService(store, references, customers, files,
+            conversations, linkedBusinesses, audit, events, Clock.fixed(NOW, ZoneOffset.UTC));
     private final AuthenticatedUser client = new AuthenticatedUser(UUID.randomUUID(), Role.CLIENT, Set.of());
     private final CustomerAccountSummary owner = new CustomerAccountSummary(
             UUID.randomUUID(), "INDIVIDUAL", "Synthetic owner", "ACTIVE", NOW);
@@ -124,6 +126,23 @@ class RequestServiceTest {
     }
 
     @Test
+    void validatesLinkedBusinessOwnershipForModuleSuggestion() {
+        when(customers.findOwnedBy(client.userId())).thenReturn(Optional.of(owner));
+        when(store.categoryExists("WEB_APPLICATION")).thenReturn(true);
+        UUID foreignBusiness = UUID.randomUUID();
+        CreateRequestCommand command = new CreateRequestCommand(RequestType.SIMBIOSPHERE_MODULE,
+                "WEB_APPLICATION", "Synthetic module", "Synthetic description", "Goal", "Impact",
+                "module", foreignBusiness, null, null);
+        when(linkedBusinesses.requireOwnedBy(client.userId(), foreignBusiness))
+                .thenThrow(new IllegalArgumentException("not owned"));
+
+        assertThatThrownBy(() -> service.create(client, command))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not owned");
+        verify(store, never()).save(any(RequestEntity.class));
+    }
+
+    @Test
     void rejectsEmployeeFromClientUseCases() {
         var employee = new AuthenticatedUser(UUID.randomUUID(), Role.EMPLOYEE, Set.of());
         assertThatThrownBy(() -> service.listOwned(employee, null, null, null, null, null,
@@ -133,7 +152,7 @@ class RequestServiceTest {
 
     private CreateRequestCommand command(RequestType type) {
         return new CreateRequestCommand(type, "WEB_APPLICATION", "Synthetic title", "Synthetic description",
-                "Synthetic goal", null, null, null, null);
+                "Synthetic goal", null, null, null, null, null);
     }
 
     private static RequestEntity request(UUID ownerAccountId, UUID ownerUserId) {

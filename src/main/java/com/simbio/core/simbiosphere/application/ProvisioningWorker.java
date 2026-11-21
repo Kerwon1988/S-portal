@@ -72,7 +72,8 @@ public class ProvisioningWorker {
     }
 
     private List<String> decodeModules(String json) {
-        if (json == null || json.isBlank() || "[]".equals(json)) return List.of();
+        if (json == null || json.isBlank() || "null".equals(json)) return null;
+        if ("[]".equals(json)) return List.of();
         try {
             return List.of(json.replace("[", "").replace("]", "").replace("\"", "")
                     .split(","));

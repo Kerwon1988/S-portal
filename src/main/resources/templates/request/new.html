@@ -24,7 +24,16 @@
             <p class="text-sm text-danger" role="alert" th:errors="*{description}"></p></div>
         <div th:unless="${suggestion}"><label for="objective" th:text="#{request.objective}">Objective</label>
             <textarea id="objective" th:field="*{objective}" rows="3" maxlength="2000" class="mt-1 w-full rounded border border-border bg-surface px-3 py-2"></textarea></div>
-        <div th:if="${suggestion}"><label for="relatedModule" th:text="#{request.module}">Related module</label>
+        <div th:if="${suggestion}"><label for="linkedBusiness" th:text="#{request.linked-business}">Linked business</label>
+            <select id="linkedBusiness" th:field="*{linkedBusinessPublicId}" required
+                    class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                <option value="" th:text="#{request.linked-business-select}">Select a business</option>
+                <option th:each="business : ${linkedBusinesses}" th:value="${business.publicId}"
+                        th:text="${business.businessName + ' · ' + business.businessType + ' · ' + business.tenantSlug}">Business</option>
+            </select>
+            <p th:if="${#lists.isEmpty(linkedBusinesses)}" class="mt-1 text-sm text-text-muted"
+               th:text="#{request.linked-business-empty}">No linked businesses yet.</p>
+            <label for="relatedModule" class="mt-4 block" th:text="#{request.module}">Related module</label>
             <input id="relatedModule" th:field="*{relatedModule}" maxlength="80" pattern="[A-Za-z0-9_-]{1,80}" required class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
             <label for="impact" class="mt-4 block" th:text="#{request.impact}">Impact</label>
             <textarea id="impact" th:field="*{impact}" rows="4" maxlength="4000" required class="mt-1 w-full rounded border border-border bg-surface px-3 py-2"></textarea></div>

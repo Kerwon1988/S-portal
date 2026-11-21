@@ -14,7 +14,10 @@
                        class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
             <div><label for="sim-business-slug" th:text="#{simbiosphere.onboarding.business-slug}">Business slug</label>
                 <input id="sim-business-slug" th:field="*{businessSlug}" required pattern="[a-z0-9-]{3,50}"
-                       class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3"></div>
+                       hx-get="/cuenta/simbiosphere/slug" hx-trigger="input changed delay:400ms"
+                       hx-include="#sim-business-slug" hx-target="#simbiosphere-slug-result" hx-swap="outerHTML"
+                       class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
+                <div id="simbiosphere-slug-result"></div></div>
             <div><label for="sim-business-type" th:text="#{simbiosphere.onboarding.business-type}">Business type</label>
                 <select id="sim-business-type" th:field="*{businessType}" required
                         class="mt-1 min-h-11 w-full rounded border border-border bg-surface px-3">
@@ -44,10 +47,28 @@
         </dl>
         <p th:if="${provisioning.status.name() == 'ACTION_REQUIRED'}" role="alert" class="text-warning"
            th:text="#{simbiosphere.account.action-required}">Additional action is required.</p>
+        <form th:if="${provisioning.status.name() == 'ACTION_REQUIRED' and provisioning.errorCode == 'SLUG_TAKEN'}"
+              method="post" th:action="@{/cuenta/simbiosphere/correccion-slug}" class="space-y-3">
+            <label for="corrected-business-slug" th:text="#{simbiosphere.account.correct-slug}">Choose another slug</label>
+            <input id="corrected-business-slug" name="businessSlug" required pattern="[a-z0-9-]{3,50}"
+                   class="min-h-11 w-full rounded border border-border bg-surface px-3">
+            <p class="text-sm text-text-muted" th:text="#{simbiosphere.account.correct-slug-help}">Correction creates a new idempotency key; no external account is guessed or linked.</p>
+            <button type="submit" class="inline-flex min-h-11 items-center rounded bg-primary px-4 text-on-primary"
+                    th:text="#{simbiosphere.account.retry}">Save and retry</button>
+        </form>
+        <p th:if="${simbiosphereCorrectionError}" class="text-danger" role="alert"
+           th:text="#{simbiosphere.account.correction-error}">The correction could not be applied.</p>
         <p th:if="${provisioning.status.name() != 'PROVISIONED'}" class="text-sm text-text-muted"
            th:text="#{simbiosphere.account.pending-external}">Activation is unavailable until DEMO completes provisioning.</p>
         <p th:if="${provisioning.status.name() == 'PROVISIONED'}" class="text-sm"
            th:text="#{simbiosphere.account.provisioned}">Provisioning is complete. A fresh activation link is requested only through an authorized action.</p>
+        <p th:if="${simbiosphereActivationError}" class="text-danger" role="alert"
+           th:text="#{simbiosphere.account.activation-error}">Activation link could not be issued.</p>
+        <form th:if="${provisioning.status.name() == 'PROVISIONED'}" method="post"
+              th:action="@{/cuenta/simbiosphere/activacion}">
+            <button type="submit" class="inline-flex min-h-11 items-center rounded bg-primary px-4 text-on-primary"
+                    th:text="#{simbiosphere.account.activate}">Continue to activation</button>
+        </form>
     </section>
 </main>
 </html>

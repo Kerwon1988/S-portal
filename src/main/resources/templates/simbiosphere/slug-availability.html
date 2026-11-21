@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><body>
+<div th:fragment="result" id="simbiosphere-slug-result" role="status" aria-live="polite">
+    <p th:if="${slugAvailabilityUnavailable}" class="text-sm text-text-muted"
+       th:text="#{simbiosphere.onboarding.slug-unavailable}">Availability cannot be checked now.</p>
+    <p th:if="${slugAvailability != null and slugAvailability.available}" class="text-sm text-success"
+       th:text="#{simbiosphere.onboarding.slug-free}">The slug is available.</p>
+    <p th:if="${slugAvailability != null and !slugAvailability.available}" class="text-sm text-danger"
+       th:text="#{simbiosphere.onboarding.slug-taken}">The slug is already used.</p>
+</div>
+</body></html>

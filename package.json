@@ -9,7 +9,10 @@
     "e2e:install": "playwright install chromium",
     "test:anti-bot": "node --test scripts/test-anti-bot.test.mjs",
     "test:contact": "node --test scripts/test-contact-recorder.test.mjs",
-    "test:privacy": "node --test scripts/test-error-reporter.test.mjs"
+    "test:privacy": "node --test scripts/test-error-reporter.test.mjs",
+    "test:release-smoke": "node --test scripts/test-smoke-release.test.mjs",
+    "test:hardening": "node --test scripts/test-hardening-contract.test.mjs",
+    "sbom": "node scripts/generate-sbom.mjs"
   },
   "dependencies": {
     "@alpinejs/csp": "3.17.5",

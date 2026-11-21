@@ -62,11 +62,11 @@ erDiagram
 
 | Esquema.tabla (owner) | Columnas principales | Restricciones/índices |
 |---|---|---|
-| `simbiosphere.provisioning` | `id`, `public_id`, `client_account_public_id`, estado, `external_system`, `external_account_id`, `idempotency_key`, error, intentos, lease/backoff y timestamps | Un provisioning por ClientAccount; `idempotency_key` y `public_id` únicos; estado limitado; lease y optimistic locking para worker futuro |
+| `simbiosphere.provisioning` | `id`, `public_id`, `client_account_public_id`, `owner_user_public_id`, estado, `external_system`, IDs externos, datos de negocio/sede, módulos JSON opcionales, versión/fecha de términos, `idempotency_key`, error, intentos, lease/backoff y timestamps | Un provisioning por ClientAccount; `idempotency_key` y `public_id` únicos; estado limitado; `modules_json` NULL distingue defaults de `[]`; no guarda email, nombre personal, password ni token; lease y optimistic locking |
 | `simbiosphere.account_link` | `id`, `public_id`, referencia `client_account_public_id`, sistema externo, `external_account_id`, `created_at` | Unicidad `(external_system, external_account_id)`; nunca resolver por email |
 | `simbiosphere.linked_business` | `id`, `public_id`, FK al vínculo del mismo esquema, `external_business_id`, nombre/tipo/slug externo, `created_at` | FK solo dentro de `simbiosphere`; una cuenta puede tener 1..N negocios; no se asume un ownerUserId dentro del tenant externo |
 
-Las referencias a `customer` son UUIDs resueltos por API y no crean FK cross-module. La migración SQL Server no se ejecuta ni certifica mediante H2.
+Las referencias a `customer` son UUIDs resueltos por API y no crean FK cross-module. `request.request.linked_business_public_id` referencia `simbiosphere.api.LinkedBusinessQuery` por UUID, sin FK ni import de entidad entre módulos. La migración SQL Server no se ejecuta ni certifica mediante H2.
 
 ## Solicitudes y mensajería
 ```mermaid

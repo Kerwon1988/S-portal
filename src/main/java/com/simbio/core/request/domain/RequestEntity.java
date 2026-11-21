@@ -44,6 +44,8 @@ public class RequestEntity {
     private String impact;
     @Column(name = "related_module", length = 80)
     private String relatedModule;
+    @Column(name = "linked_business_public_id")
+    private UUID linkedBusinessPublicId;
     @Column(name = "estimated_budget", precision = 19, scale = 4)
     private BigDecimal estimatedBudget;
     @Column(name = "target_date")
@@ -81,6 +83,14 @@ public class RequestEntity {
             String title, String description, String objective, String impact, String relatedModule,
             BigDecimal estimatedBudget, LocalDate targetDate, UUID ownerAccountId, UUID ownerUserId,
             Instant createdAt) {
+        this(publicId, referenceCode, type, category, title, description, objective, impact,
+                relatedModule, null, estimatedBudget, targetDate, ownerAccountId, ownerUserId, createdAt);
+    }
+
+    public RequestEntity(UUID publicId, String referenceCode, RequestType type, String category,
+            String title, String description, String objective, String impact, String relatedModule,
+            UUID linkedBusinessPublicId, BigDecimal estimatedBudget, LocalDate targetDate, UUID ownerAccountId, UUID ownerUserId,
+            Instant createdAt) {
         this.publicId = Objects.requireNonNull(publicId);
         this.referenceCode = requireText(referenceCode, "reference");
         this.type = Objects.requireNonNull(type);
@@ -90,6 +100,7 @@ public class RequestEntity {
         this.objective = trimToNull(objective);
         this.impact = trimToNull(impact);
         this.relatedModule = trimToNull(relatedModule);
+        this.linkedBusinessPublicId = linkedBusinessPublicId;
         this.estimatedBudget = estimatedBudget == null || estimatedBudget.signum() >= 0
                 ? estimatedBudget : invalid("Estimated budget cannot be negative");
         this.targetDate = targetDate;
@@ -153,6 +164,7 @@ public class RequestEntity {
     public String getObjective() { return objective; }
     public String getImpact() { return impact; }
     public String getRelatedModule() { return relatedModule; }
+    public UUID getLinkedBusinessPublicId() { return linkedBusinessPublicId; }
     public BigDecimal getEstimatedBudget() { return estimatedBudget; }
     public LocalDate getTargetDate() { return targetDate; }
     public UUID getOwnerAccountId() { return ownerAccountId; }

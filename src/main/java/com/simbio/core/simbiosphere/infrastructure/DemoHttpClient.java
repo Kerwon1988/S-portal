@@ -65,9 +65,15 @@ public class DemoHttpClient implements DemoProvisioningClient {
     @Override
     public ActivationLinkResult createActivationLink(long customerAccountId, String idempotencyKey) {
         if (customerAccountId < 1) throw new IllegalArgumentException("Customer account id must be positive");
-        return exchange("POST", URI.create("/api/platform/v1/owner-onboardings/"
+        ActivationLinkResult result = exchange("POST", URI.create("/api/platform/v1/owner-onboardings/"
                 + customerAccountId + "/activation-links"), new byte[0], idempotencyKey,
                 ActivationLinkResult.class);
+        URI target = URI.create(result.activationUrl());
+        if (target.getHost() == null || !target.getHost().equalsIgnoreCase(properties.getBaseUrl().getHost())) {
+            throw new DemoClientException(502, "UNSAFE_ACTIVATION_URL", null, false,
+                    new IllegalArgumentException("Activation host differs from provider"));
+        }
+        return result;
     }
 
     private <T> T exchange(String method, URI relativePath, byte[] body, String idempotencyKey,

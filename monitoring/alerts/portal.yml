@@ -1,0 +1,24 @@
+groups:
+  - name: portal
+    rules:
+      - alert: PortalReadinessDown
+        expr: up{job="s-portal"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: S-portal readiness endpoint is unavailable
+          runbook: docs/operations/observability.md
+      - alert: PortalHttpErrorsElevated
+        expr: rate(http_server_requests_seconds_count{job="s-portal",outcome="SERVER_ERROR"}[5m]) > 0.1
+        for: 10m
+        labels: { severity: high }
+        annotations:
+          summary: Elevated server errors
+          runbook: docs/operations/release-rollback.md
+      - alert: PortalOutboxFailures
+        expr: increase(portal_notification_delivery_total{outcome="failed"}[15m]) > 0
+        for: 5m
+        labels: { severity: high }
+        annotations:
+          summary: Email outbox has terminal failures
+          runbook: docs/operations/observability.md

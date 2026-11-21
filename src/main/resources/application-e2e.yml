@@ -1,4 +1,13 @@
 portal:
+  simbiosphere:
+    client:
+      enabled: ${PORTAL_SIMBIOSPHERE_CLIENT_ENABLED:false}
+      base-url: ${PORTAL_SIMBIOSPHERE_BASE_URL:http://localhost:8081}
+      key-id: ${PORTAL_SIMBIOSPHERE_KEY_ID:s-portal-local-key}
+      secret: ${PORTAL_SIMBIOSPHERE_HMAC_SECRET:}
+    worker:
+      enabled: ${PORTAL_SIMBIOSPHERE_WORKER_ENABLED:false}
+      poll-interval: 1s
   notification:
     worker:
       enabled: true

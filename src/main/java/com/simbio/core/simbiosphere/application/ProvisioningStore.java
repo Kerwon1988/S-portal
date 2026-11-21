@@ -1,6 +1,7 @@
 package com.simbio.core.simbiosphere.application;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ public interface ProvisioningStore {
     Optional<ProvisioningEntity> findProvisioning(UUID clientAccountPublicId);
     Optional<ProvisioningEntity> findByPublicId(UUID publicId);
     Optional<ProvisioningEntity> claimNext(Instant now, String worker, Instant leaseUntil);
+    List<ProvisioningEntity> search(com.simbio.core.simbiosphere.api.ProvisioningStatus status, int limit);
     AccountLinkEntity save(AccountLinkEntity accountLink);
     LinkedBusinessEntity save(LinkedBusinessEntity business);
 }

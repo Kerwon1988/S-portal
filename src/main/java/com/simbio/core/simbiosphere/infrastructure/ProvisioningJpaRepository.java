@@ -22,4 +22,7 @@ interface ProvisioningJpaRepository extends JpaRepository<ProvisioningEntity, Lo
             + "and (p.nextAttemptAt is null or p.nextAttemptAt <= :now) "
             + "and (p.leaseExpiresAt is null or p.leaseExpiresAt <= :now) order by p.createdAt asc")
     java.util.List<ProvisioningEntity> findClaimable(Instant now, Pageable pageable);
+    java.util.List<ProvisioningEntity> findTop100ByStatusOrderByUpdatedAtDesc(
+            com.simbio.core.simbiosphere.api.ProvisioningStatus status);
+    java.util.List<ProvisioningEntity> findTop100ByOrderByUpdatedAtDesc();
 }

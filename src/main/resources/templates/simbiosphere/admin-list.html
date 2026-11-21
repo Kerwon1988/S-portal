@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/base :: layout('simbiosphere.admin.title', ~{::main}, 'admin')}">
+<main id="main-content" class="mx-auto w-full max-w-6xl p-4 sm:p-6" tabindex="-1">
+    <h1 class="font-heading text-3xl" th:text="#{simbiosphere.admin.heading}">SimbioSphere provisioning</h1>
+    <p th:if="${provisioningRetrySucceeded}" class="mt-3 text-success" role="status"
+       th:text="#{simbiosphere.admin.retry-success}">Retry queued.</p>
+    <p th:if="${provisioningRetryRejected}" class="mt-3 text-danger" role="alert"
+       th:text="#{simbiosphere.admin.retry-rejected}">Retry rejected.</p>
+    <form method="get" th:action="@{/gestion/provisioning}" class="mt-5 flex flex-wrap gap-3">
+        <label for="provisioning-status" th:text="#{simbiosphere.admin.status-filter}">Status</label>
+        <select id="provisioning-status" name="status" class="min-h-11 rounded border border-border bg-surface px-3">
+            <option value="" th:text="#{simbiosphere.admin.all}">All</option>
+            <option th:each="item : ${statuses}" th:value="${item}" th:text="#{|simbiosphere.account.status.${item}|}"
+                    th:selected="${status == item}">Status</option>
+        </select>
+        <button class="min-h-11 rounded bg-primary px-4 text-on-primary" type="submit"
+                th:text="#{simbiosphere.admin.filter}">Filter</button>
+    </form>
+    <div class="mt-6 overflow-x-auto rounded border border-border">
+        <table class="w-full text-left">
+            <caption class="sr-only" th:text="#{simbiosphere.admin.caption}">Provisioning operations</caption>
+            <thead><tr>
+                <th class="p-3" th:text="#{simbiosphere.admin.id}">ID</th>
+                <th class="p-3" th:text="#{simbiosphere.admin.status}">Status</th>
+                <th class="p-3" th:text="#{simbiosphere.admin.error}">Error</th>
+                <th class="p-3" th:text="#{simbiosphere.admin.attempts}">Attempts</th>
+                <th class="p-3" th:text="#{simbiosphere.admin.updated}">Updated</th>
+                <th class="p-3" th:text="#{simbiosphere.admin.actions}">Actions</th>
+            </tr></thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(provisionings)}"><td colspan="6" class="p-4"
+                    th:text="#{simbiosphere.admin.empty}">No provisioning rows.</td></tr>
+                <tr th:each="item : ${provisionings}" class="border-t border-border">
+                    <td class="p-3"><code th:text="${item.publicId}">id</code></td>
+                    <td class="p-3" th:text="#{|simbiosphere.account.status.${item.status}|}">Status</td>
+                    <td class="p-3" th:text="#{|simbiosphere.admin.error.${item.errorCode}|}">Error</td>
+                    <td class="p-3" th:text="${item.attemptCount}">0</td>
+                    <td class="p-3"><time th:datetime="${item.updatedAt}" th:text="${item.updatedAt}">time</time></td>
+                    <td class="p-3">
+                        <form th:if="${item.retryable}" method="post"
+                              th:action="@{/gestion/provisioning/{id}/retry(id=${item.publicId})}">
+                            <input type="hidden" name="confirmed" value="true">
+                            <button class="min-h-11 rounded border border-primary px-3 text-primary" type="submit"
+                                    th:text="#{simbiosphere.admin.retry}">Retry</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</html>

@@ -18,6 +18,8 @@ class ProvisioningEntityTest {
         ProvisioningEntity provisioning = provisioning();
 
         assertThat(provisioning.getStatus()).isEqualTo(ProvisioningStatus.PENDING);
+        provisioning.attachIntent(UUID.randomUUID(), "Synthetic shop", "synthetic-shop", "SERVICES",
+                "Main", "main", "[]", "SIM-TERMS-1", NOW);
         assertThat(provisioning.markReady(NOW)).isTrue();
         provisioning.markProcessing("worker-a", NOW, NOW.plusSeconds(60));
         provisioning.retry("TIMEOUT", NOW.plusSeconds(30), NOW);
@@ -30,7 +32,7 @@ class ProvisioningEntityTest {
     void rejectsRemoteCompletionWhileStillPending() {
         ProvisioningEntity provisioning = provisioning();
 
-        assertThatThrownBy(() -> provisioning.complete("external-account", NOW))
+        assertThatThrownBy(() -> provisioning.complete("external-account", 1, NOW))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("PENDING");
     }

@@ -40,6 +40,20 @@ class SimbioSpherePersistenceH2IT {
     }
 
     @Test
+    void onlyOneWorkerClaimsAReadyProvisioningRow() {
+        ProvisioningEntity value = new ProvisioningEntity(UUID.randomUUID(), UUID.randomUUID(),
+                "SIMBIOSPHERE", UUID.randomUUID().toString(), Instant.now());
+        value.attachIntent(UUID.randomUUID(), "Synthetic shop", "synthetic-shop", "SERVICES",
+                "Main", "main", "[]", "SIM-TERMS-1", Instant.now());
+        value.markReady(Instant.now());
+        store.save(value);
+        entityManager.flush();
+
+        assertThat(store.claimNext(Instant.now(), "worker-a", Instant.now().plusSeconds(60))).isPresent();
+        assertThat(store.claimNext(Instant.now(), "worker-b", Instant.now().plusSeconds(60))).isEmpty();
+    }
+
+    @Test
     void enforcesUniqueExternalAccountRegardlessOfEmail() {
         store.save(new AccountLinkEntity(UUID.randomUUID(), UUID.randomUUID(), "SIMBIOSPHERE",
                 "demo-account-10", Instant.now()));

@@ -20,7 +20,7 @@ public record SimbioSphereOnboardingForm(
         @AssertTrue boolean termsAccepted) {
 
     public static SimbioSphereOnboardingForm empty() {
-        return new SimbioSphereOnboardingForm(null, null, null, null, null, List.of(), false);
+        return new SimbioSphereOnboardingForm(null, null, null, null, null, null, false);
     }
 
     public ProvisioningIntent toIntent(String termsVersion, Instant acceptedAt) {

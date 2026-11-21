@@ -42,6 +42,7 @@ import com.simbio.core.request.application.RequestDetail;
 import com.simbio.core.request.application.QuoteService;
 import com.simbio.core.request.application.RequestService;
 import com.simbio.core.request.domain.RequestNotFoundException;
+import com.simbio.core.simbiosphere.api.LinkedBusinessQuery;
 import com.simbio.core.shared.security.AuthenticatedUser;
 import com.simbio.core.shared.security.Role;
 import com.simbio.core.shared.paging.PageQuery;
@@ -52,11 +53,14 @@ public class ClientRequestController {
     private final RequestService requests;
     private final ConversationApi conversations;
     private final QuoteService quotes;
+    private final LinkedBusinessQuery linkedBusinesses;
 
-    public ClientRequestController(RequestService requests, ConversationApi conversations, QuoteService quotes) {
+    public ClientRequestController(RequestService requests, ConversationApi conversations,
+            QuoteService quotes, LinkedBusinessQuery linkedBusinesses) {
         this.requests = requests;
         this.conversations = conversations;
         this.quotes = quotes;
+        this.linkedBusinesses = linkedBusinesses;
     }
 
     @GetMapping
@@ -100,6 +104,7 @@ public class ClientRequestController {
         requireClient(actor);
         model.addAttribute("requestForm", formFromSession(http));
         model.addAttribute("suggestion", true);
+        model.addAttribute("linkedBusinesses", linkedBusinesses.findOwnedBy(actor.userId()));
         return "request/new";
     }
 
@@ -126,6 +131,7 @@ public class ClientRequestController {
         http.getSession().setAttribute("requestDraft", form);
         if (errors.hasErrors()) {
             model.addAttribute("suggestion", true);
+            model.addAttribute("linkedBusinesses", linkedBusinesses.findOwnedBy(actor.userId()));
             return "request/new";
         }
         RequestSummary created = create(actor, RequestType.SIMBIOSPHERE_MODULE, form);
@@ -221,13 +227,13 @@ public class ClientRequestController {
     private RequestSummary create(AuthenticatedUser actor, RequestType type, RequestForm form) {
         return requests.create(actor, new CreateRequestCommand(type, form.category(), form.title(),
                 form.description(), form.objective(), form.impact(), form.relatedModule(),
-                form.estimatedBudget(), form.targetDate()));
+                form.linkedBusinessPublicId(), form.estimatedBudget(), form.targetDate()));
     }
 
     private static RequestForm formFromSession(HttpServletRequest request) {
         Object saved = request.getSession().getAttribute("requestDraft");
         return saved instanceof RequestForm form ? form :
-                new RequestForm("WEB_APPLICATION", "", "", "", "", "", null, null);
+                new RequestForm("WEB_APPLICATION", "", "", "", "", "", null, null, null);
     }
 
     private static void requireClient(AuthenticatedUser actor) {

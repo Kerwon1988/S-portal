@@ -177,7 +177,11 @@ PROMPT 15 creó únicamente la base de saga local: `simbiosphere.provisioning` e
 
 SIM-011 aporta un fallback opcional con `PORTAL_SIMBIOSPHERE_FALLBACK_ENABLED=false` por defecto. La URL debe ser HTTPS, estar en la allowlist de host y no contener credenciales, query ni fragmento; el enlace público no traslada datos del formulario. La URL `/continuar/simbiosphere` solo redirige cuando el flag está habilitado y responde 404 en otro caso.
 
-SIM-005 está parcialmente preparado: `EmailVerified` transita solo una intención PENDING existente a READY y publica IDs tras commit. Es no-op para identidades sin cuenta/intención; no se crea intención automática desde cualquier `ClientRegistered` hasta que SIM-009 aporte el consentimiento y campos del alta conjunta.
+SIM-005 queda implementado localmente: `/cuenta/simbiosphere` crea la intención solo para CLIENT owner verificado, con términos separados `SIM-TERMS-1`, CSRF y datos mínimos. Si el email ya está verificado, la intención nace READY; un `EmailVerified` tardío transita idempotentemente una PENDING existente a READY. El evento de estado se publica tras commit, contiene solo IDs y el registro ordinario `ClientRegistered` no crea intención conjunta.
+
+SIM-006 añade claim con lock + lease, HTTP fuera de transacción, backoff `30 s/2 m/10 m/30 m/2 h/6 h` con jitter, FAILED al agotar, ACTION_REQUIRED para errores de negocio y creación de vínculo/negocio solo tras respuesta exitosa. El worker está deshabilitado por defecto.
+
+SIM-007 permite corregir únicamente `SLUG_TAKEN` bajo ownership y CSRF; rota la idempotency key para evitar reutilizar payload distinto. SIM-008 muestra `/cuenta/simbiosphere` owner-only y solicita un activation link fresco mediante POST; redirige sin persistir/loguear el token. SIM-009 captura negocio/sede/tipo, términos separados y comprueba slug por fragmento HTMX. SIM-014 permite seleccionar un negocio vinculado en sugerencias de módulo y revalida su propiedad en `request.application`.
 
 SIM-012 queda como diseño R2: `AccountLinkPort` exige un desafío temporal de posesión, máximo de intentos y confirmación por prueba; no existe implementación ni enlace automático por email.
 

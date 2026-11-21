@@ -45,6 +45,7 @@ import com.simbio.core.request.domain.RequestNotFoundException;
 import com.simbio.core.shared.security.AuthenticatedUser;
 import com.simbio.core.shared.security.Role;
 import com.simbio.core.simbiosphere.application.DemoProvisioningClient;
+import com.simbio.core.simbiosphere.api.LinkedBusinessQuery;
 import com.simbio.core.shared.paging.PageResult;
 
 @SpringBootTest
@@ -58,6 +59,7 @@ class ClientRequestControllerTest {
     @MockitoBean ConversationApi conversations;
     @MockitoBean ThreadAccessService threadAccess;
     @MockitoBean DemoProvisioningClient demoProvisioningClient;
+    @MockitoBean LinkedBusinessQuery linkedBusinesses;
 
     @Test
     void listRendersLocalizedFiltersAndPagination() throws Exception {

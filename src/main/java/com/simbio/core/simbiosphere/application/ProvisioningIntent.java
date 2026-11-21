@@ -23,8 +23,8 @@ public record ProvisioningIntent(
         }
         locationName = required(locationName, "locationName", 200);
         locationSlug = pattern(locationSlug, "^[a-z0-9-]{2,50}$", "locationSlug");
-        modules = modules == null ? List.of() : List.copyOf(modules);
-        if (modules.stream().anyMatch(value -> value == null || !value.matches("^[A-Z0-9_-]{1,64}$"))) {
+        modules = modules == null ? null : List.copyOf(modules);
+        if (modules != null && modules.stream().anyMatch(value -> value == null || !value.matches("^[A-Z0-9_-]{1,64}$"))) {
             throw new IllegalArgumentException("Invalid optional module");
         }
         termsVersion = required(termsVersion, "termsVersion", 64);

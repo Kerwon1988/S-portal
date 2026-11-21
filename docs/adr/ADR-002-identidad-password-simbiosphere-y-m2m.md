@@ -23,6 +23,14 @@ La API M2M debe aceptar evidencia de email verificado y persistir aceptación de
 
 En PROMPT 09 se añadieron flujos locales para verificar email, recuperar/cambiar la contraseña e invitar a definir una credencial propia; el token es opaco, de un uso y se persiste hasheado. No se sincronizan contraseñas con SimbioSphere y el correo de perfil no se cambia desde el formulario actual. No se modificó DEMO ni se afirma alta/provisión externa. La compilación y los tests de estos flujos siguen pendientes de validación Maven.
 
+## Decisión PII y términos del alta conjunta (2026-11-20)
+
+- El owner aprobó términos SimbioSphere separados, explícitos y obligatorios, con versión `SIM-TERMS-1` y fecha UTC.
+- `simbiosphere.provisioning` guarda solo IDs públicos del owner/cuenta Portal, configuración de negocio/sede, selección opcional de módulos, versión/fecha de términos e identificadores técnicos de saga.
+- No se persisten en la intención el email, nombre personal, contraseña, hash, token de activación ni credenciales M2M. Al ejecutar el worker se resuelven email/nombre/locale/verificación mediante `identity.api.IdentityOwnerProfileApi` y se envían exclusivamente al adapter M2M fuera de transacción.
+- `modules=null/omitido` solicita defaults de DEMO; `[]` se reserva para cero opcionales y queda distinguido en persistencia/JSON.
+- El alta ordinaria de S-portal no crea intención conjunta automáticamente. La intención se crea desde `/cuenta/simbiosphere` con sesión CLIENT, cuenta owner verificada, aceptación específica y CSRF.
+
 ## Avance local PROMPT 15
 
 - SIM-001 ya modela `provisioning`, `account_link` y `linked_business` con referencias UUID al owner `customer`; `account_link` no admite resolución por email.

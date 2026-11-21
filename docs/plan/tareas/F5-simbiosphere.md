@@ -19,10 +19,10 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; ER 04 y saga 05
 - Estimación: M (≤ 1 d)
 - Riesgos: la relación OWNER sale de CustomerAccountMembership y Tenant no tiene owner directo (`iam/application/OwnerOnboardingService.java:50-61`, `tenant/domain/Tenant.java:62`); no limitar vínculo a un tenant.
-- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL. Módulo, agregado PENDING, vínculos 1..N, migración, API/evento mínimo y tests focales incluidos en la selección ampliada 35/35 (H2, cliente HTTP, contrato y gates locales) completados. SQL Server no verificado.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL. Módulo, agregado PENDING, vínculos 1..N, migración, API/evento mínimo y tests focales incluidos en la selección ampliada 51/51 (H2, cliente HTTP, contrato y gates locales) completados. SQL Server no verificado.
 
 ### SIM-003 — Cliente HTTP tipado con HMAC, timeouts, circuit breaker y errores RFC 7807
-- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL VALIDADA. Cliente Java 21 tipado, HMAC-SHA256, canonicalización, idempotencia, timeouts 3 s/10 s, circuit breaker en memoria y Problem Details saneados. La selección focal relacionada pasa 35/35 con vector HMAC, HTTP local, errores, H2, migración, capas y DAG. La verificación global Modulith separada descubre el ciclo concurrente `customer→identity→notification→request→customer`; permanece como gate transversal abierto.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL VALIDADA. Cliente Java 21 tipado, HMAC-SHA256, canonicalización, idempotencia, timeouts 3 s/10 s, circuit breaker en memoria y Problem Details saneados. La selección focal relacionada pasa dentro de 51/51 con vector HMAC, HTTP local, errores, H2, migración, capas y DAG. El ciclo concurrente se resolvió mediante eventos de notificación; `ModularityTests` pasa.
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
 - Tipo: feat
 - Depende de: SIM-002, FND-007
@@ -55,7 +55,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; contrato en 05
 - Estimación: M (≤ 1 d)
 - Riesgos: plugins/versiones de contrato cambian; fijar artefactos y revisar diff.
-- Estado local (2026-11-20): PARCIAL. El OpenAPI aceptado está sincronizado; existen fixtures y `DemoHttpClientContractTest` ejecuta un servidor HTTP loopback para request/response, HMAC, 503 y ausencia de password. WireMock no está disponible en el repositorio offline proporcionado: la ejecución específica WireMock queda `POSTPONED`, sin impedir el contrato/protocolo local.
+- Estado local (2026-11-20): POSTPONED SOLO WIREMOCK. OpenAPI aceptado/fixtures y `DemoHttpClientContractTest` pasan con servidor loopback (HMAC, 201/200/503, no-password). WireMock 3.13.1 existe pero su cadena transitiva Jetty/XMLUnit no está completa en la caché offline; no se descarga. La prueba WireMock queda `POSTPONED` con reproducción al aportar artefactos/local repo completo.
 
 ### SIM-005 — Aprovisionamiento local en el registro y transición tras verificar el email
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -73,7 +73,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; secuencia 05
 - Estimación: M (≤ 1 d)
 - Riesgos: evento perdido bloquea alta; EPR y métrica por estado obligatorios.
-- Estado local (2026-11-20): PARCIAL. `EmailVerified` transita idempotentemente una intención PENDING a READY y publica solo IDs tras commit; si no existe cuenta/intención, no hace nada y nunca llama HTTP. Falta el origen de intención del registro conjunto, términos separados/legales, EPR persistente, métrica y contrato de campos PII; por ello SIM-006 no queda habilitada.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL. `/cuenta/simbiosphere` crea intención owner verificada con términos separados, PII minimizada y estado READY; `EmailVerified` recupera PENDING tardía idempotentemente. Sin HTTP local antes del worker; eventos tras commit solo con IDs. La aprobación PII/terms queda registrada en ADR-002. Observabilidad agregada de métricas queda para HRD-007; no bloquea la saga.
 
 ### SIM-006 — Worker de aprovisionamiento con claim, backoff y estados
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -91,7 +91,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; runbook 09
 - Estimación: M (≤ 1 d)
 - Riesgos: respuesta remota perdida tras éxito; misma Idempotency-Key y reconciliación por estado.
-- Estado local (2026-11-20): BLOQUEADO por SIM-005. Existe cliente HTTP y estados, pero falta la intención completa con datos/consentimiento aprobados para construir el comando; no se implementa worker que invente PII/negocio.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL. Claim H2/pessimistic lock, lease, HTTP fuera de transacción, idempotencia, backoff 30 s/2 m/10 m/30 m/2 h/6 h con jitter, FAILED al agotar, ACTION_REQUIRED para errores no retryable y eventos tras commit. Worker deshabilitado por defecto; no hay llamada de red hasta configurar client+worker.
 
 ### SIM-007 — Errores de negocio: ACTION_REQUIRED y UI de corrección
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -109,7 +109,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; errores 05
 - Estimación: M (≤ 1 d)
 - Riesgos: el reintento interno busca owner solo por email (`platform/application/PlatformOwnerOnboardingService.java:38-41,67-84`); usar contrato idempotente y no exponerlo.
-- Estado local (2026-11-20): BLOQUEADO por SIM-006; el enum y códigos remotos están preparados, pero no hay transición/worker operativa que genere ACTION_REQUIRED.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL SEGURA PARA SLUG. `SLUG_TAKEN` se muestra sin detalles ajenos; CLIENT owner puede proponer otro slug, rota idempotency key, conserva CSRF y reencola. Otros códigos quedan visibles como acción genérica y no permiten vinculación/lookup por email.
 
 ### SIM-008 — Panel "Mi SimbioSphere" con enlace de acceso y activación de contraseña
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -127,7 +127,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; flujo en 05
 - Estimación: M (≤ 1 d)
 - Riesgos: enlace requiere tarea DEMO-06b; no usar password ni reutilizar token en panel.
-- Estado local (2026-11-20): PARCIAL. Existe `/cuenta/simbiosphere`, owner-only, que muestra únicamente el estado propio y nunca token/secret; los tests MVC/i18n/plantilla pasan. La acción de activación queda bloqueada hasta un provider local/externo habilitado por SIM-006/DEMO-06b.
+- Estado local (2026-11-21): IMPLEMENTACIÓN + VERIFICACIÓN LOCAL. `/cuenta/simbiosphere` es owner-only; POST CSRF solicita activation link nuevo a DEMO-06b, valida host provider, redirige y no persiste/loguea el token. DEMO local confirmó 201 y URL presente con evidencia redactada. Queda `POSTPONED` el E2E navegador/entorno compartido.
 
 ### SIM-009 — Campos del alta conjunta y comprobación de slug
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -145,7 +145,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; catálogo OpenAPI 05
 - Estimación: M (≤ 1 d)
 - Riesgos: selección vacía en DEMO da cero módulos opcionales (`BusinessModuleSelectionValidator.java:20`; `CustomerAccountCapabilityService.java:64,69-70`).
-- Estado local (2026-11-20): BLOQUEADO. El contrato de campos existe, pero la decisión legal/UX de términos separados y el origen de intención conjunta no están aprobados; no se inventa captura ni se almacena PII adicional.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL. Formulario owner/CSRF con negocio, slug, tipo, sede inicial y términos SimbioSphere separados; consulta HTMX de slug; sin email/nombre/password en persistencia. `modules` omitido conserva defaults; `[]` queda reservado a cero opcionales.
 
 ### SIM-010 — Backoffice: estado, reintento manual y alertas de aprovisionamiento
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -163,7 +163,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; runbook 09
 - Estimación: M (≤ 1 d)
 - Riesgos: exponer texto remoto puede filtrar PII; mostrar error normalizado y truncado.
-- Estado local (2026-11-20): BLOQUEADO por SIM-006; no se construye panel de reintento ni alerta sin worker/estado procesable.
+- Estado local (2026-11-20): BLOQUEADO por contratos owner pendientes de USR-002/NTF-004. El worker ya expone estados/procesables, pero no se inventa el panel lazy compartido ni alertas ADMIN sin aprobación de owner, permisos/rutas y copy final.
 
 ### SIM-011 — Alternativa temporal: enlace a /onboarding de DEMO tras feature flag
 - Fase / épica / módulo owner: F5 / SIM / simbiosphere
@@ -217,7 +217,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; matriz CI en 08/09
 - Estimación: M (≤ 1 d)
 - Riesgos: disponibilidad/latencia de otro repo; separar de build offline y coordinar ventana.
-- Estado local (2026-11-20): POSTPONED. Cliente y contrato loopback pasan, pero no existe autorización para red real, endpoint compartido ni secreto efímero.
+- Estado local (2026-11-21): VERIFICACIÓN LOCAL REAL. DEMO `localhost:8081` respondió health UP, availability 200, provisioning 201, replay 201 con mismo tenant y activation link 201. Partner/PII sintéticos; URL/token redactados. Sigue `POSTPONED` solo el provider en entorno compartido/PRE con secreto externo; esta evidencia local no lo sustituye.
 
 ### SIM-014 — Selector de negocio vinculado en la sugerencia de módulo
 - Fase / épica / módulo owner: F5 / SIM / request
@@ -235,7 +235,7 @@
 - Documentación a actualizar: DIARIO + INVENTARIO; contrato UI en inventario
 - Estimación: S (≤ 0,5 d)
 - Riesgos: una CustomerAccount puede agrupar tenants (`iam/application/OwnerOnboardingService.java:50-61`, `tenant/domain/Tenant.java:62`); no limitar vínculo a uno.
-- Estado local (2026-11-20): BLOQUEADO por SIM-006; sin negocios aprovisionados no se añade selector ni se introduce la dependencia `request→simbiosphere`.
+- Estado local (2026-11-20): IMPLEMENTACIÓN LOCAL. `request→simbiosphere.api.LinkedBusinessQuery`, selector para sugerencias y revalidación server-side por owner/UUID. La prueba negativa rechaza ID de negocio ajeno antes de persistir; no hay FK cross-module.
 
 ### E2E-004 — E2E: registro conjunto y alta de solicitud
 - Fase / épica / módulo owner: F5 / E2E / test

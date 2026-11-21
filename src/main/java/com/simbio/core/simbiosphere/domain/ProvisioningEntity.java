@@ -33,6 +33,8 @@ public class ProvisioningEntity {
     private String externalSystem;
     @Column(name = "external_account_id", length = 128)
     private String externalAccountId;
+    @Column(name = "external_customer_account_id")
+    private Long externalCustomerAccountId;
     @Column(name = "idempotency_key", nullable = false, length = 128, unique = true)
     private String idempotencyKey;
     @Column(name = "owner_user_public_id")
@@ -95,7 +97,7 @@ public class ProvisioningEntity {
         this.businessType = requireText(businessType, "businessType");
         this.locationName = requireText(locationName, "locationName");
         this.locationSlug = requireText(locationSlug, "locationSlug");
-        this.modulesJson = Objects.requireNonNullElse(modulesJson, "[]");
+        this.modulesJson = modulesJson;
         this.termsVersion = requireText(termsVersion, "termsVersion");
         this.termsAcceptedAt = Objects.requireNonNull(termsAcceptedAt);
     }
@@ -119,9 +121,11 @@ public class ProvisioningEntity {
         updatedAt = Objects.requireNonNull(now);
     }
 
-    public void complete(String accountId, Instant now) {
+    public void complete(String accountId, long customerAccountId, Instant now) {
         requireStatus(ProvisioningStatus.PROCESSING);
         externalAccountId = requireText(accountId, "externalAccountId");
+        if (customerAccountId < 1) throw new IllegalArgumentException("customerAccountId must be positive");
+        externalCustomerAccountId = customerAccountId;
         status = ProvisioningStatus.PROVISIONED;
         errorCode = null;
         nextAttemptAt = null;
@@ -135,6 +139,17 @@ public class ProvisioningEntity {
         errorCode = requireText(code, "errorCode");
         clearLease();
         updatedAt = Objects.requireNonNull(now);
+    }
+
+    public void correctAndRequeue(String newSlug, String newIdempotencyKey, Instant now) {
+        requireStatus(ProvisioningStatus.ACTION_REQUIRED);
+        businessSlug = requireText(newSlug, "businessSlug");
+        if (!businessSlug.matches("^[a-z0-9-]{3,50}$")) throw new IllegalArgumentException("businessSlug is invalid");
+        idempotencyKey = requireText(newIdempotencyKey, "idempotencyKey");
+        status = ProvisioningStatus.READY;
+        errorCode = null;
+        nextAttemptAt = Objects.requireNonNull(now);
+        updatedAt = now;
     }
 
     public void retry(String code, Instant nextAttempt, Instant now) {
@@ -179,6 +194,7 @@ public class ProvisioningEntity {
     public ProvisioningStatus getStatus() { return status; }
     public String getExternalSystem() { return externalSystem; }
     public String getExternalAccountId() { return externalAccountId; }
+    public Long getExternalCustomerAccountId() { return externalCustomerAccountId; }
     public String getIdempotencyKey() { return idempotencyKey; }
     public UUID getOwnerUserPublicId() { return ownerUserPublicId; }
     public String getBusinessName() { return businessName; }
